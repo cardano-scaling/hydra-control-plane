@@ -15,6 +15,7 @@ impl Node {
             socket,
         };
 
+        node.listen();
         Ok(node)
     }
 

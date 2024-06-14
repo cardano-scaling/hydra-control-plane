@@ -11,7 +11,6 @@ pub async fn get_node(pkh: &str, state: &State<MyState>) -> Result<String, Statu
         .ok_or(Status::ServiceUnavailable)?;
 
     if let Some(node) = nodes.get_mut(index) {
-        node.listen();
         node.players.push(Player::new(pkh));
         Ok(node.uri.clone())
     } else {

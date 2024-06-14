@@ -10,4 +10,5 @@ async-tungstenite = { version = "0.26.1", features = ["tokio-runtime"] }
 futures-util = "0.3.30"
 rocket = "0.5.1"
 serde = "1.0.203"
+serde_json = "1.0.117"
 tokio = { version = "1.38.0", features = ["full"] }
