@@ -1,0 +1,13 @@
+[package]
+name = "hydra_control_plane"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-tungstenite = { version = "0.26.1", features = ["tokio-runtime"] }
+futures-util = "0.3.30"
+rocket = "0.5.1"
+serde = "1.0.203"
+tokio = { version = "1.38.0", features = ["full"] }
