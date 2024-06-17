@@ -1,19 +1,39 @@
 use std::{error::Error, fmt};
 
 use async_tungstenite::tungstenite::Message;
-use serde_json::Value;
+use serde_json::{map::Values, Value};
 
-use super::super::tag::Tag;
+use super::{super::tag::Tag, messages::snapshot_confirmed::SnapshotConfirmed};
 
 pub enum HydraMessage {
     HydraEvent(HydraEventMessage),
     Ping(Vec<u8>),
 }
 
-// TODO: this should be an enum, which each variant being a struct that represents a different message schema
-pub struct HydraEventMessage {
-    pub tag: Tag,
-    pub data: Value,
+#[derive(Debug)]
+pub enum HydraEventMessage {
+    SnapshotConfirmed(SnapshotConfirmed),
+    Unimplemented(Value),
+}
+
+impl TryFrom<Value> for HydraEventMessage {
+    type Error = Box<dyn Error>;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        let tag = value["tag"]
+            .as_str()
+            .ok_or("Invalid tag")?
+            .parse::<Tag>()
+            .map_err(|_| "Invalid tag")?;
+
+        match tag {
+            Tag::SnapshotConfirmed => {
+                let snapshot_confirmed = SnapshotConfirmed::try_from(value)?;
+                Ok(HydraEventMessage::SnapshotConfirmed(snapshot_confirmed))
+            }
+            _ => Ok(HydraEventMessage::Unimplemented(value)),
+        }
+    }
 }
 
 impl TryFrom<Message> for HydraMessage {
@@ -24,15 +44,9 @@ impl TryFrom<Message> for HydraMessage {
             Message::Text(text) => {
                 let json: Value = serde_json::from_str(&text)
                     .map_err(|err| HydraMessageError::JsonParseError(err))?;
-                let tag_str = json["tag"].as_str().ok_or(HydraMessageError::InvalidTag)?;
-                let tag = tag_str
-                    .parse::<Tag>()
-                    .map_err(|_| HydraMessageError::UnsupportedTag(tag_str.to_string()))?;
-
-                Ok(HydraMessage::HydraEvent(HydraEventMessage {
-                    tag,
-                    data: json.clone(),
-                }))
+                let event = HydraEventMessage::try_from(json)
+                    .map_err(|_| HydraMessageError::UnsupportedTag("".to_string()))?;
+                Ok(HydraMessage::HydraEvent(event))
             }
             Message::Ping(payload) => Ok(HydraMessage::Ping(payload)),
             _ => Err(HydraMessageError::UnsupportedMessageFormat),

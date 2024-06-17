@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
 
+#[derive(Debug)]
 pub struct SnapshotConfirmed {
     head_id: String,
     seq: u64,
@@ -43,11 +44,11 @@ impl TryFrom<Value> for SnapshotConfirmed {
             .as_u64()
             .ok_or("Invalid snapshot_number")?;
         let utxo = value["utxo"]
-            .as_array()
+            .as_object()
             .ok_or("Invalid utxo")?
             .iter()
-            .map(|s| UTxO::try_from(s.clone()))
-            .collect()?;
+            .map(|(key, value)| UTxO::try_from_value(key, value))
+            .collect::<Result<Vec<UTxO>, Box<dyn std::error::Error>>>()?;
         let timestamp = value["timestamp"].as_str().ok_or("Invalid timestamp")?;
 
         Ok(SnapshotConfirmed {
@@ -56,7 +57,7 @@ impl TryFrom<Value> for SnapshotConfirmed {
             signatures,
             confirmed_transactions,
             snapshot_number,
-            utxo: vec![],
+            utxo,
             timestamp: timestamp.to_string(),
         })
     }

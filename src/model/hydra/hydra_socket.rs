@@ -5,6 +5,7 @@ use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::StreamExt;
 use std::sync::Arc;
 use tokio::net::TcpStream;
+use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::Mutex;
 
 use super::hydra_message::HydraMessage;
@@ -17,6 +18,7 @@ pub struct HydraSocket {
 
 pub struct HydraReceiver {
     receiver: SplitStream<WebSocketStream<TokioAdapter<TcpStream>>>,
+    writer: UnboundedSender<String>,
 }
 
 pub struct HydraSender {
@@ -24,12 +26,18 @@ pub struct HydraSender {
 }
 
 impl HydraSocket {
-    pub async fn new(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(
+        url: &str,
+        writer: &UnboundedSender<String>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let (ws_stream, _) = connect_async(url).await?;
         let (sender, receiver) = ws_stream.split();
 
         Ok(HydraSocket {
-            receiver: Arc::new(Mutex::new(HydraReceiver { receiver })),
+            receiver: Arc::new(Mutex::new(HydraReceiver {
+                receiver,
+                writer: writer.clone(),
+            })),
             sender: Arc::new(Mutex::new(HydraSender { sender })),
             connected: true,
         })
@@ -54,10 +62,7 @@ impl HydraReceiver {
                     }
 
                     HydraMessage::HydraEvent(event) => {
-                        println!(
-                            "Received event: tag: {:?} | data: {:?}",
-                            event.tag, event.data
-                        );
+                        println!("Received event: {:?}", event);
                     }
                 },
                 Err(e) => {
