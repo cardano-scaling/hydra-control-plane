@@ -3,7 +3,7 @@ use std::{error::Error, fmt};
 use async_tungstenite::tungstenite::Message;
 use serde_json::Value;
 
-use super::tag::Tag;
+use super::super::tag::Tag;
 
 pub enum HydraMessage {
     HydraEvent(HydraEventMessage),

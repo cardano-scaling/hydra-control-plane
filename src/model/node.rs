@@ -1,4 +1,4 @@
-use super::{hydra_socket::HydraSocket, player::Player};
+use super::{hydra::hydra_socket::HydraSocket, player::Player};
 
 pub struct Node {
     pub uri: String,
