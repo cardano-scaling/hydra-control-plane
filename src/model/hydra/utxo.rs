@@ -6,7 +6,7 @@ use serde_json::Value;
 pub struct UTxO {
     hash: Vec<u8>,
     index: u32,
-    address: Vec<u8>,
+    address: String,
     datum: Datum,
     reference_script: Option<Vec<u8>>,
     value: HashMap<String, u64>,
@@ -24,9 +24,12 @@ impl UTxO {
         let index = tx_id.split("#").collect::<Vec<&str>>()[1].parse::<u32>()?;
         let hex_hash = tx_id.split("#").collect::<Vec<&str>>()[0];
         let hash = hex::decode(hex_hash)?;
-        let address = hex::decode(value["address"].as_str().ok_or("Invalid address")?)?;
-        let is_inline = value["inlineDatum"].is_null();
-        let is_hash = value["datumHash"].is_null();
+        let address = value["address"]
+            .as_str()
+            .ok_or("Invalid address")?
+            .to_string();
+        let is_inline = !value["inlineDatum"].is_null();
+        let is_hash = !value["datumHash"].is_null();
         let datum: Datum;
         if is_inline {
             datum = Datum::InlineDatum(hex::decode(

@@ -45,7 +45,7 @@ impl TryFrom<Message> for HydraMessage {
                 let json: Value = serde_json::from_str(&text)
                     .map_err(|err| HydraMessageError::JsonParseError(err))?;
                 let event = HydraEventMessage::try_from(json)
-                    .map_err(|_| HydraMessageError::UnsupportedTag("".to_string()))?;
+                    .map_err(|e| HydraMessageError::UnknownError(e.to_string()))?;
                 Ok(HydraMessage::HydraEvent(event))
             }
             Message::Ping(payload) => Ok(HydraMessage::Ping(payload)),
@@ -59,6 +59,7 @@ pub enum HydraMessageError {
     UnsupportedMessageFormat,
     UnsupportedTag(String),
     JsonParseError(serde_json::Error),
+    UnknownError(String),
     InvalidTag,
 }
 
@@ -71,6 +72,7 @@ impl fmt::Display for HydraMessageError {
             HydraMessageError::UnsupportedTag(tag) => write!(f, "unsupported tag: {tag}"),
             HydraMessageError::InvalidTag => write!(f, "invalid tag field"),
             HydraMessageError::JsonParseError(err) => write!(f, "json parse error: {err}"),
+            HydraMessageError::UnknownError(err) => write!(f, "unknown error: {err}"),
         }
     }
 }
