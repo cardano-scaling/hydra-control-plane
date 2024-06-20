@@ -1,9 +1,16 @@
 use std::{error::Error, fmt};
 
 use async_tungstenite::tungstenite::Message;
-use serde_json::{map::Values, Value};
+use serde_json::Value;
 
-use super::{super::tag::Tag, messages::snapshot_confirmed::SnapshotConfirmed};
+use super::{
+    super::tag::Tag,
+    messages::{
+        committed::Committed, head_is_initializing::HeadIsInitializing,
+        peer_connected::PeerConnected, peer_disconnected::PeerDisconnected,
+        snapshot_confirmed::SnapshotConfirmed, tx_valid::TxValid,
+    },
+};
 
 pub enum HydraMessage {
     HydraEvent(HydraEventMessage),
@@ -13,6 +20,11 @@ pub enum HydraMessage {
 #[derive(Debug)]
 pub enum HydraEventMessage {
     SnapshotConfirmed(SnapshotConfirmed),
+    TxValid(TxValid),
+    PeerConnected(PeerConnected),
+    PeerDisconnected(PeerDisconnected),
+    HeadIsInitializing(HeadIsInitializing),
+    Committed(Committed),
     Unimplemented(Value),
 }
 
@@ -30,6 +42,26 @@ impl TryFrom<Value> for HydraEventMessage {
             Tag::SnapshotConfirmed => {
                 let snapshot_confirmed = SnapshotConfirmed::try_from(value)?;
                 Ok(HydraEventMessage::SnapshotConfirmed(snapshot_confirmed))
+            }
+            Tag::TxValid => {
+                let tx_valid = TxValid::try_from(value)?;
+                Ok(HydraEventMessage::TxValid(tx_valid))
+            }
+            Tag::PeerConnected => {
+                let peer_connected = PeerConnected::try_from(value)?;
+                Ok(HydraEventMessage::PeerConnected(peer_connected))
+            }
+            Tag::PeerDisconnected => {
+                let peer_disconnected = PeerDisconnected::try_from(value)?;
+                Ok(HydraEventMessage::PeerDisconnected(peer_disconnected))
+            }
+            Tag::HeadIsInitializing => {
+                let head_is_initializing = HeadIsInitializing::try_from(value)?;
+                Ok(HydraEventMessage::HeadIsInitializing(head_is_initializing))
+            }
+            Tag::Committed => {
+                let committed = Committed::try_from(value)?;
+                Ok(HydraEventMessage::Committed(committed))
             }
             _ => Ok(HydraEventMessage::Unimplemented(value)),
         }
