@@ -6,9 +6,10 @@ use serde_json::Value;
 use super::{
     super::tag::Tag,
     messages::{
-        committed::Committed, head_is_initializing::HeadIsInitializing,
-        peer_connected::PeerConnected, peer_disconnected::PeerDisconnected,
-        snapshot_confirmed::SnapshotConfirmed, tx_valid::TxValid,
+        committed::Committed, greetings::Greetings, head_is_initializing::HeadIsInitializing,
+        head_is_open::HeadIsOpen, peer_connected::PeerConnected,
+        peer_disconnected::PeerDisconnected, snapshot_confirmed::SnapshotConfirmed,
+        tx_valid::TxValid,
     },
 };
 
@@ -24,7 +25,9 @@ pub enum HydraEventMessage {
     PeerConnected(PeerConnected),
     PeerDisconnected(PeerDisconnected),
     HeadIsInitializing(HeadIsInitializing),
+    HeadIsOpen(HeadIsOpen),
     Committed(Committed),
+    Greetings(Greetings),
     Unimplemented(Value),
 }
 
@@ -40,29 +43,21 @@ impl TryFrom<Value> for HydraEventMessage {
 
         match tag {
             Tag::SnapshotConfirmed => {
-                let snapshot_confirmed = SnapshotConfirmed::try_from(value)?;
-                Ok(HydraEventMessage::SnapshotConfirmed(snapshot_confirmed))
+                SnapshotConfirmed::try_from(value).map(HydraEventMessage::SnapshotConfirmed)
             }
-            Tag::TxValid => {
-                let tx_valid = TxValid::try_from(value)?;
-                Ok(HydraEventMessage::TxValid(tx_valid))
-            }
+            Tag::TxValid => TxValid::try_from(value).map(HydraEventMessage::TxValid),
             Tag::PeerConnected => {
-                let peer_connected = PeerConnected::try_from(value)?;
-                Ok(HydraEventMessage::PeerConnected(peer_connected))
+                PeerConnected::try_from(value).map(HydraEventMessage::PeerConnected)
             }
             Tag::PeerDisconnected => {
-                let peer_disconnected = PeerDisconnected::try_from(value)?;
-                Ok(HydraEventMessage::PeerDisconnected(peer_disconnected))
+                PeerDisconnected::try_from(value).map(HydraEventMessage::PeerDisconnected)
             }
             Tag::HeadIsInitializing => {
-                let head_is_initializing = HeadIsInitializing::try_from(value)?;
-                Ok(HydraEventMessage::HeadIsInitializing(head_is_initializing))
+                HeadIsInitializing::try_from(value).map(HydraEventMessage::HeadIsInitializing)
             }
-            Tag::Committed => {
-                let committed = Committed::try_from(value)?;
-                Ok(HydraEventMessage::Committed(committed))
-            }
+            Tag::HeadIsOpen => HeadIsOpen::try_from(value).map(HydraEventMessage::HeadIsOpen),
+            Tag::Committed => Committed::try_from(value).map(HydraEventMessage::Committed),
+            Tag::Greetings => Greetings::try_from(value).map(HydraEventMessage::Greetings),
             _ => Ok(HydraEventMessage::Unimplemented(value)),
         }
     }
