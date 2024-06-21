@@ -8,8 +8,9 @@ use tokio::net::TcpStream;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::Mutex;
 
-use super::hydra_message::HydraMessage;
+use super::hydra_message::{HydraData, HydraEventMessage, HydraMessage};
 
+#[derive(Clone)]
 pub struct HydraSocket {
     pub receiver: Arc<Mutex<HydraReceiver>>,
     sender: Arc<Mutex<HydraSender>>,
@@ -18,7 +19,7 @@ pub struct HydraSocket {
 
 pub struct HydraReceiver {
     receiver: SplitStream<WebSocketStream<TokioAdapter<TcpStream>>>,
-    writer: UnboundedSender<String>,
+    writer: UnboundedSender<HydraData>,
 }
 
 pub struct HydraSender {
@@ -28,7 +29,7 @@ pub struct HydraSender {
 impl HydraSocket {
     pub async fn new(
         url: &str,
-        writer: &UnboundedSender<String>,
+        writer: &UnboundedSender<HydraData>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let (ws_stream, _) = connect_async(url).await?;
         let (sender, receiver) = ws_stream.split();
@@ -45,7 +46,7 @@ impl HydraSocket {
 }
 
 impl HydraReceiver {
-    pub async fn listen(&mut self) {
+    pub async fn listen(&mut self, node_identifier: &str) {
         while let Some(msg) = self.receiver.next().await {
             let msg = match msg {
                 Ok(msg) => msg,
@@ -62,7 +63,16 @@ impl HydraReceiver {
                     }
 
                     HydraMessage::HydraEvent(event) => {
-                        println!("Received event: {:?}", event);
+                        let message = HydraEventMessage::from(event);
+                        if let HydraEventMessage::HeadIsOpen(h) = &message {
+                            println!("Head is open: {:?}", h);
+                        }
+
+                        let data = HydraData::Received {
+                            uri: node_identifier.to_string(),
+                            message,
+                        };
+                        self.writer.send(data);
                     }
                 },
                 Err(e) => {

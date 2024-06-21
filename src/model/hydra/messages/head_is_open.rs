@@ -37,3 +37,21 @@ impl TryFrom<Value> for HeadIsOpen {
         })
     }
 }
+
+impl HeadIsOpen {
+    pub fn head_id(&self) -> &str {
+        &self.head_id
+    }
+
+    pub fn seq(&self) -> u64 {
+        self.seq
+    }
+
+    pub fn utxos(&self) -> &Vec<UTxO> {
+        &self.utxos
+    }
+
+    pub fn timestamp(&self) -> &str {
+        &self.timestamp
+    }
+}

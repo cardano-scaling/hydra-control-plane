@@ -1,12 +1,17 @@
-use std::sync::Arc;
-
 use crate::routes::get_node::get_node;
+use routes::heads::heads;
 use tokio::{
     spawn,
-    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+    sync::mpsc::{self, error::TryRecvError, UnboundedReceiver, UnboundedSender},
 };
 
-use model::{hydra::state::HydraNodesState, node::Node};
+use model::{
+    hydra::{
+        hydra_message::{HydraData, HydraEventMessage},
+        state::HydraNodesState,
+    },
+    node::Node,
+};
 use serde::Deserialize;
 
 #[macro_use]
@@ -28,17 +33,23 @@ struct Config {
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
-    let (tx, rx): (UnboundedSender<String>, UnboundedReceiver<String>) = mpsc::unbounded_channel();
+    let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
+        mpsc::unbounded_channel();
 
     let node = Node::try_new("ws://127.0.0.1:4001", &tx)
         .await
         .expect("failed to connect");
-    let nodes = vec![node];
+
+    let node2 = Node::try_new("ws://3.15.33.186:4001", &tx)
+        .await
+        .expect("failed to connect");
+
+    let nodes = vec![node, node2];
     let hydra_state = HydraNodesState::from_nodes(nodes);
 
     let hydra_state_clone = hydra_state.clone();
     spawn(async move {
-        update(hydra_state_clone, rx);
+        update(hydra_state_clone, rx).await;
     });
 
     let rocket = rocket::build();
@@ -50,14 +61,47 @@ async fn main() -> Result<(), rocket::Error> {
             state: hydra_state,
             config,
         })
-        .mount("/", routes![get_node])
+        .mount("/", routes![get_node, heads])
         .launch()
         .await?;
 
     Ok(())
 }
 
-fn update(state: HydraNodesState, reader: UnboundedReceiver<String>) {
-    //
-    // ... handle updating
+async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
+    loop {
+        match rx.try_recv() {
+            Ok(data) => match data {
+                HydraData::Received { message, uri } => {
+                    let mut state_guard = state.state.write().await;
+                    let nodes = &mut state_guard.nodes;
+                    let node = nodes.iter_mut().find(|n| n.uri == uri);
+                    if let None = node {
+                        println!("Node not found: ${:?}", uri);
+                        continue;
+                    }
+                    let node = node.unwrap();
+                    match message {
+                        HydraEventMessage::HeadIsOpen(head_is_open) => {
+                            if let None = node.head_id {
+                                println!(
+                                    "updating node {:?} with head_id {:?}",
+                                    node.uri,
+                                    head_is_open.head_id()
+                                );
+                                node.head_id = Some(head_is_open.head_id().to_string());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                HydraData::Sent(_) => {}
+            },
+            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Disconnected) => {
+                println!("mpsc disconnected");
+                break;
+            }
+        }
+    }
 }

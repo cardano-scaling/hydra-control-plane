@@ -19,6 +19,15 @@ pub enum HydraMessage {
 }
 
 #[derive(Debug)]
+pub enum HydraData {
+    Received {
+        message: HydraEventMessage,
+        uri: String,
+    },
+    Sent(String),
+}
+
+#[derive(Debug)]
 pub enum HydraEventMessage {
     SnapshotConfirmed(SnapshotConfirmed),
     TxValid(TxValid),
