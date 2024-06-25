@@ -1,4 +1,5 @@
 use crate::routes::get_node::get_node;
+use routes::head::head;
 use routes::heads::heads;
 use tokio::{
     spawn,
@@ -8,7 +9,6 @@ use tokio::{
 use model::{
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
-        messages::snapshot_confirmed,
         state::HydraNodesState,
     },
     node::Node,
@@ -37,7 +37,7 @@ async fn main() -> Result<(), rocket::Error> {
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
 
-    let node = Node::try_new("ws://127.0.0.1:4001", &tx)
+    let node = Node::try_new("ws://127.0.0.1:4001", &tx, true)
         .await
         .expect("failed to connect");
 
@@ -62,7 +62,7 @@ async fn main() -> Result<(), rocket::Error> {
             state: hydra_state,
             config,
         })
-        .mount("/", routes![get_node, heads])
+        .mount("/", routes![get_node, heads, head])
         .launch()
         .await?;
 
@@ -93,21 +93,13 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                                 node.head_id = Some(head_is_open.head_id().to_string());
                             }
                         }
-                        HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => {
-                            let txs: u64 = snapshot_confirmed
-                                .confirmed_transactions
-                                .len()
-                                .try_into()
-                                .expect("failed to convert usize to u64");
-
-                            println!(
-                                "updating node {:?} with transaction_count {:?} | adding {:?} ",
-                                node.uri, node.transaction_count, txs
-                            );
-
-                            node.transaction_count += txs;
+                        HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => node
+                            .stats
+                            .calculate_stats(snapshot_confirmed.confirmed_transactions),
+                        HydraEventMessage::TxValid(tx) => {
+                            node.stats.add_transaction(tx.tx_id.clone(), tx.into());
                         }
-                        _ => {}
+                        _ => println!("Unhandled message: {:?}", message),
                     }
                 }
                 HydraData::Sent(_) => {}

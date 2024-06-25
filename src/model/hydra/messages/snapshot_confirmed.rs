@@ -9,7 +9,7 @@ pub struct SnapshotConfirmed {
     pub head_id: String,
     pub seq: u64,
     pub signatures: Vec<String>,
-    pub confirmed_transactions: Vec<String>,
+    pub confirmed_transactions: Vec<Vec<u8>>,
     pub snapshot_number: u64,
     pub utxo: Vec<UTxO>,
     pub timestamp: String,
@@ -38,12 +38,11 @@ impl TryFrom<Value> for SnapshotConfirmed {
             .as_array()
             .ok_or("Invalid confirmedTransactions")?
             .iter()
-            .map(|s| {
-                s.as_str()
-                    .ok_or("Invalid transaction")
-                    .map(|s| s.to_string())
+            .map(|s| match s.as_str() {
+                Some(s) => hex::decode(s).map_err(|_| "Invalid confirmedTransaction"),
+                None => Err("Invalid confirmedTransaction"),
             })
-            .collect::<Result<Vec<String>, &str>>()?;
+            .collect::<Result<Vec<Vec<u8>>, &str>>()?;
         let snapshot_number = snapshot["snapshotNumber"]
             .as_u64()
             .ok_or("Invalid snapshotNumber")?;

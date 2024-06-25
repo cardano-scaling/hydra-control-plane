@@ -4,13 +4,13 @@ use serde_json::Value;
 
 #[derive(Debug)]
 pub struct TxValid {
-    head_id: String,
-    seq: u64,
-    timestamp: String,
-    cbor: Vec<u8>,
-    descrption: String,
-    tx_id: Vec<u8>,
-    tx_type: String,
+    pub head_id: String,
+    pub seq: u64,
+    pub timestamp: String,
+    pub cbor: Vec<u8>,
+    pub descrption: String,
+    pub tx_id: Vec<u8>,
+    pub tx_type: String,
 }
 
 impl TryFrom<Value> for TxValid {
@@ -27,12 +27,21 @@ impl TryFrom<Value> for TxValid {
             .as_object()
             .ok_or("Invalid transaction")?;
 
-        let cbor = hex::decode(transaction["cborHex"].as_str().ok_or("Invalid cbor")?)?;
+        let cbor = match transaction["cborHex"].as_str() {
+            Some(cbor) => hex::decode(cbor)?,
+            None => return Err("Invalid cbor".into()),
+        };
+
         let descrption = transaction["description"]
             .as_str()
             .ok_or("Invalid descrption")?
             .to_owned();
-        let tx_id = hex::decode(transaction["txId"].as_str().ok_or("Invalid txId")?)?;
+
+        let tx_id = match transaction["txId"].as_str() {
+            Some(tx_id) => hex::decode(tx_id)?,
+            None => return Err("Invalid txId".into()),
+        };
+
         let tx_type = transaction["type"]
             .as_str()
             .ok_or("Invalid txType")?
