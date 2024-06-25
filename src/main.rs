@@ -8,6 +8,7 @@ use tokio::{
 use model::{
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
+        messages::snapshot_confirmed,
         state::HydraNodesState,
     },
     node::Node,
@@ -40,11 +41,11 @@ async fn main() -> Result<(), rocket::Error> {
         .await
         .expect("failed to connect");
 
-    let node2 = Node::try_new("ws://3.15.33.186:4001", &tx)
-        .await
-        .expect("failed to connect");
+    // let node2 = Node::try_new("ws://3.15.33.186:4001", &tx)
+    //     .await
+    //     .expect("failed to connect");
 
-    let nodes = vec![node, node2];
+    let nodes = vec![node];
     let hydra_state = HydraNodesState::from_nodes(nodes);
 
     let hydra_state_clone = hydra_state.clone();
@@ -91,6 +92,20 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                                 );
                                 node.head_id = Some(head_is_open.head_id().to_string());
                             }
+                        }
+                        HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => {
+                            let txs: u64 = snapshot_confirmed
+                                .confirmed_transactions
+                                .len()
+                                .try_into()
+                                .expect("failed to convert usize to u64");
+
+                            println!(
+                                "updating node {:?} with transaction_count {:?} | adding {:?} ",
+                                node.uri, node.transaction_count, txs
+                            );
+
+                            node.transaction_count += txs;
                         }
                         _ => {}
                     }

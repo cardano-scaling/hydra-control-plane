@@ -6,13 +6,13 @@ use crate::model::hydra::utxo::UTxO;
 
 #[derive(Debug)]
 pub struct SnapshotConfirmed {
-    head_id: String,
-    seq: u64,
-    signatures: Vec<String>,
-    confirmed_transactions: Vec<String>,
-    snapshot_number: u64,
-    utxo: Vec<UTxO>,
-    timestamp: String,
+    pub head_id: String,
+    pub seq: u64,
+    pub signatures: Vec<String>,
+    pub confirmed_transactions: Vec<String>,
+    pub snapshot_number: u64,
+    pub utxo: Vec<UTxO>,
+    pub timestamp: String,
 }
 
 impl TryFrom<Value> for SnapshotConfirmed {

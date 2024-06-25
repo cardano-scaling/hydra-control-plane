@@ -10,8 +10,9 @@ use super::{
 pub struct Node {
     pub uri: String,
     pub head_id: Option<String>,
-    pub players: Vec<Player>,
     pub socket: HydraSocket,
+    pub players: Vec<Player>,
+    pub transaction_count: u64,
 }
 
 impl Node {
@@ -25,6 +26,7 @@ impl Node {
             head_id: None,
             players: Vec::new(),
             socket,
+            transaction_count: 0,
         };
 
         node.listen();
@@ -43,10 +45,11 @@ impl Serialize for Node {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_struct("Node", 3)?;
+        let mut s = serializer.serialize_struct("Node", 4)?;
         s.serialize_field("uri", &self.uri)?;
         s.serialize_field("head_id", &self.head_id)?;
         s.serialize_field("players", &self.players.len())?;
+        s.serialize_field("transaction_count", &self.transaction_count)?;
         s.skip_field("socket")?;
         s.end()
     }

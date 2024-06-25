@@ -64,15 +64,12 @@ impl HydraReceiver {
 
                     HydraMessage::HydraEvent(event) => {
                         let message = HydraEventMessage::from(event);
-                        if let HydraEventMessage::HeadIsOpen(h) = &message {
-                            println!("Head is open: {:?}", h);
-                        }
 
                         let data = HydraData::Received {
                             uri: node_identifier.to_string(),
                             message,
                         };
-                        self.writer.send(data);
+                        let _ = self.writer.send(data);
                     }
                 },
                 Err(e) => {
