@@ -15,18 +15,19 @@ pub async fn new_game(pkh: &str, state: &State<MyState>) -> Result<String, Statu
         .find(|n| n.players.len() < max_players)
         .ok_or(Status::ServiceUnavailable)?;
 
+    let utxos = node
+        .fetch_utxos()
+        .await
+        .map_err(|_| Status::ServiceUnavailable);
+
+    println!("{:?}", utxos);
     let player = Player::new(pkh);
     let game_state = player.initialize_state();
     let plutus_data: PlutusData = game_state.into();
     let mut buffer: Vec<u8> = Vec::new();
     encode(plutus_data, &mut buffer).map_err(|_| Status::InternalServerError)?;
     let cbor = hex::encode(&buffer);
-    println!(
-        "Player: {:?} | GameState: {:?} | Datum: {:?}",
-        pkh,
-        player.initialize_state(),
-        cbor,
-    );
+
     node.players.push(player.clone());
 
     Ok(format!(

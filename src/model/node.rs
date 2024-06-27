@@ -1,7 +1,10 @@
-use std::collections::HashMap;
-
+use reqwest::Error;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde_json::Value;
+use std::collections::HashMap;
 use tokio::sync::mpsc::UnboundedSender;
+
+use crate::model::hydra::utxo::UTxO;
 
 use super::{
     hydra::{hydra_message::HydraData, hydra_socket::HydraSocket, messages::tx_valid::TxValid},
@@ -10,13 +13,19 @@ use super::{
 
 #[derive(Clone)]
 pub struct Node {
-    pub uri: String,
+    pub connection_info: ConnectionInfo,
     pub head_id: Option<String>,
     pub socket: HydraSocket,
     pub players: Vec<Player>,
     pub stats: NodeStats,
 }
 
+#[derive(Clone)]
+pub struct ConnectionInfo {
+    pub host: String,
+    pub port: u32,
+    pub secure: bool,
+}
 pub struct NodeSummary(pub Node);
 
 #[derive(Clone)]
@@ -40,15 +49,22 @@ pub struct StateUpdate {
     pub play_time: u64,
 }
 
+pub enum NetworkRequestError {
+    HttpError(reqwest::Error),
+    DeserializationError(Box<dyn std::error::Error>),
+}
+
 impl Node {
     pub async fn try_new(
         uri: &str,
         writer: &UnboundedSender<HydraData>,
         persisted: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let socket = HydraSocket::new(uri, writer).await?;
+        let connection_info: ConnectionInfo = uri.to_string().try_into()?;
+
+        let socket = HydraSocket::new(connection_info.to_websocket_url().as_str(), writer).await?;
         let node = Node {
-            uri: uri.to_owned(),
+            connection_info,
             head_id: None,
             players: Vec::new(),
             socket,
@@ -61,8 +77,30 @@ impl Node {
 
     pub fn listen(&self) {
         let receiver = self.socket.receiver.clone();
-        let uri = self.uri.clone();
-        tokio::spawn(async move { receiver.lock().await.listen(uri.as_str()).await });
+        let identifier = self.connection_info.to_authority();
+        tokio::spawn(async move { receiver.lock().await.listen(identifier.as_str()).await });
+    }
+
+    pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>, NetworkRequestError> {
+        let request_url = self.connection_info.to_http_url() + "/snapshot/utxo";
+        println!("{}", request_url);
+        let response = reqwest::get(&request_url)
+            .await
+            .map_err(NetworkRequestError::HttpError)?;
+
+        let body = response
+            .json::<HashMap<String, Value>>()
+            .await
+            .map_err(NetworkRequestError::HttpError)?;
+
+        println!("{:?}", body);
+        let utxos = body
+            .iter()
+            .map(|(key, value)| UTxO::try_from_value(key, value))
+            .map(|result| result.map_err(|e| NetworkRequestError::DeserializationError(e)))
+            .collect::<Result<Vec<UTxO>, NetworkRequestError>>()?;
+
+        Ok(utxos)
     }
 }
 
@@ -78,10 +116,63 @@ impl Serialize for Node {
         s.serialize_field("active_games", &self.players.len())?;
         s.skip_field("socket")?;
         s.skip_field("ephemeral")?;
+        s.skip_field("connection_info")?;
         s.end()
     }
 }
 
+impl TryFrom<String> for ConnectionInfo {
+    type Error = Box<dyn std::error::Error>;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let parts: Vec<&str> = value.split(':').collect();
+        // default to secure connection if no schema provided
+        match parts.len() {
+            2 => {
+                let host = parts[0].to_string();
+                let port = parts[1].parse::<u32>()?;
+
+                Ok(ConnectionInfo {
+                    host,
+                    port,
+                    secure: true,
+                })
+            }
+            3 => {
+                let schema = parts[0].to_string();
+                let port = parts[2].parse::<u32>()?;
+                let host = parts[1]
+                    .to_string()
+                    .split("//")
+                    .last()
+                    .ok_or("Invalid host")?
+                    .to_string();
+
+                let secure = schema == "https" || schema == "wss";
+                Ok(ConnectionInfo { host, port, secure })
+            }
+            _ => {
+                return Err("Invalid uri".into());
+            }
+        }
+    }
+}
+
+impl ConnectionInfo {
+    pub fn to_websocket_url(&self) -> String {
+        let schema = if self.secure { "wss" } else { "ws" };
+        format!("{}://{}:{}", schema, self.host, self.port)
+    }
+
+    pub fn to_http_url(&self) -> String {
+        let schema = if self.secure { "https" } else { "http" };
+        format!("{}://{}:{}", schema, self.host, self.port)
+    }
+
+    pub fn to_authority(&self) -> String {
+        format!("{}:{}", self.host, self.port)
+    }
+}
 impl NodeStats {
     pub fn new(persisted: bool) -> NodeStats {
         NodeStats {

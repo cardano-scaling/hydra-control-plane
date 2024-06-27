@@ -74,12 +74,14 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
     loop {
         match rx.try_recv() {
             Ok(data) => match data {
-                HydraData::Received { message, uri } => {
+                HydraData::Received { message, authority } => {
                     let mut state_guard = state.state.write().await;
                     let nodes = &mut state_guard.nodes;
-                    let node = nodes.iter_mut().find(|n| n.uri == uri);
+                    let node = nodes
+                        .iter_mut()
+                        .find(|n| n.connection_info.to_authority() == authority);
                     if let None = node {
-                        println!("Node not found: ${:?}", uri);
+                        println!("Node not found: ${:?}", authority);
                         continue;
                     }
                     let node = node.unwrap();
@@ -88,7 +90,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                             if let None = node.head_id {
                                 println!(
                                     "updating node {:?} with head_id {:?}",
-                                    node.uri,
+                                    node.connection_info.to_authority(),
                                     head_is_open.head_id()
                                 );
                                 node.head_id = Some(head_is_open.head_id().to_string());

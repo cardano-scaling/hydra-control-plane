@@ -22,7 +22,7 @@ pub enum HydraMessage {
 pub enum HydraData {
     Received {
         message: HydraEventMessage,
-        uri: String,
+        authority: String,
     },
     Sent(String),
 }

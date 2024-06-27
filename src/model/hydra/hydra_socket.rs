@@ -66,7 +66,7 @@ impl HydraReceiver {
                         let message = HydraEventMessage::from(event);
 
                         let data = HydraData::Received {
-                            uri: node_identifier.to_string(),
+                            authority: node_identifier.to_string(),
                             message,
                         };
                         let _ = self.writer.send(data);
