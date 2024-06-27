@@ -3,24 +3,28 @@ use pallas::ledger::primitives::{
     conway::{Constr, PlutusData},
 };
 
-pub struct GameData {
+#[derive(Debug)]
+pub struct GameState {
     is_over: bool,
     admin: Vec<u8>,
     player: Player,
     monsters: Vec<MapObject>,
 }
 
+#[derive(Debug)]
 pub struct Player {
     player_state: PlayerState,
     map_object: MapObject,
     kill_count: u32,
 }
 
+#[derive(Debug)]
 pub struct MapObject {
     position: Position,
     health: u32,
 }
 
+#[derive(Debug)]
 pub struct Position {
     momentum_x: i64,
     momentum_y: i64,
@@ -30,13 +34,14 @@ pub struct Position {
     floor_z: i64,
 }
 
+#[derive(Debug)]
 pub enum PlayerState {
     LIVE,
     DEAD,
     REBORN,
 }
 
-impl Into<PlutusData> for GameData {
+impl Into<PlutusData> for GameState {
     fn into(self) -> PlutusData {
         let is_over = if self.is_over {
             PlutusData::Constr(Constr {
@@ -73,9 +78,9 @@ impl Into<PlutusData> for GameData {
     }
 }
 
-impl GameData {
-    pub fn new(admin: Vec<u8>) -> GameData {
-        GameData {
+impl GameState {
+    pub fn new(admin: Vec<u8>) -> GameState {
+        GameState {
             is_over: false,
             admin,
             player: Player::new(),

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UTxO {
     hash: Vec<u8>,
     index: u32,
@@ -12,7 +12,7 @@ pub struct UTxO {
     value: HashMap<String, u64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Datum {
     DatumHash(Vec<u8>),
     InlineDatum(Vec<u8>),

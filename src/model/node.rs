@@ -120,6 +120,22 @@ impl NodeStats {
         self.secrets += state_change.secrets;
         self.play_time += state_change.play_time;
     }
+
+    pub fn join(&self, other: NodeStats) -> NodeStats {
+        let mut pending_transactions = self.pending_transactions.clone();
+        pending_transactions.extend(other.pending_transactions);
+
+        NodeStats {
+            persisted: self.persisted && other.persisted,
+            transactions: self.transactions + other.transactions,
+            bytes: self.bytes + other.bytes,
+            kills: self.kills + other.kills,
+            items: self.items + other.items,
+            secrets: self.secrets + other.secrets,
+            play_time: self.play_time + other.play_time,
+            pending_transactions,
+        }
+    }
 }
 
 impl Serialize for NodeStats {

@@ -1,6 +1,7 @@
-use crate::routes::get_node::get_node;
+use routes::global::global;
 use routes::head::head;
 use routes::heads::heads;
+use routes::new_game::new_game;
 use tokio::{
     spawn,
     sync::mpsc::{self, error::TryRecvError, UnboundedReceiver, UnboundedSender},
@@ -62,7 +63,7 @@ async fn main() -> Result<(), rocket::Error> {
             state: hydra_state,
             config,
         })
-        .mount("/", routes![get_node, heads, head])
+        .mount("/", routes![new_game, heads, head, global])
         .launch()
         .await?;
 
