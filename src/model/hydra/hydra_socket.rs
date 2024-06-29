@@ -2,6 +2,7 @@ use async_tungstenite::tokio::{connect_async, TokioAdapter};
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
 use futures_util::stream::{SplitSink, SplitStream};
+use futures_util::SinkExt;
 use futures_util::StreamExt;
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -13,7 +14,7 @@ use super::hydra_message::{HydraData, HydraEventMessage, HydraMessage};
 #[derive(Clone)]
 pub struct HydraSocket {
     pub receiver: Arc<Mutex<HydraReceiver>>,
-    sender: Arc<Mutex<HydraSender>>,
+    pub sender: Arc<Mutex<HydraSender>>,
     pub connected: bool,
 }
 
@@ -42,6 +43,19 @@ impl HydraSocket {
             sender: Arc::new(Mutex::new(HydraSender { sender })),
             connected: true,
         })
+    }
+}
+
+impl HydraSender {
+    pub async fn send(&mut self, message: HydraData) -> Result<(), Box<dyn std::error::Error>> {
+        match message {
+            HydraData::Send(data) => {
+                self.sender.send(Message::Text(data)).await?;
+
+                Ok(())
+            }
+            _ => Err("Can only send data of variant Send".into()),
+        }
     }
 }
 

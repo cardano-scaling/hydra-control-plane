@@ -10,9 +10,11 @@ use tokio::{
 use model::{
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
+        messages::new_tx::NewTx,
         state::HydraNodesState,
     },
     node::Node,
+    tx_builder::build_tx,
 };
 use serde::Deserialize;
 
@@ -105,7 +107,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                         _ => println!("Unhandled message: {:?}", message),
                     }
                 }
-                HydraData::Sent(_) => {}
+                HydraData::Send(_) => {}
             },
             Err(TryRecvError::Empty) => {}
             Err(TryRecvError::Disconnected) => {

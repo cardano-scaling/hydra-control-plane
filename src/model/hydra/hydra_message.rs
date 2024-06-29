@@ -24,7 +24,7 @@ pub enum HydraData {
         message: HydraEventMessage,
         authority: String,
     },
-    Sent(String),
+    Send(String),
 }
 
 #[derive(Debug)]

@@ -1,4 +1,3 @@
-use reqwest::Error;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -7,8 +6,13 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::model::hydra::utxo::UTxO;
 
 use super::{
-    hydra::{hydra_message::HydraData, hydra_socket::HydraSocket, messages::tx_valid::TxValid},
+    hydra::{
+        hydra_message::HydraData,
+        hydra_socket::HydraSocket,
+        messages::{new_tx::NewTx, tx_valid::TxValid},
+    },
     player::Player,
+    tx_builder::build_tx,
 };
 
 #[derive(Clone)]
@@ -18,6 +22,7 @@ pub struct Node {
     pub socket: HydraSocket,
     pub players: Vec<Player>,
     pub stats: NodeStats,
+    //pub tx_builder: TxBuilder;
 }
 
 #[derive(Clone)]
@@ -72,6 +77,16 @@ impl Node {
         };
 
         node.listen();
+
+        let tx = NewTx::new(build_tx()).unwrap();
+        let tx: String = serde_json::to_string::<NewTx>(&tx).unwrap();
+        node.socket
+            .sender
+            .lock()
+            .await
+            .send(HydraData::Send(tx))
+            .await;
+
         Ok(node)
     }
 

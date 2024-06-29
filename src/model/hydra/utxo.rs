@@ -1,5 +1,10 @@
 use std::collections::HashMap;
 
+use pallas::{
+    codec::utils::Bytes,
+    ledger::{addresses::Address, primitives::conway::PolicyId},
+    txbuilder::Output,
+};
 use serde_json::Value;
 
 #[derive(Debug, Clone)]
@@ -68,3 +73,36 @@ impl UTxO {
         })
     }
 }
+
+// impl TryInto<Output> for UTxO {
+//     type Error = Box<dyn std::error::Error>;
+
+//     fn try_into(self) -> Result<Output, Self::Error> {
+//         let address = Address::from_bech32(self.address.as_str())?;
+//         let lovelace: u64 = self
+//             .value
+//             .get("lovelace")
+//             .unwrap_or(&u64::default())
+//             .clone();
+//         let assets = self
+//             .value
+//             .into_iter()
+//             .filter(|(key, _)| key != "lovelace")
+//             .map(|(key, value)| {
+//                 let result = hex::decode(key);
+//                 if result.is_err() {
+//                     return result.err().unwrap();
+//                 }
+//             })
+//             .collect::<Result<HashMap<PolicyId, HashMap<Bytes, u64>>, Box<dyn std::error::Error>>>(
+//             )?;
+//         // Output {
+//         //     address,
+//         //     lovelace,
+//         //     value: self.value,
+//         //     datum: self.datum,
+//         //     reference_script: self.reference_script,
+//         // }
+//         todo!()
+//     }
+// }
