@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Hydra Doom Control Plane
+  description: |-
+    This API serves as the prototype for a control plane server for a fleet of hydra heads, in particular those allowing users to play "Doom" on those hydra heads.
+  version: 0.0.1
+tags:
+  - name: global
+    description: status and management of the entire cluster
+  - name: heads
+    description: Status and management of the hydra heads
+  - name: games
+    description: Status and management of individual games
+paths:
+  /global:
+    get:
+      tags:
+        - global
+      summary: Global statistics about the whole cluster
+      operationId: getStats
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+  /heads:
+    get:
+      tags:
+        - heads
+      summary: List the online hydra heads and some basic stats
+      operationId: getHeads
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeadSummary'
+  /heads/{headId}:
+    get:
+      tags:
+        - heads
+      summary: Get detailed information about a specific head
+      operationId: getHead
+      parameters:
+        - name: headId
+          in: path
+          description: The head identifier to query about
+          required: true
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Head'
+        '404':
+          description: Head not found
+components:
+  schemas:
+    HeadSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "b37aabd81024c043f53a069c91e51a5b52"
+        activeGames:
+          type: integer
+          description: the number of active games on this particular head
+          example: 5
+        persisted:
+          type: boolean
+          description: whether the events on this head are being persisted, or are treated ephemerally
+    Head:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "b37aabd81024c043f53a069c91e51a5b52"
+        activeGames:
+          $ref: "#/components/schemas/Game"
+        total:
+          allOf:
+            - $ref: "#/components/schemas/Stats"
+          description: Statistics for the whole lifetime of the head
+        active:
+          allOf:
+            - $ref: "#/components/schemas/Stats"
+          description: Statistics for only active games on the current head
+        recent:
+          allOf:
+            - $ref: "#/components/schemas/Stats"
+          description: Statistics covering only the last 30 seconds
+    Stats:
+      type: object
+      properties:
+        games:
+          type: integer
+          description: The number of games played, including those in progress right now
+        transactions:
+          type: integer
+          description: The number of transactions processed
+        bytes:
+          type: integer
+          description: The total number of bytes processed
+        kills:
+          type: integer
+          description: The total number of kills across all games covered by these stats
+        items:
+          type: integer
+          description: The total number of items found across all games covered by these stats
+        secrets:
+          type: integer
+          description: The total number of secrets found across all games covered by these stats
+        playTime:
+          type: integer
+          description: The number of seconds played across all games covered by these stats
+    Game:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "addr1abc"

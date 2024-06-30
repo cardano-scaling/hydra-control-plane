@@ -35,17 +35,21 @@ impl UTxO {
             .to_string();
         let is_inline = !value["inlineDatum"].is_null();
         let is_hash = !value["datumHash"].is_null();
-        let datum: Datum;
-        if is_inline {
+        let datum = if is_inline {
+            /*
+            TODO: fix this
+            println!("inlineDatum: {:#?}", value["inlineDatum"]);
             datum = Datum::InlineDatum(hex::decode(
                 value["inlineDatum"].as_str().ok_or("Invalid inlineDatum")?,
             )?);
+            */
+            Datum::None
         } else if is_hash {
-            datum = Datum::DatumHash(hex::decode(
+            Datum::DatumHash(hex::decode(
                 value["datumHash"].as_str().ok_or("Invalid datumHash")?,
-            )?);
+            )?)
         } else {
-            datum = Datum::None;
+            Datum::None
         };
 
         let reference_script = if value["referenceScript"].is_null() {

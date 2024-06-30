@@ -40,7 +40,7 @@ async fn main() -> Result<(), rocket::Error> {
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
 
-    let node = Node::try_new("ws://127.0.0.1:4001", &tx, true)
+    let node = Node::try_new("ws://3.15.33.186:4001", &tx, true)
         .await
         .expect("failed to connect");
 
