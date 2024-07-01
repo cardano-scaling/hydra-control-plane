@@ -40,13 +40,28 @@ async fn main() -> Result<(), rocket::Error> {
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
 
-    let node = Node::try_new("ws://3.15.33.186:4001", &tx, true)
+    let node = Node::try_new("ws://127.0.0.1:4001", &tx, true)
         .await
         .expect("failed to connect");
 
-    // let node2 = Node::try_new("ws://3.15.33.186:4001", &tx)
+    // let node2 = Node::try_new("ws://3.15.33.186:4001", &tx, true)
     //     .await
     //     .expect("failed to connect");
+
+    let utxos = node
+        .fetch_utxos()
+        .await
+        .map_err(|e| {
+            println!("{:?}", e);
+
+            e
+        })
+        .expect("Failed to fetch utxos");
+
+    // Fetching utxos requires deserializing them, but for some reaosn whne I print them out locally, it hangs after printing
+    // println!("{:?}", utxos);
+
+    // println!("Done fetching utxos...");
 
     let nodes = vec![node];
     let hydra_state = HydraNodesState::from_nodes(nodes);

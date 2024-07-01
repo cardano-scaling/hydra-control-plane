@@ -12,7 +12,7 @@ use super::{
         messages::{new_tx::NewTx, tx_valid::TxValid},
     },
     player::Player,
-    tx_builder::build_tx,
+    tx_builder::{build_tx, TxBuilder},
 };
 
 #[derive(Clone)]
@@ -22,7 +22,7 @@ pub struct Node {
     pub socket: HydraSocket,
     pub players: Vec<Player>,
     pub stats: NodeStats,
-    //pub tx_builder: TxBuilder;
+    // pub tx_builder: TxBuilder,
 }
 
 #[derive(Clone)]
@@ -54,6 +54,7 @@ pub struct StateUpdate {
     pub play_time: u64,
 }
 
+#[derive(Debug)]
 pub enum NetworkRequestError {
     HttpError(reqwest::Error),
     DeserializationError(Box<dyn std::error::Error>),
@@ -74,19 +75,14 @@ impl Node {
             players: Vec::new(),
             socket,
             stats: NodeStats::new(persisted),
+            // tx_builder: TxBuilder::new("".to_string()),
         };
 
         node.listen();
 
-        let tx = NewTx::new(build_tx()).unwrap();
-        let tx: String = serde_json::to_string::<NewTx>(&tx).unwrap();
-        node.socket
-            .sender
-            .lock()
-            .await
-            .send(HydraData::Send(tx))
-            .await;
-
+        // let tx = NewTx::new(build_tx()).unwrap();
+        // let tx: String = serde_json::to_string::<NewTx>(&tx).unwrap();
+        // node.send(tx);
         Ok(node)
     }
 
@@ -96,9 +92,15 @@ impl Node {
         tokio::spawn(async move { receiver.lock().await.listen(identifier.as_str()).await });
     }
 
+    pub fn send(&self, message: String) {
+        let sender = self.socket.sender.clone();
+        tokio::spawn(async move {
+            let _ = sender.lock().await.send(HydraData::Send(message)).await;
+        });
+    }
+
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>, NetworkRequestError> {
         let request_url = self.connection_info.to_http_url() + "/snapshot/utxo";
-        println!("{}", request_url);
         let response = reqwest::get(&request_url)
             .await
             .map_err(NetworkRequestError::HttpError)?;
@@ -108,7 +110,6 @@ impl Node {
             .await
             .map_err(NetworkRequestError::HttpError)?;
 
-        println!("{:?}", body);
         let utxos = body
             .iter()
             .map(|(key, value)| UTxO::try_from_value(key, value))

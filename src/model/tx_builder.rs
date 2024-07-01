@@ -1,26 +1,43 @@
-use std::hash::Hash;
-
 use pallas::{
     crypto::key::ed25519::SecretKey,
-    ledger::addresses::{Address, ShelleyPaymentPart},
+    ledger::addresses::Address,
     txbuilder::{BuildBabbage, BuiltTransaction, Input, Output, StagingTransaction},
 };
 
 use hex::FromHex;
 
-use super::hydra::utxo::UTxO;
+use super::{hydra::utxo::UTxO, player::Player};
 
+#[derive(Clone)]
 pub struct TxBuilder {
-    admin_key: ShelleyPaymentPart,
-    script_ref: Option<UTxO>,
+    admin_key: SecretKey,
+    script_ref: Option<Output>,
 }
 
 impl TxBuilder {
-    pub fn new(admin_key: ShelleyPaymentPart, script_ref: Option<UTxO>) -> Self {
+    pub fn new(admin_key: [u8; 32]) -> Self {
+        let admin_key: SecretKey = admin_key.into();
         TxBuilder {
             admin_key,
-            script_ref,
+            script_ref: None,
         }
+    }
+
+    pub fn set_script_ref(&mut self, script_ref: UTxO) -> Result<(), Box<dyn std::error::Error>> {
+        let script_ref: Output = script_ref.try_into()?;
+        self.script_ref = Some(script_ref);
+
+        Ok(())
+    }
+
+    pub fn build_new_game_state(
+        &self,
+        player: Player,
+    ) -> Result<BuiltTransaction, Box<dyn std::error::Error>> {
+        if let None = self.script_ref {
+            return Err("There must be a script reference in order to build game state".into());
+        }
+        unimplemented!()
     }
 }
 
@@ -40,8 +57,8 @@ pub fn build_tx() -> BuiltTransaction {
             .into();
 
     let tx = StagingTransaction::new()
-        .input(Input::new(hash.into(), 250000000))
-        .output(Output::new(address, 250000000))
+        .input(Input::new(hash.into(), 0))
+        .output(Output::new(address, 0))
         .fee(0)
         .build_babbage_raw()
         .unwrap();
