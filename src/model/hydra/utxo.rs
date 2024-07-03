@@ -2,11 +2,12 @@ use std::collections::HashMap;
 
 use pallas::{
     codec::minicbor::encode,
+    crypto::hash::Hash,
     ledger::{
         addresses::Address,
         primitives::conway::{BigInt, Constr, PlutusData, PolicyId},
     },
-    txbuilder::Output,
+    txbuilder::{Input, Output},
 };
 use serde_json::Value;
 
@@ -25,11 +26,11 @@ pub enum ScriptType {
 
 #[derive(Debug, Clone)]
 pub struct UTxO {
-    hash: Vec<u8>,
-    index: u32,
-    address: String,
+    pub hash: Vec<u8>,
+    pub index: u64,
+    pub address: Address,
     datum: Datum,
-    reference_script: Option<Script>,
+    pub reference_script: Option<Script>,
     value: HashMap<String, u64>,
 }
 
@@ -42,13 +43,11 @@ pub enum Datum {
 
 impl UTxO {
     pub fn try_from_value(tx_id: &str, value: &Value) -> Result<Self, Box<dyn std::error::Error>> {
-        let index = tx_id.split("#").collect::<Vec<&str>>()[1].parse::<u32>()?;
+        let index = tx_id.split("#").collect::<Vec<&str>>()[1].parse::<u64>()?;
         let hex_hash = tx_id.split("#").collect::<Vec<&str>>()[0];
         let hash = hex::decode(hex_hash)?;
-        let address = value["address"]
-            .as_str()
-            .ok_or("Invalid address")?
-            .to_string();
+        let address = value["address"].as_str().ok_or("Invalid address")?;
+        let address = Address::from_bech32(address)?;
         let is_inline = !value["inlineDatum"].is_null();
         let is_hash = !value["datumHash"].is_null();
         let datum = if is_inline {
@@ -84,6 +83,13 @@ impl UTxO {
             reference_script,
             value: value_map,
         })
+    }
+}
+
+impl Into<Input> for UTxO {
+    fn into(self) -> Input {
+        let hash: Hash<32> = self.hash.as_slice().try_into().unwrap();
+        Input::new(hash, self.index)
     }
 }
 
@@ -135,14 +141,13 @@ impl TryInto<Output> for UTxO {
     type Error = Box<dyn std::error::Error>;
 
     fn try_into(self) -> Result<Output, Self::Error> {
-        let address = Address::from_bech32(self.address.as_str())?;
         let lovelace: u64 = self
             .value
             .get("lovelace")
             .unwrap_or(&u64::default())
             .clone();
 
-        let mut output = Output::new(address, lovelace);
+        let mut output = Output::new(self.address, lovelace);
         for (asset_id, count) in self.value {
             if asset_id == "lovelace" {
                 continue;

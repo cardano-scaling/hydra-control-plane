@@ -14,7 +14,6 @@ use model::{
         state::HydraNodesState,
     },
     node::Node,
-    tx_builder::build_tx,
 };
 use serde::Deserialize;
 
@@ -23,6 +22,9 @@ extern crate rocket;
 
 mod model;
 mod routes;
+
+// this is a temporary way to store the script address
+pub const SCRIPT_ADDRESS: &str = "addr_test1wp096khk46y6mxmnl0pqe446kdlzswsjpyd67ju6gs9sldqjkl4wx";
 
 struct MyState {
     state: HydraNodesState,
@@ -47,16 +49,6 @@ async fn main() -> Result<(), rocket::Error> {
     // let node2 = Node::try_new("ws://3.15.33.186:4001", &tx, true)
     //     .await
     //     .expect("failed to connect");
-
-    let utxos = node
-        .fetch_utxos()
-        .await
-        .map_err(|e| {
-            println!("{:?}", e);
-
-            e
-        })
-        .expect("Failed to fetch utxos");
 
     // Fetching utxos requires deserializing them, but for some reaosn whne I print them out locally, it hangs after printing
     // println!("{:?}", utxos);

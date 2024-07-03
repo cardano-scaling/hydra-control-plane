@@ -5,6 +5,8 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::model::hydra::utxo::UTxO;
 
+use hex::FromHex;
+
 use super::{
     hydra::{
         hydra_message::HydraData,
@@ -12,7 +14,7 @@ use super::{
         messages::{new_tx::NewTx, tx_valid::TxValid},
     },
     player::Player,
-    tx_builder::{build_tx, TxBuilder},
+    tx_builder::TxBuilder,
 };
 
 #[derive(Clone)]
@@ -22,7 +24,7 @@ pub struct Node {
     pub socket: HydraSocket,
     pub players: Vec<Player>,
     pub stats: NodeStats,
-    // pub tx_builder: TxBuilder,
+    pub tx_builder: TxBuilder,
 }
 
 #[derive(Clone)]
@@ -69,21 +71,49 @@ impl Node {
         let connection_info: ConnectionInfo = uri.to_string().try_into()?;
 
         let socket = HydraSocket::new(connection_info.to_websocket_url().as_str(), writer).await?;
-        let node = Node {
+        let mut node = Node {
             connection_info,
             head_id: None,
             players: Vec::new(),
             socket,
             stats: NodeStats::new(persisted),
-            // tx_builder: TxBuilder::new("".to_string()),
+            tx_builder: TxBuilder::new(
+                <[u8; 32]>::from_hex(
+                    "0E3F3546A93BD1295EB9DCE216941EEFBCE99CA9323DF258D9BEEEE335920CCE",
+                )
+                .unwrap(),
+            ),
         };
 
         node.listen();
-
-        // let tx = NewTx::new(build_tx()).unwrap();
-        // let tx: String = serde_json::to_string::<NewTx>(&tx).unwrap();
-        // node.send(tx);
+        let utxos = node
+            .fetch_utxos()
+            .await
+            .map_err(|_| "Failed to fetch UTxOs")?;
+        let maybe_script_ref = TxBuilder::find_script_ref(utxos);
+        match maybe_script_ref {
+            Some(script_ref) => {
+                let _ = node.tx_builder.set_script_ref(&script_ref);
+                println!("Set script ref! {:?}", script_ref);
+            }
+            None => {
+                println!("No script ref found for this node.");
+            }
+        }
         Ok(node)
+    }
+
+    pub async fn add_player(&self, player: Player) -> Result<(), Box<dyn std::error::Error>> {
+        let utxos = self
+            .fetch_utxos()
+            .await
+            .map_err(|_| "Failed to fetch utxos")?;
+
+        let new_game_tx = self.tx_builder.build_new_game_state(&player, utxos)?;
+        let message: String = NewTx::new(new_game_tx)?.into();
+        self.send(message);
+
+        Ok(())
     }
 
     pub fn listen(&self) {

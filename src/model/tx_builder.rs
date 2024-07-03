@@ -1,10 +1,17 @@
 use pallas::{
+    codec::minicbor::encode,
     crypto::key::ed25519::SecretKey,
-    ledger::addresses::Address,
+    ledger::{
+        addresses::{Address, ShelleyPaymentPart},
+        primitives::conway::PlutusData,
+        traverse::ComputeHash,
+    },
     txbuilder::{BuildBabbage, BuiltTransaction, Input, Output, StagingTransaction},
 };
 
 use hex::FromHex;
+
+use crate::SCRIPT_ADDRESS;
 
 use super::{hydra::utxo::UTxO, player::Player};
 
@@ -23,8 +30,8 @@ impl TxBuilder {
         }
     }
 
-    pub fn set_script_ref(&mut self, script_ref: UTxO) -> Result<(), Box<dyn std::error::Error>> {
-        let script_ref: Output = script_ref.try_into()?;
+    pub fn set_script_ref(&mut self, script_ref: &UTxO) -> Result<(), Box<dyn std::error::Error>> {
+        let script_ref: Output = script_ref.clone().try_into()?;
         self.script_ref = Some(script_ref);
 
         Ok(())
@@ -32,36 +39,60 @@ impl TxBuilder {
 
     pub fn build_new_game_state(
         &self,
-        player: Player,
+        player: &Player,
+        utxos: Vec<UTxO>,
     ) -> Result<BuiltTransaction, Box<dyn std::error::Error>> {
-        if let None = self.script_ref {
-            return Err("There must be a script reference in order to build game state".into());
+        if let Some(_) = player.utxo {
+            return Err("Player already has a UTxO created".into());
         }
-        unimplemented!()
+
+        let admin_kh = self.admin_key.public_key().compute_hash();
+        let admin_utxos: Vec<UTxO> = utxos
+            .into_iter()
+            .filter(|utxo| {
+                println!(
+                    "utxo: {:?} | address: {:?}",
+                    utxo.hash,
+                    utxo.address.to_bech32().unwrap()
+                );
+                match &utxo.address {
+                    Address::Shelley(address) => match address.payment() {
+                        ShelleyPaymentPart::Key(hash) => {
+                            println!("{:?} | {:?}", hash, &admin_kh);
+                            hash == &admin_kh
+                        }
+                        ShelleyPaymentPart::Script(hash) => hash == &admin_kh,
+                    },
+                    _ => false,
+                }
+            })
+            .collect();
+
+        if admin_utxos.is_empty() {
+            return Err("No admin UTxOs found".into());
+        };
+
+        let input_utxo = admin_utxos.first().unwrap();
+
+        let script_address = Address::from_bech32(SCRIPT_ADDRESS).unwrap();
+
+        let game_state: PlutusData = player.initialize_state().into();
+        let mut datum: Vec<u8> = Vec::new();
+        let _ = encode(&game_state, &mut datum)?;
+
+        let tx = StagingTransaction::new()
+            .input(input_utxo.clone().into())
+            .output(Output::new(script_address, 0).set_inline_datum(datum))
+            .change_address(input_utxo.clone().address)
+            .fee(0)
+            .build_babbage_raw()?;
+
+        tx.sign(self.admin_key.clone().into()).map_err(|e| e.into())
     }
-}
 
-pub fn build_tx() -> BuiltTransaction {
-    let hash: [u8; 32] = [
-        204, 200, 153, 252, 40, 49, 85, 188, 162, 75, 210, 191, 138, 156, 80, 51, 128, 155, 218,
-        188, 217, 108, 26, 193, 3, 47, 193, 77, 91, 238, 215, 71,
-    ];
-
-    let address =
-        Address::from_bech32("addr_test1vqx5tu4nzz5cuanvac4t9an4djghrx7hkdvjnnhstqm9kegvm6g6c")
-            .unwrap();
-
-    let sk: SecretKey =
-        <[u8; 32]>::from_hex("0E3F3546A93BD1295EB9DCE216941EEFBCE99CA9323DF258D9BEEEE335920CCE")
-            .unwrap()
-            .into();
-
-    let tx = StagingTransaction::new()
-        .input(Input::new(hash.into(), 0))
-        .output(Output::new(address, 0))
-        .fee(0)
-        .build_babbage_raw()
-        .unwrap();
-
-    tx.sign(sk.into()).unwrap()
+    pub fn find_script_ref(utxos: Vec<UTxO>) -> Option<UTxO> {
+        utxos.into_iter().find(|utxo| {
+            utxo.reference_script.is_some() && utxo.address.to_bech32().unwrap() == SCRIPT_ADDRESS
+        })
+    }
 }
