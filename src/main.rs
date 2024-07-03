@@ -10,7 +10,6 @@ use tokio::{
 use model::{
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
-        messages::new_tx::NewTx,
         state::HydraNodesState,
     },
     node::Node,
@@ -108,9 +107,12 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                         HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => node
                             .stats
                             .calculate_stats(snapshot_confirmed.confirmed_transactions),
-                        HydraEventMessage::TxValid(tx) => {
-                            node.stats.add_transaction(tx.tx_id.clone(), tx.into());
-                        }
+                        HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                println!("failed to add transaction {:?}", e);
+                            }
+                        },
                         _ => println!("Unhandled message: {:?}", message),
                     }
                 }

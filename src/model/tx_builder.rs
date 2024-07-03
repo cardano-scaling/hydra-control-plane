@@ -6,10 +6,8 @@ use pallas::{
         primitives::conway::PlutusData,
         traverse::ComputeHash,
     },
-    txbuilder::{BuildBabbage, BuiltTransaction, Input, Output, StagingTransaction},
+    txbuilder::{BuildBabbage, BuiltTransaction, Output, StagingTransaction},
 };
-
-use hex::FromHex;
 
 use crate::SCRIPT_ADDRESS;
 
@@ -57,10 +55,7 @@ impl TxBuilder {
                 );
                 match &utxo.address {
                     Address::Shelley(address) => match address.payment() {
-                        ShelleyPaymentPart::Key(hash) => {
-                            println!("{:?} | {:?}", hash, &admin_kh);
-                            hash == &admin_kh
-                        }
+                        ShelleyPaymentPart::Key(hash) => hash == &admin_kh,
                         ShelleyPaymentPart::Script(hash) => hash == &admin_kh,
                     },
                     _ => false,
@@ -83,6 +78,10 @@ impl TxBuilder {
         let tx = StagingTransaction::new()
             .input(input_utxo.clone().into())
             .output(Output::new(script_address, 0).set_inline_datum(datum))
+            .output(Output::new(
+                input_utxo.address.clone(),
+                input_utxo.value.get("lovelace").unwrap().to_owned(),
+            ))
             .change_address(input_utxo.clone().address)
             .fee(0)
             .build_babbage_raw()?;

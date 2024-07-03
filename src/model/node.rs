@@ -1,13 +1,30 @@
+use pallas::{
+    codec::{
+        minicbor::{decode, encode},
+        utils::KeepRaw,
+    },
+    ledger::{
+        addresses::Address,
+        primitives::{
+            babbage::{PseudoScript, PseudoTransactionOutput},
+            conway::{
+                NativeScript, PlutusData, PseudoDatumOption, PseudoPostAlonzoTransactionOutput,
+            },
+        },
+        traverse::MultiEraTx,
+    },
+};
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::Value;
 use std::collections::HashMap;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::model::hydra::utxo::UTxO;
+use crate::{model::hydra::utxo::UTxO, SCRIPT_ADDRESS};
 
 use hex::FromHex;
 
 use super::{
+    game_state::GameState,
     hydra::{
         hydra_message::HydraData,
         hydra_socket::HydraSocket,
@@ -79,7 +96,7 @@ impl Node {
             stats: NodeStats::new(persisted),
             tx_builder: TxBuilder::new(
                 <[u8; 32]>::from_hex(
-                    "0E3F3546A93BD1295EB9DCE216941EEFBCE99CA9323DF258D9BEEEE335920CCE",
+                    "AF9292ADA4AA01DB918BBBA7796ACF235E6D87D3EBC0D93FA44AA7E0531CF226",
                 )
                 .unwrap(),
             ),
@@ -103,14 +120,17 @@ impl Node {
         Ok(node)
     }
 
-    pub async fn add_player(&self, player: Player) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn add_player(&mut self, player: Player) -> Result<(), Box<dyn std::error::Error>> {
         let utxos = self
             .fetch_utxos()
             .await
             .map_err(|_| "Failed to fetch utxos")?;
 
         let new_game_tx = self.tx_builder.build_new_game_state(&player, utxos)?;
+
         let message: String = NewTx::new(new_game_tx)?.into();
+
+        self.players.push(player);
         self.send(message);
 
         Ok(())
@@ -147,6 +167,88 @@ impl Node {
             .collect::<Result<Vec<UTxO>, NetworkRequestError>>()?;
 
         Ok(utxos)
+    }
+
+    pub fn add_transaction(
+        &mut self,
+        transaction: TxValid,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let bytes = transaction.cbor.as_slice();
+        let tx = MultiEraTx::decode(bytes).map_err(|_| "Failed to decode transaction")?;
+
+        let tx = tx.as_babbage().ok_or("Invalid babbage era tx")?;
+
+        let outputs = &tx.transaction_body.outputs;
+        let script_outputs = outputs
+            .into_iter()
+            .filter(|output| match output {
+                PseudoTransactionOutput::PostAlonzo(output) => {
+                    let bytes: Vec<u8> = output.address.clone().into();
+                    let address = match Address::from_bytes(bytes.as_slice()) {
+                        Ok(address) => address,
+                        Err(_) => return false,
+                    };
+                    // unwrapping here because it came from hydra, so it is valid
+                    let address = address.to_bech32().unwrap();
+
+                    address.as_str() == SCRIPT_ADDRESS
+                }
+                _ => false,
+            })
+            .collect::<Vec<
+                &PseudoTransactionOutput<
+                    PseudoPostAlonzoTransactionOutput<
+                        PseudoDatumOption<KeepRaw<PlutusData>>,
+                        PseudoScript<KeepRaw<NativeScript>>,
+                    >,
+                >,
+            >>();
+
+        if script_outputs.len() != 1 {
+            return Err("Invalid number of script outputs".into());
+        }
+
+        let script_output = script_outputs.first().unwrap();
+        match script_output {
+            PseudoTransactionOutput::PostAlonzo(output) => {
+                if output.datum_option.is_none() {
+                    return Err("No datum found".into());
+                }
+
+                let datum = match output.datum_option.as_ref().unwrap() {
+                    PseudoDatumOption::Data(datum) => datum,
+                    _ => return Err("No inline datum found".into()),
+                }
+                .0
+                .raw_cbor();
+
+                let data = match decode::<PlutusData>(datum) {
+                    Ok(data) => data,
+                    Err(_) => return Err("Failed to deserialize datum".into()),
+                };
+
+                let game_state: GameState = data.try_into()?;
+
+                let player = match self
+                    .players
+                    .iter_mut()
+                    .find(|player| player.pkh == game_state.admin)
+                {
+                    Some(player) => player,
+                    None => return Err("No player found".into()),
+                };
+
+                let state_update =
+                    player.generate_state_update(transaction.cbor.len() as u64, game_state);
+
+                self.stats
+                    .pending_transactions
+                    .insert(transaction.tx_id, state_update);
+
+                Ok(())
+            }
+            _ => return Err("Invalid output type".into()),
+        }
     }
 }
 
@@ -232,9 +334,6 @@ impl NodeStats {
             pending_transactions: HashMap::new(),
         }
     }
-    pub fn add_transaction(&mut self, tx_id: Vec<u8>, state_change: StateUpdate) {
-        self.pending_transactions.insert(tx_id, state_change);
-    }
 
     pub fn calculate_stats(&mut self, confirmed_txs: Vec<Vec<u8>>) {
         for tx_id in confirmed_txs {
@@ -289,19 +388,6 @@ impl Serialize for NodeStats {
         s.serialize_field("play_time", &self.play_time)?;
         s.skip_field("pending_transactions")?;
         s.end()
-    }
-}
-
-impl From<TxValid> for StateUpdate {
-    fn from(value: TxValid) -> Self {
-        // TODO: implement this from reading datum
-        StateUpdate {
-            bytes: value.cbor.len() as u64,
-            kills: 0,
-            items: 0,
-            secrets: 0,
-            play_time: 0,
-        }
     }
 }
 

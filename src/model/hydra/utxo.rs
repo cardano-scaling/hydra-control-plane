@@ -31,7 +31,7 @@ pub struct UTxO {
     pub address: Address,
     datum: Datum,
     pub reference_script: Option<Script>,
-    value: HashMap<String, u64>,
+    pub value: HashMap<String, u64>,
 }
 
 #[derive(Debug, Clone)]

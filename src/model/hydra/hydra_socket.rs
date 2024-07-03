@@ -50,8 +50,8 @@ impl HydraSender {
     pub async fn send(&mut self, message: HydraData) -> Result<(), Box<dyn std::error::Error>> {
         match message {
             HydraData::Send(data) => {
-                self.sender.send(Message::Text(data)).await?;
-
+                let _ = self.sender.send(Message::Text(data)).await?;
+                println!("Sent message");
                 Ok(())
             }
             _ => Err("Can only send data of variant Send".into()),
