@@ -1,21 +1,30 @@
+use pallas::ledger::addresses::Address;
+
 use super::{game_state::GameState, hydra::utxo::UTxO, node::StateUpdate};
 
 #[derive(Clone)]
 pub struct Player {
     pub pkh: Vec<u8>,
+    pub address: Address,
     pub utxo: Option<UTxO>,
     pub utxo_time: u64,
     pub game_state: Option<GameState>,
 }
 
 impl Player {
-    pub fn new(pkh: &str) -> Self {
-        Player {
-            pkh: pkh.as_bytes().to_owned(),
+    pub fn new(address: Address) -> Result<Self, Box<dyn std::error::Error>> {
+        let pkh: String = match &address {
+            Address::Shelley(shelley) => shelley.payment().to_hex(),
+            _ => return Err("Invalid address type".into()),
+        };
+
+        Ok(Player {
+            pkh: pkh.into_bytes(),
+            address,
             utxo: None,
             utxo_time: 0,
             game_state: None,
-        }
+        })
     }
 
     pub fn initialize_state(&self) -> GameState {

@@ -86,6 +86,11 @@ impl UTxO {
     }
 }
 
+impl ToString for UTxO {
+    fn to_string(&self) -> String {
+        format!("{}#{}", hex::encode(&self.hash), self.index.to_string())
+    }
+}
 impl Into<Input> for UTxO {
     fn into(self) -> Input {
         let hash: Hash<32> = self.hash.as_slice().try_into().unwrap();

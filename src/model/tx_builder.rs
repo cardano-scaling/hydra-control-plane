@@ -6,17 +6,17 @@ use pallas::{
         primitives::conway::PlutusData,
         traverse::ComputeHash,
     },
-    txbuilder::{BuildBabbage, BuiltTransaction, Output, StagingTransaction},
+    txbuilder::{BuildBabbage, BuiltTransaction, Output, ScriptKind, StagingTransaction},
 };
 
-use crate::SCRIPT_ADDRESS;
+use crate::{SCRIPT_ADDRESS, SCRIPT_CBOR};
 
 use super::{hydra::utxo::UTxO, player::Player};
 
 #[derive(Clone)]
 pub struct TxBuilder {
     admin_key: SecretKey,
-    script_ref: Option<Output>,
+    pub script_ref: Option<UTxO>,
 }
 
 impl TxBuilder {
@@ -28,11 +28,8 @@ impl TxBuilder {
         }
     }
 
-    pub fn set_script_ref(&mut self, script_ref: &UTxO) -> Result<(), Box<dyn std::error::Error>> {
-        let script_ref: Output = script_ref.clone().try_into()?;
-        self.script_ref = Some(script_ref);
-
-        Ok(())
+    pub fn set_script_ref(&mut self, script_ref: &UTxO) {
+        self.script_ref = Some(script_ref.clone());
     }
 
     pub fn build_new_game_state(
@@ -44,24 +41,7 @@ impl TxBuilder {
             return Err("Player already has a UTxO created".into());
         }
 
-        let admin_kh = self.admin_key.public_key().compute_hash();
-        let admin_utxos: Vec<UTxO> = utxos
-            .into_iter()
-            .filter(|utxo| {
-                println!(
-                    "utxo: {:?} | address: {:?}",
-                    utxo.hash,
-                    utxo.address.to_bech32().unwrap()
-                );
-                match &utxo.address {
-                    Address::Shelley(address) => match address.payment() {
-                        ShelleyPaymentPart::Key(hash) => hash == &admin_kh,
-                        ShelleyPaymentPart::Script(hash) => hash == &admin_kh,
-                    },
-                    _ => false,
-                }
-            })
-            .collect();
+        let admin_utxos = self.find_admin_utxos(utxos);
 
         if admin_utxos.is_empty() {
             return Err("No admin UTxOs found".into());
@@ -78,6 +58,9 @@ impl TxBuilder {
         let tx = StagingTransaction::new()
             .input(input_utxo.clone().into())
             .output(Output::new(script_address, 0).set_inline_datum(datum))
+            .output(Output::new(player.address.clone(), 0))
+            // Temp workaround until we query the script address for the latestUTxO in browser, this way player has collateral
+            .output(Output::new(player.address.clone(), 0))
             .output(Output::new(
                 input_utxo.address.clone(),
                 input_utxo.value.get("lovelace").unwrap().to_owned(),
@@ -93,5 +76,47 @@ impl TxBuilder {
         utxos.into_iter().find(|utxo| {
             utxo.reference_script.is_some() && utxo.address.to_bech32().unwrap() == SCRIPT_ADDRESS
         })
+    }
+
+    pub fn create_script_ref(
+        &self,
+        utxos: Vec<UTxO>,
+    ) -> Result<BuiltTransaction, Box<dyn std::error::Error>> {
+        let admin_utxos = self.find_admin_utxos(utxos);
+        if admin_utxos.is_empty() {
+            return Err("No admin UTxOs found".into());
+        };
+
+        let input_utxo = admin_utxos.first().unwrap();
+
+        let script_address = Address::from_bech32(SCRIPT_ADDRESS).unwrap();
+
+        let bytes = hex::decode(SCRIPT_CBOR).unwrap();
+
+        let tx = StagingTransaction::new()
+            .input(input_utxo.clone().into())
+            .output(Output::new(script_address, 0).set_inline_script(ScriptKind::PlutusV2, bytes))
+            .output(Output::new(
+                input_utxo.clone().address,
+                input_utxo.value.get("lovelace").unwrap().to_owned(),
+            ))
+            .fee(0)
+            .build_babbage_raw()?;
+
+        tx.sign(self.admin_key.clone().into()).map_err(|e| e.into())
+    }
+
+    fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {
+        let admin_kh = self.admin_key.public_key().compute_hash();
+        utxos
+            .into_iter()
+            .filter(|utxo| match &utxo.address {
+                Address::Shelley(address) => match address.payment() {
+                    ShelleyPaymentPart::Key(hash) => hash == &admin_kh,
+                    ShelleyPaymentPart::Script(hash) => hash == &admin_kh,
+                },
+                _ => false,
+            })
+            .collect()
     }
 }

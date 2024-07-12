@@ -1,3 +1,5 @@
+use rocket::http::Method;
+use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::global::global;
 use routes::head::head;
 use routes::heads::heads;
@@ -24,7 +26,7 @@ mod routes;
 
 // this is a temporary way to store the script address
 pub const SCRIPT_ADDRESS: &str = "addr_test1wp096khk46y6mxmnl0pqe446kdlzswsjpyd67ju6gs9sldqjkl4wx";
-
+pub const SCRIPT_CBOR: &str = "59026701000032323232323232322223253330073232323232323232323232323253330143370e9000180980089919191980080080291299980d8008a5013232533301a3371e00400a29444cc010010004c078008dd7180e0009bae30190013012001163017301830110103758602c002602c002602a00260280026026002602400260220026020002601e002600e0026018002600a00429309b2b199119299980499b87480000044c8c8c8c8c8c8c8c94ccc050c0580084c8c8c926323300100100422533301800114984c8cc00c00cc06c008c03cc064004c94ccc04ccdc3a40000022646464646464a666038603c0042646493180a00219299980d19b874800000454ccc074c060018526161533301a3370e90010008a99980e980c0030a4c2c2a66603466e1d20040011533301d301800614985858c06001458dd6980e000980e001180d000980d001180c00098088028b180880219299980919b87480000044c8c94ccc05cc06400852616375c602e002602000c2a66602466e1d20020011323253330173019002149858dd7180b80098080030b18080028b1bac3014001301400230120013012002301000130100023370e900118059baa300e001300700216300700123253330083370e90000008991919192999807980880109924c64a66601a66e1d20000011323232323232323232323232533301c301e002149858dd6980e000980e0011bad301a001301a002375a603000260300046eb4c058004c058008dd6980a000980a0011bad3012001300b00416300b00316375a601e002601e004601a002600c0042c600c0020064600a6ea80048c00cdd5000ab9a5573aaae7955cfaba157441";
 struct MyState {
     state: HydraNodesState,
     config: Config,
@@ -66,12 +68,24 @@ async fn main() -> Result<(), rocket::Error> {
     let figment = rocket.figment();
     let config = figment.extract::<Config>().expect("invalid config");
 
+    // just doing this for local development for now
+    let cors = CorsOptions::default()
+        .allowed_origins(AllowedOrigins::all())
+        .allowed_methods(
+            vec![Method::Get, Method::Post, Method::Patch]
+                .into_iter()
+                .map(From::from)
+                .collect(),
+        )
+        .allow_credentials(true);
+
     let _rocket = rocket::build()
         .manage(MyState {
             state: hydra_state,
             config,
         })
         .mount("/", routes![new_game, heads, head, global])
+        .attach(cors.to_cors().unwrap())
         .launch()
         .await?;
 
@@ -113,7 +127,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                                 println!("failed to add transaction {:?}", e);
                             }
                         },
-                        _ => println!("Unhandled message: {:?}", message),
+                        _ => {} //println!("Unhandled message: {:?}", message),
                     }
                 }
                 HydraData::Send(_) => {}

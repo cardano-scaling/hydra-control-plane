@@ -1,8 +1,5 @@
 use pallas::{
-    codec::{
-        minicbor::{decode, encode},
-        utils::KeepRaw,
-    },
+    codec::{minicbor::decode, utils::KeepRaw},
     ledger::{
         addresses::Address,
         primitives::{
@@ -16,7 +13,7 @@ use pallas::{
 };
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{model::hydra::utxo::UTxO, SCRIPT_ADDRESS};
@@ -80,6 +77,28 @@ pub enum NetworkRequestError {
 }
 
 impl Node {
+    // This sucks and is hacky. Definitely a better way to do this, but I can't think
+    async fn set_script_ref(node: &mut Node) -> Result<(), Box<dyn std::error::Error>> {
+        let utxos = node
+            .fetch_utxos()
+            .await
+            .map_err(|_| "Failed to fetch UTxOs")?;
+        let maybe_script_ref = TxBuilder::find_script_ref(utxos.clone());
+        match maybe_script_ref {
+            Some(script_ref) => {
+                node.tx_builder.set_script_ref(&script_ref);
+                println!("Set script ref! {:?}", script_ref);
+                Ok(())
+            }
+            None => {
+                let tx = node.tx_builder.create_script_ref(utxos)?;
+                let message: String = NewTx::new(tx)?.into();
+                node.send(message);
+                std::thread::sleep(Duration::from_millis(250));
+                Box::pin(Node::set_script_ref(node)).await
+            }
+        }
+    }
     pub async fn try_new(
         uri: &str,
         writer: &UnboundedSender<HydraData>,
@@ -103,20 +122,7 @@ impl Node {
         };
 
         node.listen();
-        let utxos = node
-            .fetch_utxos()
-            .await
-            .map_err(|_| "Failed to fetch UTxOs")?;
-        let maybe_script_ref = TxBuilder::find_script_ref(utxos);
-        match maybe_script_ref {
-            Some(script_ref) => {
-                let _ = node.tx_builder.set_script_ref(&script_ref);
-                println!("Set script ref! {:?}", script_ref);
-            }
-            None => {
-                println!("No script ref found for this node.");
-            }
-        }
+        Node::set_script_ref(&mut node).await?;
         Ok(node)
     }
 
