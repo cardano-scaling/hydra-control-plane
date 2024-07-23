@@ -2,6 +2,7 @@ use pallas::ledger::addresses::Address;
 
 use super::{game_state::GameState, hydra::utxo::UTxO, node::StateUpdate};
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct Player {
     pub pkh: Vec<u8>,

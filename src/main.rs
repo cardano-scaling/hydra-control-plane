@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use rocket::http::Method;
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::global::global;
@@ -36,14 +38,25 @@ struct MyState {
 struct Config {
     ttl_minutes: u64,
     max_players: u64,
+    admin_key_file: PathBuf,
 }
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
+    let rocket = rocket::build();
+    let figment = rocket.figment();
+    let config = figment.extract::<Config>().expect("invalid config");
+
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
 
-    let node = Node::try_new("ws://127.0.0.1:4001", &tx, true)
+    // Load the admin key from disk; TODO: should probably do only on-demand?
+    let admin_key_bytes: [u8; 32] = std::fs::read(&config.admin_key_file)
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+    let node = Node::try_new("ws://127.0.0.1:4001", admin_key_bytes.into(), &tx, true)
         .await
         .expect("failed to connect");
 
@@ -63,10 +76,6 @@ async fn main() -> Result<(), rocket::Error> {
     spawn(async move {
         update(hydra_state_clone, rx).await;
     });
-
-    let rocket = rocket::build();
-    let figment = rocket.figment();
-    let config = figment.extract::<Config>().expect("invalid config");
 
     // just doing this for local development for now
     let cors = CorsOptions::default()

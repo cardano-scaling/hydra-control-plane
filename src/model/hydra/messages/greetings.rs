@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Greetings {
     head_status: String,

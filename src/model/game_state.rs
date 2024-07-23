@@ -8,6 +8,7 @@ pub struct GameState {
     pub is_over: bool,
     pub admin: Vec<u8>,
     pub player: Player,
+    #[allow(dead_code)]
     pub monsters: Vec<MapObject>,
 }
 

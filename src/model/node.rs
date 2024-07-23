@@ -1,5 +1,6 @@
 use pallas::{
     codec::{minicbor::decode, utils::KeepRaw},
+    crypto::key::ed25519::SecretKey,
     ledger::{
         addresses::Address,
         primitives::{
@@ -17,8 +18,6 @@ use std::{collections::HashMap, time::Duration};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{model::hydra::utxo::UTxO, SCRIPT_ADDRESS};
-
-use hex::FromHex;
 
 use super::{
     game_state::GameState,
@@ -70,6 +69,7 @@ pub struct StateUpdate {
     pub play_time: u64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum NetworkRequestError {
     HttpError(reqwest::Error),
@@ -101,6 +101,7 @@ impl Node {
     }
     pub async fn try_new(
         uri: &str,
+        admin_key: SecretKey,
         writer: &UnboundedSender<HydraData>,
         persisted: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -113,12 +114,7 @@ impl Node {
             players: Vec::new(),
             socket,
             stats: NodeStats::new(persisted),
-            tx_builder: TxBuilder::new(
-                <[u8; 32]>::from_hex(
-                    "AF9292ADA4AA01DB918BBBA7796ACF235E6D87D3EBC0D93FA44AA7E0531CF226",
-                )
-                .unwrap(),
-            ),
+            tx_builder: TxBuilder::new(admin_key),
         };
 
         node.listen();

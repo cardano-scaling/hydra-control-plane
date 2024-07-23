@@ -20,8 +20,7 @@ pub struct TxBuilder {
 }
 
 impl TxBuilder {
-    pub fn new(admin_key: [u8; 32]) -> Self {
-        let admin_key: SecretKey = admin_key.into();
+    pub fn new(admin_key: SecretKey) -> Self {
         TxBuilder {
             admin_key,
             script_ref: None,

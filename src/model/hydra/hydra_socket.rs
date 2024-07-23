@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 
 use super::hydra_message::{HydraData, HydraEventMessage, HydraMessage};
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct HydraSocket {
     pub receiver: Arc<Mutex<HydraReceiver>>,

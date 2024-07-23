@@ -11,6 +11,7 @@ use pallas::{
 };
 use serde_json::Value;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Script {
     cbor: Vec<u8>,

@@ -27,6 +27,7 @@ pub enum HydraData {
     Send(String),
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum HydraEventMessage {
     SnapshotConfirmed(SnapshotConfirmed),
@@ -90,6 +91,7 @@ impl TryFrom<Message> for HydraMessage {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum HydraMessageError {
     UnsupportedMessageFormat,

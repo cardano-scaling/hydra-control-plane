@@ -2,6 +2,7 @@ use std::error::Error;
 
 use serde_json::Value;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct TxValid {
     pub head_id: String,
