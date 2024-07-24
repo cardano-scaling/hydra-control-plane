@@ -1,7 +1,5 @@
-use std::{error::Error, fs::File, path::PathBuf};
+use std::path::PathBuf;
 
-use hex::FromHex;
-use pallas::crypto::key::ed25519::SecretKey;
 use rocket::http::Method;
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::global::global;
@@ -20,7 +18,7 @@ use model::{
     },
     node::Node,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[macro_use]
 extern crate rocket;
@@ -36,27 +34,24 @@ struct MyState {
     config: Config,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 struct Config {
     ttl_minutes: u64,
     max_players: u64,
+    nodes: Vec<NodeConfig>,
+}
+
+#[derive(Debug, Deserialize)]
+struct NodeConfig {
+    #[serde(default = "localhost")]
+    connection_url: String,
     admin_key_file: PathBuf,
+    persisted: bool,
 }
 
-#[derive(Serialize, Deserialize)]
-struct KeyEnvelope {
-    #[serde(rename = "type")]
-    envelope_type: String,
-    description: String,
-    #[serde(rename = "cborHex")]
-    cbor_hex: String,
-}
-
-impl TryInto<SecretKey> for KeyEnvelope {
-    type Error = Box<dyn Error>;
-    fn try_into(self) -> Result<SecretKey, Self::Error> {
-        Ok(<[u8; 32]>::from_hex(self.cbor_hex[4..].to_string())?.into())
-    }
+fn localhost() -> String {
+    "ws://127.0.0.1:4001".to_string()
 }
 
 #[rocket::main]
@@ -68,29 +63,12 @@ async fn main() -> Result<(), rocket::Error> {
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
 
-    // Load the admin key from disk; TODO: should probably do only on-demand?
-    let admin_key: KeyEnvelope =
-        serde_json::from_reader(File::open(&config.admin_key_file).unwrap()).unwrap();
+    let mut nodes = vec![];
+    for node in &config.nodes {
+        let node = Node::try_new(&node, &tx).await.expect("failed to connect");
+        nodes.push(node);
+    }
 
-    let node = Node::try_new(
-        "ws://127.0.0.1:4001",
-        admin_key.try_into().unwrap(),
-        &tx,
-        true,
-    )
-    .await
-    .expect("failed to connect");
-
-    // let node2 = Node::try_new("ws://3.15.33.186:4001", &tx, true)
-    //     .await
-    //     .expect("failed to connect");
-
-    // Fetching utxos requires deserializing them, but for some reaosn whne I print them out locally, it hangs after printing
-    // println!("{:?}", utxos);
-
-    // println!("Done fetching utxos...");
-
-    let nodes = vec![node];
     let hydra_state = HydraNodesState::from_nodes(nodes);
 
     let hydra_state_clone = hydra_state.clone();
@@ -98,7 +76,6 @@ async fn main() -> Result<(), rocket::Error> {
         update(hydra_state_clone, rx).await;
     });
 
-    // just doing this for local development for now
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
         .allowed_methods(
@@ -143,9 +120,9 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                                 println!(
                                     "updating node {:?} with head_id {:?}",
                                     node.connection_info.to_authority(),
-                                    head_is_open.head_id()
+                                    head_is_open.head_id
                                 );
-                                node.head_id = Some(head_is_open.head_id().to_string());
+                                node.head_id = Some(head_is_open.head_id.to_string());
                             }
                         }
                         HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => node

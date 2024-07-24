@@ -1,3 +1,5 @@
+use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
+use hex::FromHex;
 use pallas::{
     codec::{minicbor::decode, utils::KeepRaw},
     crypto::key::ed25519::SecretKey,
@@ -12,12 +14,13 @@ use pallas::{
         traverse::MultiEraTx,
     },
 };
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::{
+    ser::{SerializeStruct, Serializer},
+    Deserialize, Serialize,
+};
 use serde_json::Value;
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, error::Error, fs::File, time::Duration};
 use tokio::sync::mpsc::UnboundedSender;
-
-use crate::{model::hydra::utxo::UTxO, SCRIPT_ADDRESS};
 
 use super::{
     game_state::GameState,
@@ -76,7 +79,47 @@ pub enum NetworkRequestError {
     DeserializationError(Box<dyn std::error::Error>),
 }
 
+#[derive(Serialize, Deserialize)]
+struct KeyEnvelope {
+    #[serde(rename = "type")]
+    envelope_type: String,
+    description: String,
+    #[serde(rename = "cborHex")]
+    cbor_hex: String,
+}
+
+impl TryInto<SecretKey> for KeyEnvelope {
+    type Error = Box<dyn Error>;
+    fn try_into(self) -> Result<SecretKey, Self::Error> {
+        Ok(<[u8; 32]>::from_hex(self.cbor_hex[4..].to_string())?.into())
+    }
+}
+
 impl Node {
+    pub async fn try_new(
+        config: &NodeConfig,
+        writer: &UnboundedSender<HydraData>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let connection_info: ConnectionInfo = config.connection_url.to_string().try_into()?;
+
+        let admin_key: KeyEnvelope =
+            serde_json::from_reader(File::open(&config.admin_key_file).unwrap()).unwrap();
+
+        let socket = HydraSocket::new(connection_info.to_websocket_url().as_str(), writer).await?;
+        let mut node = Node {
+            connection_info,
+            head_id: None,
+            players: Vec::new(),
+            socket,
+            stats: NodeStats::new(config.persisted),
+            tx_builder: TxBuilder::new(admin_key.try_into()?),
+        };
+
+        node.listen();
+        Node::set_script_ref(&mut node).await?;
+        Ok(node)
+    }
+
     // This sucks and is hacky. Definitely a better way to do this, but I can't think
     async fn set_script_ref(node: &mut Node) -> Result<(), Box<dyn std::error::Error>> {
         let utxos = node
@@ -98,28 +141,6 @@ impl Node {
                 Box::pin(Node::set_script_ref(node)).await
             }
         }
-    }
-    pub async fn try_new(
-        uri: &str,
-        admin_key: SecretKey,
-        writer: &UnboundedSender<HydraData>,
-        persisted: bool,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let connection_info: ConnectionInfo = uri.to_string().try_into()?;
-
-        let socket = HydraSocket::new(connection_info.to_websocket_url().as_str(), writer).await?;
-        let mut node = Node {
-            connection_info,
-            head_id: None,
-            players: Vec::new(),
-            socket,
-            stats: NodeStats::new(persisted),
-            tx_builder: TxBuilder::new(admin_key),
-        };
-
-        node.listen();
-        Node::set_script_ref(&mut node).await?;
-        Ok(node)
     }
 
     pub async fn add_player(&mut self, player: Player) -> Result<(), Box<dyn std::error::Error>> {

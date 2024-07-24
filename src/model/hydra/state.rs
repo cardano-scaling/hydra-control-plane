@@ -13,12 +13,6 @@ pub struct HydraNodesState {
 }
 
 impl HydraNodesState {
-    pub fn new() -> Self {
-        Self {
-            state: Arc::new(RwLock::new(InternalState::default())),
-        }
-    }
-
     pub fn from_nodes(nodes: Vec<Node>) -> Self {
         Self {
             state: Arc::new(RwLock::new(InternalState { nodes })),

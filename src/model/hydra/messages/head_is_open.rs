@@ -4,12 +4,13 @@ use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct HeadIsOpen {
-    head_id: String,
-    seq: u64,
-    utxos: Vec<UTxO>,
-    timestamp: String,
+    pub head_id: String,
+    pub seq: u64,
+    pub utxos: Vec<UTxO>,
+    pub timestamp: String,
 }
 
 impl TryFrom<Value> for HeadIsOpen {
@@ -35,23 +36,5 @@ impl TryFrom<Value> for HeadIsOpen {
             utxos,
             timestamp: timestamp.to_string(),
         })
-    }
-}
-
-impl HeadIsOpen {
-    pub fn head_id(&self) -> &str {
-        &self.head_id
-    }
-
-    pub fn seq(&self) -> u64 {
-        self.seq
-    }
-
-    pub fn utxos(&self) -> &Vec<UTxO> {
-        &self.utxos
-    }
-
-    pub fn timestamp(&self) -> &str {
-        &self.timestamp
     }
 }
