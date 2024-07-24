@@ -1,11 +1,15 @@
 {
+  description = "Hydra control plane";
   inputs = {
     naersk.url = "github:nix-community/naersk/master";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     utils.url = "github:numtide/flake-utils";
+
+    cardano-node.url = "github:intersectmbo/cardano-node/9.0.0";
+    hydra.url = "github:cardano-scaling/hydra/0.17.0";
   };
 
-  outputs = { self, nixpkgs, utils, naersk }:
+  outputs = { self, nixpkgs, utils, naersk, cardano-node, hydra, ... }:
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -13,10 +17,23 @@
       in
       {
         packages.hydra-control-plane = naersk-lib.buildPackage ./.;
-        devShell = with pkgs; mkShell {
-          buildInputs = [ cargo rustc rustfmt pre-commit rustPackages.clippy ];
-          RUST_SRC_PATH = rustPlatform.rustLibSrc;
+
+        devShells.default = pkgs.mkShell {
+          buildInputs = [
+            # Runtime dependencies
+            cardano-node.packages.${system}.cardano-cli
+            hydra.packages.${system}.hydra-node
+            # Rust build tools
+            pkgs.rustc
+            pkgs.cargo
+            pkgs.rust-analyzer
+            pkgs.pre-commit
+            pkgs.rustPackages.clippy
+            # Libraries
+            pkgs.pkg-config
+            pkgs.openssl
+          ];
+          RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
         };
-      }
-    );
+      });
 }
