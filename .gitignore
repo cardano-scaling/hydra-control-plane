@@ -1,1 +1,6 @@
 /target
+
+# nix / direnv
+result*
+.envrc
+.direnv
