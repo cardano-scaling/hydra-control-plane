@@ -4,7 +4,6 @@ pub mod game_state;
 pub mod hydra;
 pub mod node;
 pub mod player;
-pub mod tag;
 pub mod tx_builder;
 
 pub fn format_hex<T: AsRef<[u8]>>(data: T, f: &mut fmt::Formatter) -> fmt::Result {
