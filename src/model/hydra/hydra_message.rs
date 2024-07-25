@@ -1,5 +1,6 @@
 use std::{error::Error, fmt};
 
+use anyhow::{Context, Result};
 use async_tungstenite::tungstenite::Message;
 use serde_json::Value;
 
@@ -42,14 +43,14 @@ pub enum HydraEventMessage {
 }
 
 impl TryFrom<Value> for HydraEventMessage {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         let tag = value["tag"]
             .as_str()
-            .ok_or("Invalid tag")?
+            .context("Invalid tag")?
             .parse::<Tag>()
-            .map_err(|_| "Invalid tag")?;
+            .context("Invalid tag")?;
 
         match tag {
             Tag::SnapshotConfirmed => {

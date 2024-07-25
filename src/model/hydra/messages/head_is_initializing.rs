@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::{Context, Result};
 use serde_json::Value;
 
 #[allow(dead_code)]
@@ -12,30 +11,27 @@ pub struct HeadIsInitializing {
 }
 
 impl TryFrom<Value> for HeadIsInitializing {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         let head_id = value["headId"]
             .as_str()
-            .ok_or("Invalid head_id")?
+            .context("Invalid head_id")?
             .to_owned();
-        let parties_arr = value["parties"].as_array().ok_or("Invalid parties")?;
+        let parties_arr = value["parties"].as_array().context("Invalid parties")?;
         let parties = parties_arr
             .into_iter()
             .map(|party| {
-                let x = match party.as_object() {
-                    Some(party_obj) => {
-                        hex::decode(party_obj["vkey"].as_str().ok_or("Invalid vkey")?)
-                            .map_err(|e| e.to_string())
-                    }
-                    None => Err("Invalid party object".into()),
-                };
-
-                x
+                party
+                    .as_object()
+                    .and_then(|m| m["vkey"].as_str())
+                    .context("missing vkey")
+                    .and_then(|vkey| hex::decode(vkey).context("invalid hex"))
+                    .context("invalid vkey")
             })
-            .collect::<Result<Vec<Vec<u8>>, String>>()?;
-        let seq = value["seq"].as_u64().ok_or("Invalid seq")?;
-        let timestamp = value["timestamp"].as_str().ok_or("Invalid timestamp")?;
+            .collect::<Result<Vec<Vec<u8>>>>()?;
+        let seq = value["seq"].as_u64().context("Invalid seq")?;
+        let timestamp = value["timestamp"].as_str().context("Invalid timestamp")?;
 
         Ok(HeadIsInitializing {
             head_id: head_id.to_string(),

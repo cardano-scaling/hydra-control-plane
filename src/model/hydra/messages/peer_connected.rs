@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::{Context, Result};
 use serde_json::Value;
 
 #[allow(dead_code)]
@@ -11,15 +10,15 @@ pub struct PeerConnected {
 }
 
 impl TryFrom<Value> for PeerConnected {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
-        let peer = value["peer"].as_str().ok_or("Invalid peer")?.to_string();
+        let peer = value["peer"].as_str().context("Invalid peer")?.to_string();
         let timestamp = value["timestamp"]
             .as_str()
-            .ok_or("Invalid timestamp")?
+            .context("Invalid timestamp")?
             .to_owned();
-        let seq = value["seq"].as_u64().ok_or("Invalid seq")?;
+        let seq = value["seq"].as_u64().context("Invalid seq")?;
 
         Ok(PeerConnected {
             peer: peer.to_string(),

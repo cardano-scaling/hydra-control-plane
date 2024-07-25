@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::{Context, Result};
 use derivative::Derivative;
 use serde_json::Value;
 
@@ -18,24 +17,24 @@ pub struct Committed {
 }
 
 impl TryFrom<Value> for Committed {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         let head_id = value["headId"]
             .as_str()
-            .ok_or("Invalid head_id")?
+            .context("Invalid head_id")?
             .to_owned();
-        let party_obj = value["party"].as_object().ok_or("Invalid party object")?;
+        let party_obj = value["party"].as_object().context("Invalid party object")?;
 
-        let party = hex::decode(party_obj["vkey"].as_str().ok_or("Invalid vkey")?)?;
-        let seq = value["seq"].as_u64().ok_or("Invalid seq")?;
-        let timestamp = value["timestamp"].as_str().ok_or("Invalid timestamp")?;
+        let party = hex::decode(party_obj["vkey"].as_str().context("Invalid vkey")?)?;
+        let seq = value["seq"].as_u64().context("Invalid seq")?;
+        let timestamp = value["timestamp"].as_str().context("Invalid timestamp")?;
         let utxos = value["utxo"]
             .as_object()
-            .ok_or("Invalid UTxOs object")?
+            .context("Invalid UTxOs object")?
             .iter()
             .map(|(key, value)| UTxO::try_from_value(key, value))
-            .collect::<Result<Vec<UTxO>, Box<dyn std::error::Error>>>()?;
+            .collect::<Result<Vec<UTxO>>>()?;
 
         Ok(Committed {
             head_id: head_id.to_string(),

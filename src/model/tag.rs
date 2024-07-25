@@ -1,5 +1,5 @@
+use anyhow::{anyhow, Result};
 use std::str::FromStr;
-
 #[derive(Debug)]
 pub enum Tag {
     Greetings,
@@ -25,7 +25,7 @@ pub enum Tag {
 }
 
 impl FromStr for Tag {
-    type Err = Box<dyn std::error::Error>;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -49,7 +49,7 @@ impl FromStr for Tag {
             "PostTxOnChainFailed" => Ok(Tag::PostTxOnChainFailed),
             "CommandFailed" => Ok(Tag::CommandFailed),
             "IgnoredHeadInitializing" => Ok(Tag::IgnoredHeadInitializing),
-            _ => Err(format!("Invalid tag: {s}").into()),
+            _ => Err(anyhow!("Invalid tag: {s}").into()),
         }
     }
 }

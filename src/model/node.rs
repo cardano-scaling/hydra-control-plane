@@ -1,4 +1,5 @@
 use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
+use anyhow::{bail, Context, Result};
 use hex::{FromHex, ToHex};
 use pallas::{
     codec::{minicbor::decode, utils::KeepRaw},
@@ -19,7 +20,7 @@ use serde::{
     Deserialize, Serialize,
 };
 use serde_json::Value;
-use std::{collections::HashMap, error::Error, fs::File, time::Duration};
+use std::{collections::HashMap, fs::File, time::Duration};
 use tokio::sync::mpsc::UnboundedSender;
 
 use super::{
@@ -89,21 +90,20 @@ struct KeyEnvelope {
 }
 
 impl TryInto<SecretKey> for KeyEnvelope {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
     fn try_into(self) -> Result<SecretKey, Self::Error> {
         Ok(<[u8; 32]>::from_hex(self.cbor_hex[4..].to_string())?.into())
     }
 }
 
 impl Node {
-    pub async fn try_new(
-        config: &NodeConfig,
-        writer: &UnboundedSender<HydraData>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn try_new(config: &NodeConfig, writer: &UnboundedSender<HydraData>) -> Result<Self> {
         let connection_info: ConnectionInfo = config.connection_url.to_string().try_into()?;
 
-        let admin_key: KeyEnvelope =
-            serde_json::from_reader(File::open(&config.admin_key_file).unwrap()).unwrap();
+        let admin_key: KeyEnvelope = serde_json::from_reader(
+            File::open(&config.admin_key_file).context("unable to open key file")?,
+        )
+        .context("unable to parse key file")?;
 
         let socket = HydraSocket::new(connection_info.to_websocket_url().as_str(), writer).await?;
         let mut node = Node {
@@ -121,11 +121,8 @@ impl Node {
     }
 
     // This sucks and is hacky. Definitely a better way to do this, but I can't think
-    async fn set_script_ref(node: &mut Node) -> Result<(), Box<dyn std::error::Error>> {
-        let utxos = node
-            .fetch_utxos()
-            .await
-            .map_err(|_| "Failed to fetch UTxOs")?;
+    async fn set_script_ref(node: &mut Node) -> Result<()> {
+        let utxos = node.fetch_utxos().await.context("Failed to fetch UTxOs")?;
         let maybe_script_ref = TxBuilder::find_script_ref(utxos.clone());
         match maybe_script_ref {
             Some(script_ref) => {
@@ -144,10 +141,7 @@ impl Node {
     }
 
     pub async fn add_player(&mut self, player: Player) -> Result<(), Box<dyn std::error::Error>> {
-        let utxos = self
-            .fetch_utxos()
-            .await
-            .map_err(|_| "Failed to fetch utxos")?;
+        let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
         let new_game_tx = self.tx_builder.build_new_game_state(&player, utxos)?;
 
@@ -172,34 +166,28 @@ impl Node {
         });
     }
 
-    pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>, NetworkRequestError> {
+    pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
         let request_url = self.connection_info.to_http_url() + "/snapshot/utxo";
-        let response = reqwest::get(&request_url)
-            .await
-            .map_err(NetworkRequestError::HttpError)?;
+        let response = reqwest::get(&request_url).await.context("http error")?;
 
         let body = response
             .json::<HashMap<String, Value>>()
             .await
-            .map_err(NetworkRequestError::HttpError)?;
+            .context("http error")?;
 
         let utxos = body
             .iter()
             .map(|(key, value)| UTxO::try_from_value(key, value))
-            .map(|result| result.map_err(|e| NetworkRequestError::DeserializationError(e)))
-            .collect::<Result<Vec<UTxO>, NetworkRequestError>>()?;
+            .collect::<Result<Vec<UTxO>>>()?;
 
         Ok(utxos)
     }
 
-    pub fn add_transaction(
-        &mut self,
-        transaction: TxValid,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn add_transaction(&mut self, transaction: TxValid) -> Result<()> {
         let bytes = transaction.cbor.as_slice();
-        let tx = MultiEraTx::decode(bytes).map_err(|_| "Failed to decode transaction")?;
+        let tx = MultiEraTx::decode(bytes).context("Failed to decode transaction")?;
 
-        let tx = tx.as_babbage().ok_or("Invalid babbage era tx")?;
+        let tx = tx.as_babbage().context("Invalid babbage era tx")?;
 
         let outputs = &tx.transaction_body.outputs;
         let script_outputs = outputs
@@ -228,7 +216,7 @@ impl Node {
             >>();
 
         if script_outputs.len() != 1 {
-            return Err("Invalid number of script outputs".into());
+            bail!("Invalid number of script outputs");
         }
 
         let script_output = script_outputs.first().unwrap();
@@ -244,7 +232,7 @@ impl Node {
 
                 let data = match decode::<PlutusData>(datum) {
                     Ok(data) => data,
-                    Err(_) => return Err("Failed to deserialize datum".into()),
+                    Err(_) => bail!("Failed to deserialize datum"),
                 };
 
                 let game_state: GameState = data.try_into()?;
@@ -273,7 +261,7 @@ impl Node {
 
                 Ok(())
             }
-            _ => return Err("Invalid output type".into()),
+            _ => bail!("Invalid output type"),
         }
     }
 }
@@ -296,7 +284,7 @@ impl Serialize for Node {
 }
 
 impl TryFrom<String> for ConnectionInfo {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let parts: Vec<&str> = value.split(':').collect();
@@ -319,14 +307,14 @@ impl TryFrom<String> for ConnectionInfo {
                     .to_string()
                     .split("//")
                     .last()
-                    .ok_or("Invalid host")?
+                    .context("Invalid host")?
                     .to_string();
 
                 let secure = schema == "https" || schema == "wss";
                 Ok(ConnectionInfo { host, port, secure })
             }
             _ => {
-                return Err("Invalid uri".into());
+                bail!("Invalid uri");
             }
         }
     }

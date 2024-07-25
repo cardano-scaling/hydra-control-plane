@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use pallas::{
     codec::minicbor::encode,
     crypto::key::ed25519::SecretKey,
@@ -35,15 +36,15 @@ impl TxBuilder {
         &self,
         player: &Player,
         utxos: Vec<UTxO>,
-    ) -> Result<BuiltTransaction, Box<dyn std::error::Error>> {
+    ) -> Result<BuiltTransaction> {
         if let Some(_) = player.utxo {
-            return Err("Player already has a UTxO created".into());
+            bail!("Player already has a UTxO created");
         }
 
         let admin_utxos = self.find_admin_utxos(utxos);
 
         if admin_utxos.is_empty() {
-            return Err("No admin UTxOs found".into());
+            bail!("No admin UTxOs found");
         };
 
         let input_utxo = admin_utxos.first().unwrap();
@@ -77,13 +78,10 @@ impl TxBuilder {
         })
     }
 
-    pub fn create_script_ref(
-        &self,
-        utxos: Vec<UTxO>,
-    ) -> Result<BuiltTransaction, Box<dyn std::error::Error>> {
+    pub fn create_script_ref(&self, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
         let admin_utxos = self.find_admin_utxos(utxos);
         if admin_utxos.is_empty() {
-            return Err("No admin UTxOs found".into());
+            bail!("No admin UTxOs found");
         };
 
         let input_utxo = admin_utxos.first().unwrap();

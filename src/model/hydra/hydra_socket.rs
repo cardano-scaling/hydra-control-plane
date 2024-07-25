@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use async_tungstenite::tokio::{connect_async, TokioAdapter};
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
@@ -29,10 +30,7 @@ pub struct HydraSender {
 }
 
 impl HydraSocket {
-    pub async fn new(
-        url: &str,
-        writer: &UnboundedSender<HydraData>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(url: &str, writer: &UnboundedSender<HydraData>) -> Result<Self> {
         let (ws_stream, _) = connect_async(url).await?;
         let (sender, receiver) = ws_stream.split();
 
@@ -48,14 +46,14 @@ impl HydraSocket {
 }
 
 impl HydraSender {
-    pub async fn send(&mut self, message: HydraData) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn send(&mut self, message: HydraData) -> Result<()> {
         match message {
             HydraData::Send(data) => {
                 let _ = self.sender.send(Message::Text(data)).await?;
                 debug!("Sent message");
                 Ok(())
             }
-            _ => Err("Can only send data of variant Send".into()),
+            _ => Err(anyhow!("Can only send data of variant Send")),
         }
     }
 }

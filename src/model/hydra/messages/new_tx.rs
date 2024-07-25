@@ -1,6 +1,6 @@
+use anyhow::{bail, Result};
 use pallas::txbuilder::BuiltTransaction;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
-
 pub struct NewTx {
     transaction: Transaction,
 }
@@ -11,9 +11,9 @@ struct Transaction {
 }
 
 impl NewTx {
-    pub fn new(tx: BuiltTransaction) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(tx: BuiltTransaction) -> Result<Self> {
         if tx.signatures.is_none() {
-            return Err("No signatures".into());
+            bail!("No signatures");
         }
 
         Ok(NewTx {

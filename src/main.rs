@@ -1,16 +1,4 @@
-use std::path::PathBuf;
-
-use rocket::http::Method;
-use rocket_cors::{AllowedOrigins, CorsOptions};
-use routes::global::global;
-use routes::head::head;
-use routes::heads::heads;
-use routes::new_game::new_game;
-use tokio::{
-    spawn,
-    sync::mpsc::{self, error::TryRecvError, UnboundedReceiver, UnboundedSender},
-};
-
+use anyhow::{Context, Result};
 use model::{
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
@@ -18,7 +6,18 @@ use model::{
     },
     node::Node,
 };
+use rocket::http::Method;
+use rocket_cors::{AllowedOrigins, CorsOptions};
+use routes::global::global;
+use routes::head::head;
+use routes::heads::heads;
+use routes::new_game::new_game;
 use serde::Deserialize;
+use std::path::PathBuf;
+use tokio::{
+    spawn,
+    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+};
 
 #[macro_use]
 extern crate rocket;
@@ -55,17 +54,19 @@ fn localhost() -> String {
 }
 
 #[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
+async fn main() -> Result<()> {
     let rocket = rocket::build();
     let figment = rocket.figment();
-    let config = figment.extract::<Config>().expect("invalid config");
+    let config = figment.extract::<Config>().context("invalid config")?;
 
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
 
     let mut nodes = vec![];
     for node in &config.nodes {
-        let node = Node::try_new(&node, &tx).await.expect("failed to connect");
+        let node = Node::try_new(&node, &tx)
+            .await
+            .context("failed to construct new node")?;
         nodes.push(node);
     }
 

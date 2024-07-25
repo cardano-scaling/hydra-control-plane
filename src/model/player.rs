@@ -1,7 +1,7 @@
 use pallas::ledger::addresses::Address;
 
 use super::{game_state::GameState, hydra::utxo::UTxO, node::StateUpdate};
-
+use anyhow::{bail, Result};
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Player {
@@ -13,10 +13,10 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(address: Address) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(address: Address) -> Result<Self> {
         let pkh: String = match &address {
             Address::Shelley(shelley) => shelley.payment().to_hex(),
-            _ => return Err("Invalid address type".into()),
+            _ => bail!("Invalid address type"),
         };
 
         Ok(Player {

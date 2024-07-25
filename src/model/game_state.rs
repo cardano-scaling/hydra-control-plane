@@ -1,3 +1,4 @@
+use anyhow::{anyhow, bail, Context};
 use pallas::ledger::primitives::{
     alonzo,
     conway::{Constr, PlutusData},
@@ -80,7 +81,7 @@ impl Into<PlutusData> for GameState {
 }
 
 impl TryFrom<PlutusData> for GameState {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
@@ -95,36 +96,28 @@ impl TryFrom<PlutusData> for GameState {
                     PlutusData::Constr(constr) => {
                         let owner_bytes = match constr.fields[0].clone() {
                             PlutusData::BoundedBytes(bytes) => bytes,
-                            _ => return Err("Invalid admin bytes".into()),
+                            _ => bail!("Invalid admin bytes"),
                         };
 
                         owner_bytes.into()
                     }
-                    _ => return Err("Invalid admin".into()),
+                    _ => bail!("Invalid admin"),
                 };
 
                 let player = match constr.fields[2].clone() {
-                    PlutusData::Constr(constr) => {
-                        match Player::try_from(PlutusData::Constr(constr)) {
-                            Ok(v) => v,
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    _ => return Err("Invalid player".into()),
+                    PlutusData::Constr(constr) => Player::try_from(PlutusData::Constr(constr))?,
+                    _ => bail!("Invalid player"),
                 };
 
                 let monsters = match constr.fields[3].clone() {
                     PlutusData::Array(array) => {
                         let mut monsters = vec![];
                         for monster in array {
-                            match MapObject::try_from(monster) {
-                                Ok(v) => monsters.push(v),
-                                Err(e) => return Err(e),
-                            }
+                            monsters.push(MapObject::try_from(monster)?)
                         }
                         monsters
                     }
-                    _ => return Err("Invalid monsters".into()),
+                    _ => bail!("Invalid monsters"),
                 };
 
                 Ok(GameState {
@@ -134,7 +127,7 @@ impl TryFrom<PlutusData> for GameState {
                     monsters,
                 })
             }
-            _ => Err("Invalid PlutusData variant".into()),
+            _ => Err(anyhow!("Invalid PlutusData variant")),
         }
     }
 }
@@ -176,42 +169,31 @@ impl Into<PlutusData> for Player {
 }
 
 impl TryFrom<PlutusData> for Player {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
             PlutusData::Constr(constr) => {
                 let fields = constr.fields;
                 if fields.len() != 3 {
-                    return Err("Invalid number of fields".into());
+                    bail!("Invalid number of fields");
                 }
 
                 let player_state = match fields[0].clone() {
                     PlutusData::Constr(constr) => {
-                        match PlayerState::try_from(PlutusData::Constr(constr)) {
-                            Ok(v) => v,
-                            Err(e) => return Err(e),
-                        }
+                        PlayerState::try_from(PlutusData::Constr(constr))?
                     }
-                    _ => return Err("Invalid field type".into()),
+                    _ => bail!("Invalid field type"),
                 };
 
                 let map_object = match fields[1].clone() {
-                    PlutusData::Constr(constr) => {
-                        match MapObject::try_from(PlutusData::Constr(constr)) {
-                            Ok(v) => v,
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::Constr(constr) => MapObject::try_from(PlutusData::Constr(constr))?,
+                    _ => bail!("Invalid field type"),
                 };
 
                 let kill_count = match fields[2] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match u64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid kill count value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => u64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
                 };
 
                 Ok(Player {
@@ -220,7 +202,7 @@ impl TryFrom<PlutusData> for Player {
                     kill_count,
                 })
             }
-            _ => Err("Invalid PlutusData type".into()),
+            _ => Err(anyhow!("Invalid PlutusData type")),
         }
     }
 }
@@ -249,37 +231,29 @@ impl Into<PlutusData> for MapObject {
 }
 
 impl TryFrom<PlutusData> for MapObject {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
             PlutusData::Constr(constr) => {
                 let fields = constr.fields;
                 if fields.len() != 2 {
-                    return Err("Invalid number of fields".into());
+                    bail!("Invalid number of fields");
                 }
 
                 let position = match fields[0].clone() {
-                    PlutusData::Constr(constr) => {
-                        match Position::try_from(PlutusData::Constr(constr)) {
-                            Ok(v) => v,
-                            Err(e) => return Err(e),
-                        }
-                    }
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::Constr(constr) => Position::try_from(PlutusData::Constr(constr))?,
+                    _ => bail!("Invalid field type"),
                 };
 
                 let health = match fields[1] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match u64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid health value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => u64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
                 };
 
                 Ok(MapObject { position, health })
             }
-            _ => Err("Invalid PlutusData type".into()),
+            _ => Err(anyhow!("Invalid PlutusData type")),
         }
     }
 }
@@ -315,62 +289,56 @@ impl Into<PlutusData> for Position {
 }
 
 impl TryFrom<PlutusData> for Position {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
             PlutusData::Constr(constr) => {
                 let fields = constr.fields;
                 if fields.len() != 6 {
-                    return Err("Invalid number of fields".into());
+                    bail!("Invalid number of fields");
                 }
 
                 let momentum_x = match fields[0] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match i64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid momentum_x value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                        i64::try_from(v.0).context("invalid momentum_x")?
+                    }
+                    _ => bail!("Invalid field type"),
                 };
 
                 let momentum_y = match fields[1] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match i64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid momentum_y value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                        i64::try_from(v.0).context("invalid momentum_y")?
+                    }
+                    _ => bail!("Invalid field type"),
                 };
 
                 let momentum_z = match fields[2] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match i64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid momentum_z value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                        i64::try_from(v.0).context("invalid momentum_z")?
+                    }
+                    _ => bail!("Invalid field type"),
                 };
 
                 let angle = match fields[3] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match i64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid angle value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                        i64::try_from(v.0).context("Invalid angle")?
+                    }
+                    _ => bail!("Invalid field type"),
                 };
 
                 let z = match fields[4] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match i64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid z value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                        i64::try_from(v.0).context("invalid z")?
+                    }
+                    _ => bail!("Invalid field type"),
                 };
 
                 let floor_z = match fields[5] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => match i64::try_from(v.0) {
-                        Ok(v) => v,
-                        Err(_) => return Err("Invalid floor_z value".into()),
-                    },
-                    _ => return Err("Invalid field type".into()),
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                        i64::try_from(v.0).context("Invalid floor_z")?
+                    }
+                    _ => bail!("Invalid field type"),
                 };
 
                 Ok(Position {
@@ -382,7 +350,7 @@ impl TryFrom<PlutusData> for Position {
                     floor_z,
                 })
             }
-            _ => Err("Invalid PlutusData type".into()),
+            _ => Err(anyhow!("Invalid PlutusData type")),
         }
     }
 }
@@ -411,7 +379,7 @@ impl Into<PlutusData> for PlayerState {
 }
 
 impl TryFrom<PlutusData> for PlayerState {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
@@ -419,9 +387,9 @@ impl TryFrom<PlutusData> for PlayerState {
                 121 => Ok(PlayerState::LIVE),
                 122 => Ok(PlayerState::DEAD),
                 123 => Ok(PlayerState::REBORN),
-                _ => Err("Invalid tag for PlayerState".into()),
+                _ => Err(anyhow!("Invalid tag for PlayerState")),
             },
-            _ => Err("Invalid PlutusData for PlayerState".into()),
+            _ => Err(anyhow!("Invalid PlutusData for PlayerState")),
         }
     }
 }

@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::Context;
 use serde_json::Value;
 
 #[allow(dead_code)]
@@ -15,37 +14,31 @@ pub struct TxValid {
 }
 
 impl TryFrom<Value> for TxValid {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         let head_id = value["headId"]
             .as_str()
-            .ok_or("Invalid head_id")?
+            .context("Invalid head_id")?
             .to_owned();
-        let seq = value["seq"].as_u64().ok_or("Invalid seq")?;
-        let timestamp = value["timestamp"].as_str().ok_or("Invalid timestamp")?;
+        let seq = value["seq"].as_u64().context("Invalid seq")?;
+        let timestamp = value["timestamp"].as_str().context("Invalid timestamp")?;
         let transaction = value["transaction"]
             .as_object()
-            .ok_or("Invalid transaction")?;
+            .context("Invalid transaction")?;
 
-        let cbor = match transaction["cborHex"].as_str() {
-            Some(cbor) => hex::decode(cbor)?,
-            None => return Err("Invalid cbor".into()),
-        };
+        let cbor = hex::decode(transaction["cborHex"].as_str().context("invalid cbor")?)?;
 
         let descrption = transaction["description"]
             .as_str()
-            .ok_or("Invalid descrption")?
+            .context("Invalid descrption")?
             .to_owned();
 
-        let tx_id = match transaction["txId"].as_str() {
-            Some(tx_id) => hex::decode(tx_id)?,
-            None => return Err("Invalid txId".into()),
-        };
+        let tx_id = hex::decode(transaction["txId"].as_str().context("Invalid txId")?)?;
 
         let tx_type = transaction["type"]
             .as_str()
-            .ok_or("Invalid txType")?
+            .context("Invalid txType")?
             .to_owned();
 
         Ok(TxValid {

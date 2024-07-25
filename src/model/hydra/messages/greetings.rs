@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::{Context, Result};
 use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
@@ -16,27 +15,27 @@ pub struct Greetings {
 }
 
 impl TryFrom<Value> for Greetings {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         let head_status = value["headStatus"]
             .as_str()
-            .ok_or("Invalid head_status")?
+            .context("Invalid head_status")?
             .to_owned();
         let hydra_node_version = value["hydraNodeVersion"]
             .as_str()
-            .ok_or("Invalid hydra_node_version")?
+            .context("Invalid hydra_node_version")?
             .to_owned();
-        let me_obj = value["me"].as_object().ok_or("Invalid me object")?;
-        let me = hex::decode(me_obj["vkey"].as_str().ok_or("Invalid me vkey")?)?;
-        let seq = value["seq"].as_u64().ok_or("Invalid seq")?;
-        let timestamp = value["timestamp"].as_str().ok_or("Invalid timestamp")?;
+        let me_obj = value["me"].as_object().context("Invalid me object")?;
+        let me = hex::decode(me_obj["vkey"].as_str().context("Invalid me vkey")?)?;
+        let seq = value["seq"].as_u64().context("Invalid seq")?;
+        let timestamp = value["timestamp"].as_str().context("Invalid timestamp")?;
         let snapshot_utxos = value["snapshotUtxo"]
             .as_object()
-            .ok_or("Invalid snapshotUtxo object")?
+            .context("Invalid snapshotUtxo object")?
             .iter()
             .map(|(key, value)| UTxO::try_from_value(key, value))
-            .collect::<Result<Vec<UTxO>, Box<dyn std::error::Error>>>()?;
+            .collect::<Result<Vec<UTxO>>>()?;
 
         Ok(Greetings {
             head_status: head_status.to_string(),

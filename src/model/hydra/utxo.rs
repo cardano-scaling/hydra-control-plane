@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use anyhow::{anyhow, Context, Result};
 use derivative::Derivative;
 use pallas::{
     codec::minicbor::encode,
@@ -11,6 +10,7 @@ use pallas::{
     txbuilder::{Input, Output},
 };
 use serde_json::Value;
+use std::collections::HashMap;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -46,11 +46,11 @@ pub enum Datum {
 }
 
 impl UTxO {
-    pub fn try_from_value(tx_id: &str, value: &Value) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn try_from_value(tx_id: &str, value: &Value) -> Result<Self> {
         let index = tx_id.split("#").collect::<Vec<&str>>()[1].parse::<u64>()?;
         let hex_hash = tx_id.split("#").collect::<Vec<&str>>()[0];
         let hash = hex::decode(hex_hash)?;
-        let address = value["address"].as_str().ok_or("Invalid address")?;
+        let address = value["address"].as_str().context("Invalid address")?;
         let address = Address::from_bech32(address)?;
         let is_inline = !value["inlineDatum"].is_null();
         let is_hash = !value["datumHash"].is_null();
@@ -58,7 +58,7 @@ impl UTxO {
             Datum::InlineDatum(value_to_plutus_data(&value["inlineDatum"])?)
         } else if is_hash {
             Datum::DatumHash(hex::decode(
-                value["datumHash"].as_str().ok_or("Invalid datumHash")?,
+                value["datumHash"].as_str().context("Invalid datumHash")?,
             )?)
         } else {
             Datum::None
@@ -75,8 +75,8 @@ impl UTxO {
         };
 
         let mut value_map = HashMap::new();
-        for (key, value) in value["value"].as_object().ok_or("Invalid value")? {
-            value_map.insert(key.to_string(), value.as_u64().ok_or("Invalid value")?);
+        for (key, value) in value["value"].as_object().context("Invalid value")? {
+            value_map.insert(key.to_string(), value.as_u64().context("Invalid value")?);
         }
 
         Ok(UTxO {
@@ -102,19 +102,19 @@ impl Into<Input> for UTxO {
     }
 }
 
-fn value_to_plutus_data(value: &Value) -> Result<PlutusData, Box<dyn std::error::Error>> {
+fn value_to_plutus_data(value: &Value) -> Result<PlutusData> {
     let value = value
         .as_object()
-        .ok_or("Invalid PlutusData json encoding")?;
+        .context("Invalid PlutusData json encoding")?;
     if value.contains_key("constructor") {
         let constructor = value
             .get("constructor")
-            .ok_or("invalid constructor")?
+            .context("key constructor not found")?
             .as_u64()
-            .ok_or("Invalid constructor")?;
+            .context("Invalid constructor")?;
         let fields: Vec<PlutusData> = value["fields"]
             .as_array()
-            .ok_or("Invalid fields")?
+            .context("Invalid fields")?
             .iter()
             .filter_map(|v| value_to_plutus_data(v).ok())
             .collect();
@@ -127,27 +127,27 @@ fn value_to_plutus_data(value: &Value) -> Result<PlutusData, Box<dyn std::error:
     } else if value.contains_key("int") {
         let int = value
             .get("int")
-            .ok_or("invalid int")?
+            .context("key int not found")?
             .as_i64()
-            .ok_or("Invalid int")?;
+            .context("Invalid int")?;
         let big_int: BigInt = BigInt::Int(int.into());
         Ok(PlutusData::BigInt(big_int))
     } else if value.contains_key("bytes") {
         let bytes = value
             .get("bytes")
-            .ok_or("invalid bytes")?
+            .context("key bytes not found")?
             .as_str()
-            .ok_or("Invalid bytes")?;
+            .context("Invalid string")?;
         let bytes = hex::decode(bytes)?;
         Ok(PlutusData::BoundedBytes(bytes.into()))
     } else if value.contains_key("list") {
-        Err("plutus list decoding not yet implemented".into())
+        Err(anyhow!("plutus list decoding not yet implemented"))
     } else {
-        Err("Invalid PlutusData json encoding".into())
+        Err(anyhow!("Invalid PlutusData json encoding"))
     }
 }
 impl TryInto<Output> for UTxO {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Output, Self::Error> {
         let lovelace: u64 = self
@@ -187,17 +187,19 @@ impl TryInto<Output> for UTxO {
 }
 
 impl TryFrom<&Value> for Script {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
-        let value = value.as_object().ok_or("invalid referenceScript object")?["script"]
+        let value = value
             .as_object()
-            .ok_or("invalid script object")?;
+            .context("invalid referenceScript object")?["script"]
+            .as_object()
+            .context("invalid script object")?;
 
-        let cbor = hex::decode(value["cborHex"].as_str().ok_or("invalid cborHex")?)?;
+        let cbor = hex::decode(value["cborHex"].as_str().context("invalid cborHex")?)?;
         let script_type: ScriptType = value["type"]
             .as_str()
-            .ok_or("invalid scriptType")?
+            .context("invalid scriptType")?
             .try_into()?;
 
         Ok(Script { cbor, script_type })
@@ -205,14 +207,14 @@ impl TryFrom<&Value> for Script {
 }
 
 impl TryFrom<&str> for ScriptType {
-    type Error = Box<dyn std::error::Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "PlutusScriptV1" => Ok(ScriptType::PlutusV1),
             "PlutusScriptV2" => Ok(ScriptType::PlutusV2),
             "NativeScript" => Ok(ScriptType::NativeScript),
-            _ => Err("Invalid ScriptType".into()),
+            _ => Err(anyhow!("Invalid ScriptType")),
         }
     }
 }

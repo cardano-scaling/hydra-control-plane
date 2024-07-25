@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::{Context, Result};
 use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
@@ -17,43 +16,44 @@ pub struct SnapshotConfirmed {
 }
 
 impl TryFrom<Value> for SnapshotConfirmed {
-    type Error = Box<dyn Error>;
+    type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         let head_id = value["headId"]
             .as_str()
-            .ok_or("Invalid head_id")?
+            .context("Invalid head_id")?
             .to_owned();
-        let seq = value["seq"].as_u64().ok_or("Invalid seq")?;
+        let seq = value["seq"].as_u64().context("Invalid seq")?;
         let signatures = value["signatures"]
             .as_object()
-            .ok_or("invalid signatures object")?["multiSignature"]
+            .context("invalid signatures object")?["multiSignature"]
             .as_array()
-            .ok_or("Invalid multiSignatures")?
+            .context("Invalid multiSignatures")?
             .iter()
-            .map(|s| s.as_str().ok_or("Invalid signature").map(|s| s.to_string()))
-            .collect::<Result<Vec<String>, &str>>()?;
-        let snapshot = value["snapshot"].as_object().ok_or("Invalid snapshot")?;
+            .map(|s| s.as_str().context("invalid str").map(|s| s.to_string()))
+            .collect::<Result<Vec<String>>>()?;
+        let snapshot = value["snapshot"].as_object().context("Invalid snapshot")?;
 
         let confirmed_transactions = snapshot["confirmedTransactions"]
             .as_array()
-            .ok_or("Invalid confirmedTransactions")?
+            .context("Invalid confirmedTransactions")?
             .iter()
-            .map(|s| match s.as_str() {
-                Some(s) => hex::decode(s).map_err(|_| "Invalid confirmedTransaction"),
-                None => Err("Invalid confirmedTransaction"),
+            .map(|s| {
+                s.as_str()
+                    .context("invalid confirmedTransaction")
+                    .and_then(|s| hex::decode(s).context("failed to hex decode"))
             })
-            .collect::<Result<Vec<Vec<u8>>, &str>>()?;
+            .collect::<Result<Vec<Vec<u8>>>>()?;
         let snapshot_number = snapshot["snapshotNumber"]
             .as_u64()
-            .ok_or("Invalid snapshotNumber")?;
+            .context("Invalid snapshotNumber")?;
         let utxo = snapshot["utxo"]
             .as_object()
-            .ok_or("Invalid utxo")?
+            .context("Invalid utxo")?
             .iter()
             .map(|(key, value)| UTxO::try_from_value(key, value))
-            .collect::<Result<Vec<UTxO>, Box<dyn std::error::Error>>>()?;
-        let timestamp = value["timestamp"].as_str().ok_or("Invalid timestamp")?;
+            .collect::<Result<Vec<UTxO>>>()?;
+        let timestamp = value["timestamp"].as_str().context("Invalid timestamp")?;
 
         Ok(SnapshotConfirmed {
             head_id: head_id.to_string(),
