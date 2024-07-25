@@ -103,43 +103,39 @@ async fn main() -> Result<()> {
 async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
     loop {
         match rx.recv().await {
-            Some(data) => match data {
-                HydraData::Received { message, authority } => {
-                    let mut state_guard = state.state.write().await;
-                    let nodes = &mut state_guard.nodes;
-                    let node = nodes
-                        .iter_mut()
-                        .find(|n| n.connection_info.to_authority() == authority);
-                    if let None = node {
-                        warn!("Node not found: ${:?}", authority);
-                        continue;
-                    }
-                    let node = node.unwrap();
-                    match message {
-                        HydraEventMessage::HeadIsOpen(head_is_open) => {
-                            if let None = node.head_id {
-                                info!(
-                                    "updating node {:?} with head_id {:?}",
-                                    node.connection_info.to_authority(),
-                                    head_is_open.head_id
-                                );
-                                node.head_id = Some(head_is_open.head_id.to_string());
-                            }
-                        }
-                        HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => node
-                            .stats
-                            .calculate_stats(snapshot_confirmed.confirmed_transactions),
-                        HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
-                            Ok(_) => {}
-                            Err(e) => {
-                                warn!("failed to add transaction {:?}", e);
-                            }
-                        },
-                        _ => {} //println!("Unhandled message: {:?}", message),
-                    }
+            Some(HydraData::Received { message, authority }) => {
+                let mut state_guard = state.state.write().await;
+                let nodes = &mut state_guard.nodes;
+                let node = nodes
+                    .iter_mut()
+                    .find(|n| n.connection_info.to_authority() == authority);
+                if let None = node {
+                    warn!("Node not found: ${:?}", authority);
+                    continue;
                 }
-                HydraData::Send(_) => {}
-            },
+                let node = node.unwrap();
+                match message {
+                    HydraEventMessage::HeadIsOpen(head_is_open) if node.head_id.is_none() => {
+                        info!(
+                            "updating node {:?} with head_id {:?}",
+                            node.connection_info.to_authority(),
+                            head_is_open.head_id
+                        );
+                        node.head_id = Some(head_is_open.head_id.to_string());
+                    }
+                    HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => node
+                        .stats
+                        .calculate_stats(snapshot_confirmed.confirmed_transactions),
+                    HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!("failed to add transaction {:?}", e);
+                        }
+                    },
+                    _ => {}
+                }
+            }
+            Some(HydraData::Send(_)) => {}
             None => {
                 warn!("mpsc disconnected");
                 break;

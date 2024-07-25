@@ -15,10 +15,7 @@ use pallas::{
         traverse::MultiEraTx,
     },
 };
-use serde::{
-    ser::{SerializeStruct, Serializer},
-    Deserialize, Serialize,
-};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fs::File, time::Duration};
 use tokio::{sync::mpsc::UnboundedSender, time::sleep};
@@ -34,33 +31,44 @@ use super::{
     tx_builder::TxBuilder,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct Node {
-    pub connection_info: ConnectionInfo,
+    #[serde(rename = "id")]
     pub head_id: Option<String>,
-    pub socket: HydraSocket,
-    pub players: Vec<Player>,
+    #[serde(rename = "total")]
     pub stats: NodeStats,
+    pub persisted: bool,
+
+    #[serde(skip)]
+    pub connection_info: ConnectionInfo,
+    #[serde(skip)]
+    pub socket: HydraSocket,
+    #[serde(skip)]
+    pub players: Vec<Player>,
+    #[serde(skip)]
     pub tx_builder: TxBuilder,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct ConnectionInfo {
     pub host: String,
     pub port: u32,
     pub secure: bool,
 }
+#[derive(Serialize)]
 pub struct NodeSummary(pub Node);
 
-#[derive(Clone)]
+#[derive(Serialize, Clone)]
 pub struct NodeStats {
-    pub persisted: bool,
+    pub games: u64,
     pub transactions: u64,
     pub bytes: u64,
     pub kills: u64,
     pub items: u64,
     pub secrets: u64,
     pub play_time: u64,
+
+    #[serde(skip)]
     pub pending_transactions: HashMap<Vec<u8>, StateUpdate>,
 }
 
@@ -100,11 +108,12 @@ impl Node {
 
         let socket = HydraSocket::new(connection_info.to_websocket_url().as_str(), writer).await?;
         let mut node = Node {
-            connection_info,
             head_id: None,
+            connection_info,
+            stats: NodeStats::new(),
+            persisted: config.persisted,
             players: Vec::new(),
             socket,
-            stats: NodeStats::new(config.persisted),
             tx_builder: TxBuilder::new(admin_key.try_into()?),
         };
 
@@ -259,23 +268,6 @@ impl Node {
     }
 }
 
-impl Serialize for Node {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("Node", 4)?;
-        s.serialize_field("id", &self.head_id)?;
-        s.serialize_field("total", &self.stats)?;
-        // TODO: Make the active games count match the openapi schema
-        s.serialize_field("active_games", &self.players.len())?;
-        s.skip_field("socket")?;
-        s.skip_field("ephemeral")?;
-        s.skip_field("connection_info")?;
-        s.end()
-    }
-}
-
 impl TryFrom<String> for ConnectionInfo {
     type Error = anyhow::Error;
 
@@ -329,9 +321,9 @@ impl ConnectionInfo {
     }
 }
 impl NodeStats {
-    pub fn new(persisted: bool) -> NodeStats {
+    pub fn new() -> NodeStats {
         NodeStats {
-            persisted,
+            games: 0,
             transactions: 0,
             bytes: 0,
             kills: 0,
@@ -369,7 +361,7 @@ impl NodeStats {
         pending_transactions.extend(other.pending_transactions);
 
         NodeStats {
-            persisted: self.persisted && other.persisted,
+            games: self.games + other.games,
             transactions: self.transactions + other.transactions,
             bytes: self.bytes + other.bytes,
             kills: self.kills + other.kills,
@@ -378,35 +370,5 @@ impl NodeStats {
             play_time: self.play_time + other.play_time,
             pending_transactions,
         }
-    }
-}
-
-impl Serialize for NodeStats {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("NodeStats", 6)?;
-        s.serialize_field("transactions", &self.transactions)?;
-        s.serialize_field("bytes", &self.bytes)?;
-        s.serialize_field("kills", &self.kills)?;
-        s.serialize_field("items", &self.items)?;
-        s.serialize_field("secrets", &self.secrets)?;
-        s.serialize_field("play_time", &self.play_time)?;
-        s.skip_field("pending_transactions")?;
-        s.end()
-    }
-}
-
-impl Serialize for NodeSummary {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_struct("NodeSummary", 3)?;
-        s.serialize_field("id", &self.0.head_id)?;
-        s.serialize_field("active_games", &self.0.players.len())?;
-        s.serialize_field("persisted", &self.0.stats.persisted)?;
-        s.end()
     }
 }
