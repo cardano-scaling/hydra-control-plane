@@ -101,8 +101,8 @@ async fn main() -> Result<(), rocket::Error> {
 
 async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
     loop {
-        match rx.try_recv() {
-            Ok(data) => match data {
+        match rx.recv().await {
+            Some(data) => match data {
                 HydraData::Received { message, authority } => {
                     let mut state_guard = state.state.write().await;
                     let nodes = &mut state_guard.nodes;
@@ -139,8 +139,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                 }
                 HydraData::Send(_) => {}
             },
-            Err(TryRecvError::Empty) => {}
-            Err(TryRecvError::Disconnected) => {
+            None => {
                 warn!("mpsc disconnected");
                 break;
             }
