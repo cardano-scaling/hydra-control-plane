@@ -4,14 +4,10 @@ use anyhow::{Context, Result};
 use async_tungstenite::tungstenite::Message;
 use serde_json::Value;
 
-use super::{
-    super::tag::Tag,
-    messages::{
-        committed::Committed, greetings::Greetings, head_is_initializing::HeadIsInitializing,
-        head_is_open::HeadIsOpen, peer_connected::PeerConnected,
-        peer_disconnected::PeerDisconnected, snapshot_confirmed::SnapshotConfirmed,
-        tx_valid::TxValid,
-    },
+use super::messages::{
+    committed::Committed, greetings::Greetings, head_is_initializing::HeadIsInitializing,
+    head_is_open::HeadIsOpen, peer_connected::PeerConnected, peer_disconnected::PeerDisconnected,
+    snapshot_confirmed::SnapshotConfirmed, tx_valid::TxValid,
 };
 
 pub enum HydraMessage {
@@ -46,29 +42,23 @@ impl TryFrom<Value> for HydraEventMessage {
     type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
-        let tag = value["tag"]
-            .as_str()
-            .context("Invalid tag")?
-            .parse::<Tag>()
-            .context("Invalid tag")?;
+        let tag = value["tag"].as_str().context("Invalid tag")?;
 
         match tag {
-            Tag::SnapshotConfirmed => {
+            "SnapshotConfirmed" => {
                 SnapshotConfirmed::try_from(value).map(HydraEventMessage::SnapshotConfirmed)
             }
-            Tag::TxValid => TxValid::try_from(value).map(HydraEventMessage::TxValid),
-            Tag::PeerConnected => {
-                PeerConnected::try_from(value).map(HydraEventMessage::PeerConnected)
-            }
-            Tag::PeerDisconnected => {
+            "TxValid" => TxValid::try_from(value).map(HydraEventMessage::TxValid),
+            "PeerConnected" => PeerConnected::try_from(value).map(HydraEventMessage::PeerConnected),
+            "PeerDisconnected" => {
                 PeerDisconnected::try_from(value).map(HydraEventMessage::PeerDisconnected)
             }
-            Tag::HeadIsInitializing => {
+            "HeadIsInitializing" => {
                 HeadIsInitializing::try_from(value).map(HydraEventMessage::HeadIsInitializing)
             }
-            Tag::HeadIsOpen => HeadIsOpen::try_from(value).map(HydraEventMessage::HeadIsOpen),
-            Tag::Committed => Committed::try_from(value).map(HydraEventMessage::Committed),
-            Tag::Greetings => Greetings::try_from(value).map(HydraEventMessage::Greetings),
+            "HeadIsOpen" => HeadIsOpen::try_from(value).map(HydraEventMessage::HeadIsOpen),
+            "Committed" => Committed::try_from(value).map(HydraEventMessage::Committed),
+            "Greetings" => Greetings::try_from(value).map(HydraEventMessage::Greetings),
             _ => Ok(HydraEventMessage::Unimplemented(value)),
         }
     }
