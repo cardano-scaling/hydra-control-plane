@@ -1,5 +1,5 @@
 use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
-use hex::FromHex;
+use hex::{FromHex, ToHex};
 use pallas::{
     codec::{minicbor::decode, utils::KeepRaw},
     crypto::key::ed25519::SecretKey,
@@ -130,7 +130,7 @@ impl Node {
         match maybe_script_ref {
             Some(script_ref) => {
                 node.tx_builder.set_script_ref(&script_ref);
-                println!("Set script ref! {:?}", script_ref);
+                debug!("Set script ref! {:?}", script_ref);
                 Ok(())
             }
             None => {
@@ -234,13 +234,10 @@ impl Node {
         let script_output = script_outputs.first().unwrap();
         match script_output {
             PseudoTransactionOutput::PostAlonzo(output) => {
-                if output.datum_option.is_none() {
-                    return Err("No datum found".into());
-                }
-
-                let datum = match output.datum_option.as_ref().unwrap() {
-                    PseudoDatumOption::Data(datum) => datum,
-                    _ => return Err("No inline datum found".into()),
+                let datum = match output.datum_option.as_ref() {
+                    Some(PseudoDatumOption::Data(datum)) => datum,
+                    // If there's no datum, or a datum hash, it's an unrelated transaction
+                    _ => return Ok(()),
                 }
                 .0
                 .raw_cbor();
@@ -255,10 +252,16 @@ impl Node {
                 let player = match self
                     .players
                     .iter_mut()
-                    .find(|player| player.pkh == game_state.admin)
+                    .find(|player| player.pkh == game_state.owner)
                 {
                     Some(player) => player,
-                    None => return Err("No player found".into()),
+                    None => {
+                        warn!(
+                            "Player not found {}",
+                            game_state.owner.encode_hex::<String>()
+                        );
+                        return Ok(());
+                    }
                 };
 
                 let state_update =
@@ -363,7 +366,7 @@ impl NodeStats {
             match self.pending_transactions.remove(&tx_id) {
                 Some(state_change) => self.update_stats(state_change),
 
-                None => println!(
+                None => debug!(
                     "Transaction in snapshot not found in stored transactions: {:?}",
                     tx_id
                 ),

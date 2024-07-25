@@ -6,7 +6,7 @@ use pallas::ledger::primitives::{
 #[derive(Debug, Clone)]
 pub struct GameState {
     pub is_over: bool,
-    pub admin: Vec<u8>,
+    pub owner: Vec<u8>,
     pub player: Player,
     #[allow(dead_code)]
     pub monsters: Vec<MapObject>,
@@ -58,7 +58,7 @@ impl Into<PlutusData> for GameState {
             })
         };
 
-        let admin_bytes: alonzo::BoundedBytes = self.admin.into();
+        let admin_bytes: alonzo::BoundedBytes = self.owner.into();
 
         let admin = PlutusData::Constr(Constr {
             tag: 121,
@@ -91,14 +91,14 @@ impl TryFrom<PlutusData> for GameState {
                     false
                 };
 
-                let admin: Vec<u8> = match constr.fields[1].clone() {
+                let owner: Vec<u8> = match constr.fields[1].clone() {
                     PlutusData::Constr(constr) => {
-                        let admin_bytes = match constr.fields[0].clone() {
+                        let owner_bytes = match constr.fields[0].clone() {
                             PlutusData::BoundedBytes(bytes) => bytes,
                             _ => return Err("Invalid admin bytes".into()),
                         };
 
-                        admin_bytes.into()
+                        owner_bytes.into()
                     }
                     _ => return Err("Invalid admin".into()),
                 };
@@ -129,7 +129,7 @@ impl TryFrom<PlutusData> for GameState {
 
                 Ok(GameState {
                     is_over,
-                    admin,
+                    owner,
                     player,
                     monsters,
                 })
@@ -140,10 +140,10 @@ impl TryFrom<PlutusData> for GameState {
 }
 
 impl GameState {
-    pub fn new(admin: Vec<u8>) -> GameState {
+    pub fn new(owner: Vec<u8>) -> GameState {
         GameState {
             is_over: false,
-            admin,
+            owner,
             player: Player::new(),
             monsters: Vec::new(),
         }

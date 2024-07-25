@@ -30,7 +30,7 @@ pub async fn new_game(
 
     let player = Player::new(addr).map_err(|_| Status::BadRequest)?;
     let _ = node.add_player(player).await.map_err(|e| {
-        println!("failed to add player {:?}", e);
+        warn!("failed to add player {:?}", e);
         Status::InternalServerError
     })?;
 

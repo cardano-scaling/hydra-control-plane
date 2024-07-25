@@ -52,7 +52,7 @@ impl HydraSender {
         match message {
             HydraData::Send(data) => {
                 let _ = self.sender.send(Message::Text(data)).await?;
-                println!("Sent message");
+                debug!("Sent message");
                 Ok(())
             }
             _ => Err("Can only send data of variant Send".into()),
@@ -66,7 +66,7 @@ impl HydraReceiver {
             let msg = match msg {
                 Ok(msg) => msg,
                 Err(e) => {
-                    println!("Error receiving message: {:?}", e);
+                    warn!("Error receiving message: {:?}", e);
                     continue;
                 }
             };
@@ -74,7 +74,7 @@ impl HydraReceiver {
             match HydraMessage::try_from(msg) {
                 Ok(hydra_message) => match hydra_message {
                     HydraMessage::Ping(payload) => {
-                        println!("Received ping: {:?}", payload);
+                        debug!("Received ping: {:?}", payload);
                     }
 
                     HydraMessage::HydraEvent(event) => {
@@ -88,7 +88,7 @@ impl HydraReceiver {
                     }
                 },
                 Err(e) => {
-                    println!("Error parsing message: {:?}", e);
+                    warn!("Error parsing message: {:?}", e);
                 }
             }
         }

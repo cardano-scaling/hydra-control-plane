@@ -1,13 +1,16 @@
 use std::error::Error;
 
+use derivative::Derivative;
 use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct Committed {
     head_id: String,
+    #[derivative(Debug(format_with = "crate::model::format_hex"))]
     party: Vec<u8>,
     seq: u64,
     timestamp: String,

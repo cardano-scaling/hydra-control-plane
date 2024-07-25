@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use derivative::Derivative;
 use pallas::{
     codec::minicbor::encode,
     crypto::hash::Hash,
@@ -25,8 +26,10 @@ pub enum ScriptType {
     NativeScript,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Derivative, Clone)]
+#[derivative(Debug)]
 pub struct UTxO {
+    #[derivative(Debug(format_with = "crate::model::format_hex"))]
     pub hash: Vec<u8>,
     pub index: u64,
     pub address: Address,
