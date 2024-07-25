@@ -44,7 +44,8 @@ struct Config {
 #[derive(Debug, Deserialize)]
 struct NodeConfig {
     #[serde(default = "localhost")]
-    connection_url: String,
+    local_url: String,
+    remote_url: Option<String>,
     admin_key_file: PathBuf,
     persisted: bool,
 }
@@ -108,7 +109,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                 let nodes = &mut state_guard.nodes;
                 let node = nodes
                     .iter_mut()
-                    .find(|n| n.connection_info.to_authority() == authority);
+                    .find(|n| n.local_connection.to_authority() == authority);
                 if let None = node {
                     warn!("Node not found: ${:?}", authority);
                     continue;
@@ -118,7 +119,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                     HydraEventMessage::HeadIsOpen(head_is_open) if node.head_id.is_none() => {
                         info!(
                             "updating node {:?} with head_id {:?}",
-                            node.connection_info.to_authority(),
+                            node.local_connection.to_authority(),
                             head_is_open.head_id
                         );
                         node.head_id = Some(head_is_open.head_id.to_string());

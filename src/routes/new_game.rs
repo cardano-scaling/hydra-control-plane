@@ -35,7 +35,7 @@ pub async fn new_game(
     })?;
 
     Ok(Json(NewGameResponse {
-        ip: node.connection_info.to_authority(),
+        ip: node.remote_connection.to_authority(),
         script_ref: node.tx_builder.script_ref.clone().map(|s| s.to_string()),
     }))
 }

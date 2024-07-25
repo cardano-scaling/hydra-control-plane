@@ -10,7 +10,7 @@ First, we need to generate an admin key that manages state in Hydra heads:
 cardano-cli address key-gen --normal-key --verification-key-file admin.vk --signing-key-file admin.sk
 ```
 
-If you don't want to run it locally on port 8000, reconfigure by amending `Rocket.yaml`.
+If you don't want to run it locally on port 8000, reconfigure by amending `Rocket.toml`.
 
 Next, we need to ensure the control plane can reach a locally running
 `hydra-node`. To get started quickly, we'll prepare an `offline` mode head which is
@@ -49,3 +49,17 @@ Then, in a dedicated terminal, build & start with:
 ``` sh
 cargo run --release
 ```
+
+## Rocket.toml
+
+You can configure the server in the Rocket.toml.
+
+Each `[abc]` section defines a "Profile", which you can switch to by setting the ROCKET_PROFILE environment variable. The default is `[default]`.
+
+You can configure remote hydra nodes with a `[[profile.nodes]]` entry, which can be repeated any number of times.
+
+Each node has a `local_url`, which is the URL the control plane will attempt to connect on, and a `remote_url`, which is the URL the control plane will direct others to connect on.
+
+`admin_key_file` must point to the admin key generated above.
+
+`persisted` means the node is persisting events to disk, and is reserved for the on-site cabinets, while remote players will be directed to non-persistent nodes.

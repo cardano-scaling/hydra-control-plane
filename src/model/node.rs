@@ -40,7 +40,9 @@ pub struct Node {
     pub persisted: bool,
 
     #[serde(skip)]
-    pub connection_info: ConnectionInfo,
+    pub local_connection: ConnectionInfo,
+    #[serde(skip)]
+    pub remote_connection: ConnectionInfo,
     #[serde(skip)]
     pub socket: HydraSocket,
     #[serde(skip)]
@@ -99,17 +101,25 @@ impl TryInto<SecretKey> for KeyEnvelope {
 
 impl Node {
     pub async fn try_new(config: &NodeConfig, writer: &UnboundedSender<HydraData>) -> Result<Self> {
-        let connection_info: ConnectionInfo = config.connection_url.to_string().try_into()?;
+        let local_url = config.local_url.clone();
+        let local_connection: ConnectionInfo = local_url.clone().try_into()?;
+        let remote_connection: ConnectionInfo = config
+            .remote_url
+            .as_ref()
+            .unwrap_or(&local_url)
+            .clone()
+            .try_into()?;
 
         let admin_key: KeyEnvelope = serde_json::from_reader(
             File::open(&config.admin_key_file).context("unable to open key file")?,
         )
         .context("unable to parse key file")?;
 
-        let socket = HydraSocket::new(connection_info.to_websocket_url().as_str(), writer).await?;
+        let socket = HydraSocket::new(local_connection.to_websocket_url().as_str(), writer).await?;
         let mut node = Node {
             head_id: None,
-            connection_info,
+            local_connection,
+            remote_connection,
             stats: NodeStats::new(),
             persisted: config.persisted,
             players: Vec::new(),
@@ -157,7 +167,7 @@ impl Node {
 
     pub fn listen(&self) {
         let receiver = self.socket.receiver.clone();
-        let identifier = self.connection_info.to_authority();
+        let identifier = self.local_connection.to_authority();
         tokio::spawn(async move { receiver.lock().await.listen(identifier.as_str()).await });
     }
 
@@ -169,7 +179,7 @@ impl Node {
     }
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
-        let request_url = self.connection_info.to_http_url() + "/snapshot/utxo";
+        let request_url = self.local_connection.to_http_url() + "/snapshot/utxo";
         let response = reqwest::get(&request_url).await.context("http error")?;
 
         let body = response
