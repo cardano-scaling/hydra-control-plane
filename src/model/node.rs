@@ -21,7 +21,7 @@ use serde::{
 };
 use serde_json::Value;
 use std::{collections::HashMap, fs::File, time::Duration};
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::{sync::mpsc::UnboundedSender, time::sleep};
 
 use super::{
     game_state::GameState,
@@ -71,13 +71,6 @@ pub struct StateUpdate {
     pub items: u64,
     pub secrets: u64,
     pub play_time: u64,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub enum NetworkRequestError {
-    HttpError(reqwest::Error),
-    DeserializationError(Box<dyn std::error::Error>),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -134,13 +127,13 @@ impl Node {
                 let tx = node.tx_builder.create_script_ref(utxos)?;
                 let message: String = NewTx::new(tx)?.into();
                 node.send(message);
-                std::thread::sleep(Duration::from_millis(250));
+                sleep(Duration::from_millis(250)).await;
                 Box::pin(Node::set_script_ref(node)).await
             }
         }
     }
 
-    pub async fn add_player(&mut self, player: Player) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn add_player(&mut self, player: Player) -> Result<()> {
         let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
         let new_game_tx = self.tx_builder.build_new_game_state(&player, utxos)?;
