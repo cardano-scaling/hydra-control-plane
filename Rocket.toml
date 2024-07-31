@@ -18,5 +18,5 @@ address = "0.0.0.0"
 [[ec2.nodes]]
 local_url = "ws://3.15.33.186:4001"
 remote_url = "ws://3.15.33.186:4001"
-admin_key_file = "admin.sk"
+admin_key_file = "admin.skey"
 persisted = false
