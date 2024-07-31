@@ -14,13 +14,13 @@ pub struct Player {
 
 impl Player {
     pub fn new(address: Address) -> Result<Self> {
-        let pkh: String = match &address {
-            Address::Shelley(shelley) => shelley.payment().to_hex(),
+        let pkh = match &address {
+            Address::Shelley(shelley) => shelley.payment().to_vec(),
             _ => bail!("Invalid address type"),
         };
 
         Ok(Player {
-            pkh: pkh.into_bytes(),
+            pkh,
             address,
             utxo: None,
             utxo_time: 0,
