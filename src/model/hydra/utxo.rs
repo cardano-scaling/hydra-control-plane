@@ -1,11 +1,21 @@
 use anyhow::{anyhow, Context, Result};
 use derivative::Derivative;
 use pallas::{
-    codec::minicbor::encode,
+    codec::{
+        minicbor::{self, encode},
+        utils::KeepRaw,
+    },
     crypto::hash::Hash,
     ledger::{
         addresses::Address,
-        primitives::conway::{BigInt, Constr, PlutusData, PolicyId},
+        primitives::{
+            alonzo::Value as AlonzoValue,
+            babbage::PseudoScript,
+            conway::{
+                BigInt, Constr, NativeScript, PlutusData, PolicyId, PseudoDatumOption,
+                PseudoPostAlonzoTransactionOutput,
+            },
+        },
     },
     txbuilder::{Input, Output},
 };
@@ -82,6 +92,78 @@ impl UTxO {
         Ok(UTxO {
             hash,
             index,
+            address,
+            datum,
+            reference_script,
+            value: value_map,
+        })
+    }
+
+    pub fn try_from_pallas(
+        tx_id: &str,
+        tx_ix: u64,
+        output: &PseudoPostAlonzoTransactionOutput<
+            PseudoDatumOption<KeepRaw<'_, PlutusData>>,
+            PseudoScript<KeepRaw<'_, NativeScript>>,
+        >,
+    ) -> Result<Self> {
+        let hash = hex::decode(tx_id)?;
+        let address = Address::from_bytes(output.address.as_ref())?;
+        let datum = match &output.datum_option {
+            Some(datum) => match datum {
+                PseudoDatumOption::Hash(hash) => Datum::DatumHash(hash.as_ref().to_vec()),
+                PseudoDatumOption::Data(datum) => {
+                    Datum::InlineDatum(minicbor::decode(datum.raw_cbor())?)
+                }
+            },
+            None => Datum::None,
+        };
+        let reference_script = match &output.script_ref {
+            Some(script) => {
+                let script = &script.0;
+                let mut cbor = Vec::new();
+                minicbor::encode(&script, &mut cbor)?;
+
+                match script {
+                    PseudoScript::NativeScript(_) => Some(Script {
+                        cbor,
+                        script_type: ScriptType::NativeScript,
+                    }),
+                    PseudoScript::PlutusV1Script(_) => Some(Script {
+                        cbor,
+                        script_type: ScriptType::PlutusV1,
+                    }),
+                    PseudoScript::PlutusV2Script(_) => Some(Script {
+                        cbor,
+                        script_type: ScriptType::PlutusV2,
+                    }),
+                }
+            }
+            None => None,
+        };
+
+        let mut value_map: HashMap<String, u64> = HashMap::new();
+        match &output.value {
+            AlonzoValue::Coin(coin) => {
+                value_map.insert("lovelace".to_owned(), coin.clone());
+            }
+            AlonzoValue::Multiasset(coin, multiasset) => {
+                value_map.insert("lovelace".to_owned(), coin.clone());
+                for (policy_id, assets) in multiasset.iter() {
+                    let policy_id_hex = hex::encode(policy_id.as_ref());
+                    for (asset_name, amount) in assets.iter() {
+                        value_map.insert(
+                            format!("{}#{}", policy_id_hex, hex::encode(asset_name.as_slice())),
+                            amount.clone(),
+                        );
+                    }
+                }
+            }
+        }
+
+        Ok(UTxO {
+            hash,
+            index: tx_ix,
             address,
             datum,
             reference_script,

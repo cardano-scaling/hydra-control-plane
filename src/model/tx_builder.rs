@@ -58,8 +58,7 @@ impl TxBuilder {
         let tx = StagingTransaction::new()
             .input(input_utxo.clone().into())
             .output(Output::new(script_address, 0).set_inline_datum(datum))
-            .output(Output::new(player.address.clone(), 0))
-            // Temp workaround until we query the script address for the latestUTxO in browser, this way player has collateral
+            // This is so the player has collateral, we can't clean this up unfortunately
             .output(Output::new(player.address.clone(), 0))
             .output(Output::new(
                 input_utxo.address.clone(),

@@ -1,5 +1,6 @@
 use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
 use anyhow::{bail, Context, Result};
+use chrono::{DateTime, Utc};
 use hex::{FromHex, ToHex};
 use pallas::{
     codec::{minicbor::decode, utils::KeepRaw},
@@ -15,6 +16,7 @@ use pallas::{
         traverse::MultiEraTx,
     },
 };
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fs::File, time::Duration};
@@ -153,6 +155,8 @@ impl Node {
     }
 
     pub async fn add_player(&mut self, player: Player) -> Result<()> {
+        // clean up old players that have been inactive for too long, to avoid slowing down the node
+        self.cleanup_players();
         let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
         let new_game_tx = self.tx_builder.build_new_game_state(&player, utxos)?;
@@ -264,6 +268,14 @@ impl Node {
                     }
                 };
 
+                // TODO: actually find the index
+                let utxo =
+                    UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, output)?;
+                let timestamp: u64 =
+                    transaction.timestamp.parse::<DateTime<Utc>>()?.timestamp() as u64;
+                player.utxo = Some(utxo);
+                player.utxo_time = timestamp;
+
                 let state_update =
                     player.generate_state_update(transaction.cbor.len() as u64, game_state);
 
@@ -276,7 +288,23 @@ impl Node {
             _ => bail!("Invalid output type"),
         }
     }
-}
+
+    pub fn cleanup_players(&mut self) -> Vec<Option<UTxO>> {
+        let mut to_remove = vec![];
+        for (index, player) in self.players.iter().enumerate() {
+            if player.is_expired(Duration::from_secs(60 * 5)) {
+                println!("Player expired: {:?}", player.pkh);
+                to_remove.push(index);
+            }
+        }
+
+        let mut utxos = vec![];
+        for index in to_remove.iter().rev() {
+            println!("Removing player: {:?}", self.players[*index].pkh);
+            utxos.push(self.players.remove(*index).utxo);
+        }
+        utxos
+    }
 
 impl TryFrom<String> for ConnectionInfo {
     type Error = anyhow::Error;
