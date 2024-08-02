@@ -12,7 +12,7 @@ chrono = "0.4.38"
 derivative = "2.2.0"
 futures-util = "0.3.30"
 hex = "0.4.3"
-pallas = "0.27.0"
+pallas = { git = "https://github.com/txpipe/pallas.git", rev = "be681fe" }
 reqwest = { version = "0.12.5", features = ["json"] }
 rocket = { version = "0.5.1", features = ["json"] }
 rocket_cors = "0.6.0"

@@ -8,6 +8,7 @@ use pallas::ledger::primitives::{
 pub struct GameState {
     pub is_over: bool,
     pub owner: Vec<u8>,
+    pub admin: Vec<u8>,
     pub player: Player,
     #[allow(dead_code)]
     pub monsters: Vec<MapObject>,
@@ -59,8 +60,14 @@ impl Into<PlutusData> for GameState {
             })
         };
 
-        let admin_bytes: alonzo::BoundedBytes = self.owner.into();
+        let owner_bytes: alonzo::BoundedBytes = self.owner.into();
+        let owner = PlutusData::Constr(Constr {
+            tag: 121,
+            any_constructor: None,
+            fields: vec![PlutusData::BoundedBytes(owner_bytes)],
+        });
 
+        let admin_bytes: alonzo::BoundedBytes = self.admin.into();
         let admin = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
@@ -72,6 +79,7 @@ impl Into<PlutusData> for GameState {
             any_constructor: None,
             fields: vec![
                 is_over,
+                owner,
                 admin,
                 self.player.into(),
                 PlutusData::Array(vec![]),
@@ -96,20 +104,32 @@ impl TryFrom<PlutusData> for GameState {
                     PlutusData::Constr(constr) => {
                         let owner_bytes = match constr.fields[0].clone() {
                             PlutusData::BoundedBytes(bytes) => bytes,
-                            _ => bail!("Invalid admin bytes"),
+                            _ => bail!("Invalid owner bytes"),
                         };
 
                         owner_bytes.into()
                     }
+                    _ => bail!("Invalid owner"),
+                };
+
+                let admin: Vec<u8> = match constr.fields[2].clone() {
+                    PlutusData::Constr(constr) => {
+                        let admin_bytes = match constr.fields[0].clone() {
+                            PlutusData::BoundedBytes(bytes) => bytes,
+                            _ => bail!("Invalid admin bytes"),
+                        };
+
+                        admin_bytes.into()
+                    }
                     _ => bail!("Invalid admin"),
                 };
 
-                let player = match constr.fields[2].clone() {
+                let player = match constr.fields[3].clone() {
                     PlutusData::Constr(constr) => Player::try_from(PlutusData::Constr(constr))?,
                     _ => bail!("Invalid player"),
                 };
 
-                let monsters = match constr.fields[3].clone() {
+                let monsters = match constr.fields[4].clone() {
                     PlutusData::Array(array) => {
                         let mut monsters = vec![];
                         for monster in array {
@@ -123,6 +143,7 @@ impl TryFrom<PlutusData> for GameState {
                 Ok(GameState {
                     is_over,
                     owner,
+                    admin,
                     player,
                     monsters,
                 })
@@ -133,10 +154,11 @@ impl TryFrom<PlutusData> for GameState {
 }
 
 impl GameState {
-    pub fn new(owner: Vec<u8>) -> GameState {
+    pub fn new(owner: Vec<u8>, admin: Vec<u8>) -> GameState {
         GameState {
             is_over: false,
             owner,
+            admin,
             player: Player::new(),
             monsters: Vec::new(),
         }

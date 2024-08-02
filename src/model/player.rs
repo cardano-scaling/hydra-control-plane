@@ -30,8 +30,8 @@ impl Player {
         })
     }
 
-    pub fn initialize_state(&self) -> GameState {
-        GameState::new(self.pkh.clone())
+    pub fn initialize_state(&self, admin_pkh: Vec<u8>) -> GameState {
+        GameState::new(self.pkh.clone(), admin_pkh)
     }
 
     pub fn generate_state_update(&mut self, byte_count: u64, new_state: GameState) -> StateUpdate {
@@ -68,8 +68,6 @@ impl Player {
             .duration_since(std::time::UNIX_EPOCH)
             .expect("Time went backwards...")
             .as_secs();
-
-        println!("{}", now - self.utxo_time);
 
         now - self.utxo_time > duration.as_secs()
     }
