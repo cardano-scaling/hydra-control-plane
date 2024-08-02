@@ -127,6 +127,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                     HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => node
                         .stats
                         .calculate_stats(snapshot_confirmed.confirmed_transactions),
+
                     HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
                         Ok(_) => {}
                         Err(e) => {

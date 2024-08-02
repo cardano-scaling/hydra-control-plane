@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use pallas::ledger::addresses::Address;
 
 use super::{game_state::GameState, hydra::utxo::UTxO, node::StateUpdate};
@@ -54,5 +56,21 @@ impl Player {
         self.game_state = Some(new_state);
 
         state_update
+    }
+
+    pub fn is_expired(&self, duration: Duration) -> bool {
+        if let None = self.utxo {
+            // if we don't have a utxo yet, we haven't started playing
+            return false;
+        }
+
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("Time went backwards...")
+            .as_secs();
+
+        println!("{}", now - self.utxo_time);
+
+        now - self.utxo_time > duration.as_secs()
     }
 }

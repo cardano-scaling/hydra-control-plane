@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 async-tungstenite = { version = "0.26.1", features = ["tokio-runtime"] }
+chrono = "0.4.38"
 derivative = "2.2.0"
 futures-util = "0.3.30"
 hex = "0.4.3"
