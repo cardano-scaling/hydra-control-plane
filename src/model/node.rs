@@ -155,11 +155,12 @@ impl Node {
     }
 
     pub async fn add_player(&mut self, player: Player) -> Result<()> {
-        // clean up old players that have been inactive for too long, to avoid slowing down the node
-        self.cleanup_players();
+        let expired_utxos = self.cleanup_players();
         let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
-        let new_game_tx = self.tx_builder.build_new_game_state(&player, utxos)?;
+        let new_game_tx = self
+            .tx_builder
+            .build_new_game_state(&player, utxos, expired_utxos)?;
 
         let message: String = NewTx::new(new_game_tx)?.into();
 
@@ -289,7 +290,7 @@ impl Node {
         }
     }
 
-    pub fn cleanup_players(&mut self) -> Vec<Option<UTxO>> {
+    pub fn cleanup_players(&mut self) -> Vec<UTxO> {
         let mut to_remove = vec![];
         for (index, player) in self.players.iter().enumerate() {
             if player.is_expired(Duration::from_secs(60 * 5)) {
@@ -301,10 +302,14 @@ impl Node {
         let mut utxos = vec![];
         for index in to_remove.iter().rev() {
             println!("Removing player: {:?}", self.players[*index].pkh);
-            utxos.push(self.players.remove(*index).utxo);
+            if let Some(utxo) = self.players.remove(*index).utxo {
+                utxos.push(utxo);
+            }
         }
+
         utxos
     }
+}
 
 impl TryFrom<String> for ConnectionInfo {
     type Error = anyhow::Error;

@@ -11,6 +11,7 @@ use serde::Serialize;
 pub struct NewGameResponse {
     ip: String,
     script_ref: Option<String>,
+    admin_pkh: String,
 }
 
 #[get("/new_game?<address>")]
@@ -37,5 +38,6 @@ pub async fn new_game(
     Ok(Json(NewGameResponse {
         ip: node.remote_connection.to_authority(),
         script_ref: node.tx_builder.script_ref.clone().map(|s| s.to_string()),
+        admin_pkh: node.tx_builder.admin_pkh.to_string(),
     }))
 }
