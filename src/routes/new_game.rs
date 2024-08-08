@@ -2,6 +2,7 @@ use crate::{
     model::{node::Node, player::Player},
     MyState,
 };
+use itertools::Itertools;
 use pallas::ledger::addresses::Address;
 use rocket::serde::json::Json;
 use rocket::{http::Status, State};
@@ -19,12 +20,12 @@ pub async fn new_game(
     address: &str,
     state: &State<MyState>,
 ) -> Result<Json<NewGameResponse>, Status> {
-    let max_players: usize = state.config.max_players.try_into().unwrap_or_else(|_| 1);
     let mut state_guard = state.state.state.write().await;
     let node: &mut Node = state_guard
         .nodes
         .iter_mut()
-        .find(|n| n.players.len() < max_players)
+        .sorted_by_key(|n| n.players.len())
+        .find(|n| n.players.len() < n.max_players)
         .ok_or(Status::ServiceUnavailable)?;
 
     let addr = Address::from_bech32(address).map_err(|_| Status::BadRequest)?;

@@ -37,7 +37,6 @@ struct MyState {
 #[derive(Debug, Deserialize)]
 struct Config {
     ttl_minutes: u64,
-    max_players: u64,
     nodes: Vec<NodeConfig>,
 }
 
@@ -45,6 +44,7 @@ struct Config {
 struct NodeConfig {
     #[serde(default = "localhost")]
     local_url: String,
+    max_players: usize,
     remote_url: Option<String>,
     admin_key_file: PathBuf,
     persisted: bool,

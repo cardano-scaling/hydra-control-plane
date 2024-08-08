@@ -39,6 +39,7 @@ pub struct Node {
     pub head_id: Option<String>,
     #[serde(rename = "total")]
     pub stats: NodeStats,
+    pub max_players: usize,
     pub persisted: bool,
 
     #[serde(skip)]
@@ -123,6 +124,7 @@ impl Node {
             local_connection,
             remote_connection,
             stats: NodeStats::new(),
+            max_players: config.max_players,
             persisted: config.persisted,
             players: Vec::new(),
             socket,

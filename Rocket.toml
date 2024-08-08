@@ -1,6 +1,5 @@
 [default]
-ttl_minutes = 5
-max_players = 100
+ttl_minutes = 1
 port = 8000
 address = "0.0.0.0"
 
@@ -8,15 +7,16 @@ address = "0.0.0.0"
 local_url = "ws://127.0.0.1:4001"
 remote_url = "ws://127.0.0.1:4001"
 admin_key_file = "admin.sk"
+max_players = 5
 persisted = false
 
 [ec2]
-ttl_minutes = 5
-max_players = 100
+ttl_minutes = 1
 port = 8000
 address = "0.0.0.0"
 [[ec2.nodes]]
 local_url = "ws://3.15.33.186:4001"
 remote_url = "ws://3.15.33.186:4001"
 admin_key_file = "admin.skey"
+max_players = 1
 persisted = false

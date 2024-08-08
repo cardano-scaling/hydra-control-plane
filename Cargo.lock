@@ -850,6 +850,7 @@ dependencies = [
  "derivative",
  "futures-util",
  "hex",
+ "itertools 0.13.0",
  "pallas",
  "reqwest",
  "rocket",

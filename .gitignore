@@ -9,3 +9,4 @@ utxo.json
 *.vk
 *.sk
 /hydra-state/
+.DS_Store
