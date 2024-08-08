@@ -65,7 +65,8 @@ pub struct NodeSummary(pub Node);
 
 #[derive(Serialize, Clone)]
 pub struct NodeStats {
-    pub games: u64,
+    pub total_games: u64,
+    pub active_games: u64,
     pub transactions: u64,
     pub bytes: u64,
     pub kills: u64,
@@ -177,7 +178,8 @@ impl Node {
 
         let message: String = NewTx::new(new_game_tx)?.into();
 
-        self.stats.games += 1;
+        self.stats.total_games += 1;
+        self.stats.active_games += 1;
         self.players.push(player);
         self.send(message);
 
@@ -319,6 +321,7 @@ impl Node {
                 "Removing player: {:?}",
                 hex::encode(&self.players[*index].pkh)
             );
+            self.stats.active_games -= 1;
             if let Some(utxo) = self.players.remove(*index).utxo {
                 utxos.push(utxo);
             }
@@ -383,7 +386,8 @@ impl ConnectionInfo {
 impl NodeStats {
     pub fn new() -> NodeStats {
         NodeStats {
-            games: 0,
+            total_games: 0,
+            active_games: 0,
             transactions: 0,
             bytes: 0,
             kills: 0,

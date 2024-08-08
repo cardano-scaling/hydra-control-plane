@@ -75,7 +75,15 @@ impl TxBuilder {
             .fee(0);
 
         if expired_utxos.len() > 0 {
-            tx_builder = tx_builder.collateral_input(input_utxo.clone().into());
+            tx_builder = tx_builder
+                .reference_input(
+                    self.script_ref
+                        .as_ref()
+                        .expect("must have script ref by this point")
+                        .clone()
+                        .into(),
+                )
+                .collateral_input(input_utxo.clone().into());
         }
         for utxo in expired_utxos {
             tx_builder = tx_builder.input(utxo.clone().into());
