@@ -302,14 +302,17 @@ impl Node {
         let mut to_remove = vec![];
         for (index, player) in self.players.iter().enumerate() {
             if player.is_expired(Duration::from_secs(60 * 5)) {
-                println!("Player expired: {:?}", player.pkh);
+                println!("Player expired: {:?}", hex::encode(&player.pkh));
                 to_remove.push(index);
             }
         }
 
         let mut utxos = vec![];
         for index in to_remove.iter().rev() {
-            println!("Removing player: {:?}", self.players[*index].pkh);
+            println!(
+                "Removing player: {:?}",
+                hex::encode(&self.players[*index].pkh)
+            );
             if let Some(utxo) = self.players.remove(*index).utxo {
                 utxos.push(utxo);
             }
