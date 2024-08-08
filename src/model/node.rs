@@ -169,6 +169,12 @@ impl Node {
             .build_new_game_state(&player, utxos, expired_utxos)?;
         let player_utxo = hex::encode(new_game_tx.tx_hash.0) + "#0";
 
+        info!(
+            "New Game {}: {}",
+            player_utxo,
+            hex::encode(&new_game_tx.tx_bytes)
+        );
+
         let message: String = NewTx::new(new_game_tx)?.into();
 
         self.stats.games += 1;
