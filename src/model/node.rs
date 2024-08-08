@@ -160,6 +160,10 @@ impl Node {
         let expired_utxos = self.cleanup_players();
         let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
+        if self.players.len() >= self.max_players {
+            bail!("Max players reached");
+        }
+
         let new_game_tx = self
             .tx_builder
             .build_new_game_state(&player, utxos, expired_utxos)?;

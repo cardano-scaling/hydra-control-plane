@@ -25,8 +25,11 @@ pub async fn new_game(
         .nodes
         .iter_mut()
         .sorted_by_key(|n| n.players.len())
-        .find(|n| n.players.len() < n.max_players)
-        .ok_or(Status::ServiceUnavailable)?;
+        .next() // Get the first with the fewest players
+        .ok_or_else(|| {
+            warn!("No nodes available");
+            Status::ServiceUnavailable
+        })?;
 
     let addr = Address::from_bech32(address).map_err(|_| Status::BadRequest)?;
 
