@@ -166,6 +166,7 @@ impl Node {
 
         let message: String = NewTx::new(new_game_tx)?.into();
 
+        self.stats.games += 1;
         self.players.push(player);
         self.send(message);
 
