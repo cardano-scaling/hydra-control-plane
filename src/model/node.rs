@@ -425,7 +425,8 @@ impl NodeStats {
         pending_transactions.extend(other.pending_transactions);
 
         NodeStats {
-            games: self.games + other.games,
+            total_games: self.total_games + other.total_games,
+            active_games: self.active_games + other.active_games,
             transactions: self.transactions + other.transactions,
             bytes: self.bytes + other.bytes,
             kills: self.kills + other.kills,
