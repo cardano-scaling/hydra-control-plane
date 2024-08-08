@@ -156,7 +156,7 @@ impl Node {
         }
     }
 
-    pub async fn add_player(&mut self, player: Player) -> Result<()> {
+    pub async fn add_player(&mut self, player: Player) -> Result<String> {
         let expired_utxos = self.cleanup_players();
         let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
@@ -167,6 +167,7 @@ impl Node {
         let new_game_tx = self
             .tx_builder
             .build_new_game_state(&player, utxos, expired_utxos)?;
+        let player_utxo = hex::encode(new_game_tx.tx_hash.0) + "#0";
 
         let message: String = NewTx::new(new_game_tx)?.into();
 
@@ -174,7 +175,7 @@ impl Node {
         self.players.push(player);
         self.send(message);
 
-        Ok(())
+        Ok(player_utxo)
     }
 
     pub fn listen(&self) {
