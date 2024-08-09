@@ -89,8 +89,10 @@ dependencies = [
  "futures-io",
  "futures-util",
  "log",
+ "native-tls",
  "pin-project-lite",
  "tokio",
+ "tokio-native-tls",
  "tungstenite",
 ]
 
@@ -858,6 +860,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tokio-native-tls",
 ]
 
 [[package]]
@@ -2743,6 +2746,7 @@ dependencies = [
  "http 1.1.0",
  "httparse",
  "log",
+ "native-tls",
  "rand",
  "sha1",
  "thiserror",

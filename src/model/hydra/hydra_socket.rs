@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use async_tungstenite::stream::Stream;
 use async_tungstenite::tokio::{connect_async, TokioAdapter};
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
@@ -9,6 +10,7 @@ use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::Mutex;
+use tokio_native_tls::TlsStream;
 
 use super::hydra_message::{HydraData, HydraEventMessage, HydraMessage};
 
@@ -21,12 +23,17 @@ pub struct HydraSocket {
 }
 
 pub struct HydraReceiver {
-    receiver: SplitStream<WebSocketStream<TokioAdapter<TcpStream>>>,
+    receiver: SplitStream<
+        WebSocketStream<Stream<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TcpStream>>>>,
+    >,
     writer: UnboundedSender<HydraData>,
 }
 
 pub struct HydraSender {
-    sender: SplitSink<WebSocketStream<TokioAdapter<TcpStream>>, Message>,
+    sender: SplitSink<
+        WebSocketStream<Stream<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TcpStream>>>>,
+        Message,
+    >,
 }
 
 impl HydraSocket {

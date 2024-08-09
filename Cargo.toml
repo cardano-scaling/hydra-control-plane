@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
-async-tungstenite = { version = "0.26.1", features = ["tokio-runtime"] }
+async-tungstenite = { version = "0.26.1", features = ["tokio-native-tls"] }
 chrono = "0.4.38"
 derivative = "2.2.0"
 futures-util = "0.3.30"
@@ -20,6 +20,7 @@ rocket_cors = "0.6.0"
 serde = "1.0.203"
 serde_json = "1.0.117"
 tokio = { version = "1.38.0", features = ["full"] }
+tokio-native-tls = "0.3.1"
 
 [profile.release]
 debug = true
