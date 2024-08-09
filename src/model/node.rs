@@ -66,7 +66,7 @@ pub struct NodeSummary(pub Node);
 #[derive(Serialize, Clone)]
 pub struct NodeStats {
     pub total_games: u64,
-    pub active_games: u64,
+    pub active_games: usize,
     pub transactions: u64,
     pub bytes: u64,
     pub kills: u64,
@@ -179,7 +179,6 @@ impl Node {
         let message: String = NewTx::new(new_game_tx)?.into();
 
         self.stats.total_games += 1;
-        self.stats.active_games += 1;
         self.players.push(player);
         self.send(message);
 
@@ -309,7 +308,7 @@ impl Node {
     pub fn cleanup_players(&mut self) -> Vec<UTxO> {
         let mut to_remove = vec![];
         for (index, player) in self.players.iter().enumerate() {
-            if player.is_expired(Duration::from_secs(60 * 5)) {
+            if player.is_expired(Duration::from_secs(30)) {
                 println!("Player expired: {:?}", hex::encode(&player.pkh));
                 to_remove.push(index);
             }
@@ -321,7 +320,6 @@ impl Node {
                 "Removing player: {:?}",
                 hex::encode(&self.players[*index].pkh)
             );
-            self.stats.active_games -= 1;
             if let Some(utxo) = self.players.remove(*index).utxo {
                 utxos.push(utxo);
             }
@@ -420,20 +418,17 @@ impl NodeStats {
         self.play_time += state_change.play_time;
     }
 
-    pub fn join(&self, other: NodeStats) -> NodeStats {
-        let mut pending_transactions = self.pending_transactions.clone();
-        pending_transactions.extend(other.pending_transactions);
-
+    pub fn join(&self, other: NodeStats, active_games: usize) -> NodeStats {
         NodeStats {
             total_games: self.total_games + other.total_games,
-            active_games: self.active_games + other.active_games,
+            active_games: self.active_games + active_games, // TODO: this is awkward; but best way to prune expired games
             transactions: self.transactions + other.transactions,
             bytes: self.bytes + other.bytes,
             kills: self.kills + other.kills,
             items: self.items + other.items,
             secrets: self.secrets + other.secrets,
             play_time: self.play_time + other.play_time,
-            pending_transactions,
+            pending_transactions: HashMap::new(),
         }
     }
 }

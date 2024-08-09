@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use rocket::{http::Status, serde::json::Json, State};
 
 use crate::{model::node::NodeStats, MyState};
@@ -8,14 +10,15 @@ pub async fn global(state: &State<MyState>) -> Result<Json<NodeStats>, Status> {
     let stats = state_guard
         .nodes
         .iter()
-        .fold(None, |acc: Option<NodeStats>, node| {
-            if let Some(acc) = acc {
-                Some(acc.join(node.clone().stats))
-            } else {
-                Some(node.clone().stats)
-            }
-        })
-        .ok_or(Status::InternalServerError)?;
+        .fold(NodeStats::new(), |acc: NodeStats, node| {
+            acc.join(
+                node.clone().stats,
+                node.players
+                    .iter()
+                    .filter(|p| p.is_expired(Duration::from_secs(5)))
+                    .count(),
+            )
+        });
 
     Ok(Json(stats))
 }
