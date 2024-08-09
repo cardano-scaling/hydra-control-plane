@@ -15,7 +15,7 @@ pub async fn global(state: &State<MyState>) -> Result<Json<NodeStats>, Status> {
                 node.clone().stats,
                 node.players
                     .iter()
-                    .filter(|p| p.is_expired(Duration::from_secs(5)))
+                    .filter(|p| !p.is_expired(Duration::from_secs(5)))
                     .count(),
             )
         });
