@@ -36,21 +36,64 @@ struct MyState {
 #[derive(Debug, Deserialize)]
 struct Config {
     ttl_minutes: u64,
+    #[serde(default = "default_hosts")]
+    hosts: Vec<HostConfig>,
+    #[serde(default = "default_nodes")]
     nodes: Vec<NodeConfig>,
+}
+
+fn default_nodes() -> Vec<NodeConfig> {
+    return vec![];
+}
+fn default_hosts() -> Vec<HostConfig> {
+    return vec![];
+}
+
+#[derive(Debug, Deserialize)]
+struct HostConfig {
+    #[serde(default = "localhost")]
+    local_url: String,
+    remote_url: Option<String>,
+    stats_file_prefix: Option<String>,
+    region: String,
+    #[serde(default = "default_start_port")]
+    start_port: u32,
+    #[serde(default = "default_start_port")]
+    end_port: u32,
+
+    max_players: usize,
+    admin_key_file: PathBuf,
+    persisted: bool,
+    reserved: bool,
 }
 
 #[derive(Debug, Deserialize)]
 struct NodeConfig {
     #[serde(default = "localhost")]
     local_url: String,
-    max_players: usize,
     remote_url: Option<String>,
+    #[serde(default = "default_region")]
+    region: String,
+    port: u32,
+
+    stats_file: Option<String>,
+
+    max_players: usize,
     admin_key_file: PathBuf,
     persisted: bool,
+    reserved: bool,
+}
+
+fn default_start_port() -> u32 {
+    return 4001;
+}
+
+fn default_region() -> String {
+    "us-east-2".to_string()
 }
 
 fn localhost() -> String {
-    "ws://127.0.0.1:4001".to_string()
+    "ws://127.0.0.1".to_string()
 }
 
 #[rocket::main]
@@ -68,6 +111,28 @@ async fn main() -> Result<()> {
             .await
             .context("failed to construct new node")?;
         nodes.push(node);
+    }
+    for host in &config.hosts {
+        for port in host.start_port..=host.end_port {
+            let config = NodeConfig {
+                local_url: host.local_url.clone(),
+                remote_url: host.remote_url.clone(),
+                region: host.region.clone(),
+                port,
+                stats_file: host
+                    .stats_file_prefix
+                    .as_ref()
+                    .and_then(|prefix| Some(format!("{prefix}-{port}"))),
+                admin_key_file: host.admin_key_file.clone(),
+                max_players: host.max_players,
+                persisted: host.persisted,
+                reserved: host.reserved,
+            };
+            let node = Node::try_new(&config, &tx)
+                .await
+                .context("failed to construct new node")?;
+            nodes.push(node);
+        }
     }
 
     let hydra_state = HydraNodesState::from_nodes(nodes);
@@ -120,9 +185,12 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                         );
                         node.head_id = Some(head_is_open.head_id.to_string());
                     }
-                    HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => node
-                        .stats
-                        .calculate_stats(snapshot_confirmed.confirmed_transactions),
+                    HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => {
+                        node.stats.calculate_stats(
+                            snapshot_confirmed.confirmed_transactions,
+                            node.stats_file.clone(),
+                        );
+                    }
 
                     HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
                         Ok(_) => {}

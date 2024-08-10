@@ -36,7 +36,7 @@ impl Player {
 
     pub fn generate_state_update(&mut self, byte_count: u64, new_state: GameState) -> StateUpdate {
         let mut play_time = HashMap::new();
-        play_time.insert(new_state.owner.clone(), new_state.leveltime.clone());
+        play_time.insert(hex::encode(&new_state.owner), new_state.leveltime.clone());
         let state_update = if let Some(old_state) = &self.game_state {
             StateUpdate {
                 bytes: byte_count,

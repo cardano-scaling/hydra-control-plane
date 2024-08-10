@@ -17,9 +17,15 @@ use pallas::{
     },
 };
 
+use reqwest::Url;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
-use std::{collections::HashMap, fs::File, time::Duration};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    path::Path,
+    time::Duration,
+};
 use tokio::{sync::mpsc::UnboundedSender, time::sleep};
 
 use super::{
@@ -39,8 +45,11 @@ pub struct Node {
     pub head_id: Option<String>,
     #[serde(rename = "total")]
     pub stats: NodeStats,
+    pub stats_file: Option<String>,
+    pub region: String,
     pub max_players: usize,
     pub persisted: bool,
+    pub reserved: bool,
 
     #[serde(skip)]
     pub local_connection: ConnectionInfo,
@@ -63,7 +72,7 @@ pub struct ConnectionInfo {
 #[derive(Serialize)]
 pub struct NodeSummary(pub Node);
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct NodeStats {
     pub total_games: u64,
     pub active_games: usize,
@@ -72,8 +81,8 @@ pub struct NodeStats {
     pub kills: u64,
     pub items: u64,
     pub secrets: u64,
-    #[serde(serialize_with = "serialize_play_time")]
-    pub play_time: HashMap<Vec<u8>, Vec<u64>>,
+    pub player_play_time: HashMap<String, Vec<u64>>,
+    pub total_play_time: u64,
 
     #[serde(skip)]
     pub pending_transactions: HashMap<Vec<u8>, StateUpdate>,
@@ -85,7 +94,7 @@ pub struct StateUpdate {
     pub kills: u64,
     pub items: u64,
     pub secrets: u64,
-    pub play_time: HashMap<Vec<u8>, Vec<u64>>,
+    pub play_time: HashMap<String, Vec<u64>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -106,28 +115,39 @@ impl TryInto<SecretKey> for KeyEnvelope {
 
 impl Node {
     pub async fn try_new(config: &NodeConfig, writer: &UnboundedSender<HydraData>) -> Result<Self> {
-        let local_url = config.local_url.clone();
-        let local_connection: ConnectionInfo = local_url.clone().try_into()?;
-        let remote_connection: ConnectionInfo = config
-            .remote_url
-            .as_ref()
-            .unwrap_or(&local_url)
-            .clone()
-            .try_into()?;
+        let (local_connection, remote_connection) = ConnectionInfo::from_config(&config)?;
 
         let admin_key: KeyEnvelope = serde_json::from_reader(
             File::open(&config.admin_key_file).context("unable to open key file")?,
         )
         .context("unable to parse key file")?;
 
+        let mut stats = if config.stats_file.is_some()
+            && Path::new(config.stats_file.as_ref().unwrap()).exists()
+        {
+            let contents = fs::read_to_string(config.stats_file.as_ref().unwrap())
+                .context("expected a stats file")?;
+            serde_json::from_str(contents.as_str())?
+        } else {
+            NodeStats::new()
+        };
+        // Collapse any previous players into total time
+        for (_, play_times) in stats.player_play_time.drain() {
+            stats.total_play_time += play_times.iter().sum::<u64>();
+        }
+
         let socket = HydraSocket::new(local_connection.to_websocket_url().as_str(), writer).await?;
         let mut node = Node {
             head_id: None,
             local_connection,
             remote_connection,
-            stats: NodeStats::new(),
+            stats,
+            stats_file: config.stats_file.clone(),
+            region: config.region.clone(),
             max_players: config.max_players,
             persisted: config.persisted,
+            reserved: config.reserved,
+
             players: Vec::new(),
             socket,
             tx_builder: TxBuilder::new(admin_key.try_into()?),
@@ -300,7 +320,16 @@ impl Node {
         let mut to_remove = vec![];
         for (index, player) in self.players.iter().enumerate() {
             if player.is_expired(Duration::from_secs(30)) {
-                println!("Player expired: {:?}", hex::encode(&player.pkh));
+                let key = hex::encode(&player.pkh);
+                println!("Player expired: {:?}", key);
+                self.stats.total_play_time += self
+                    .stats
+                    .player_play_time
+                    .get(&key)
+                    .unwrap_or(&vec![])
+                    .iter()
+                    .sum::<u64>();
+                self.stats.player_play_time.remove(&key);
                 to_remove.push(index);
             }
         }
@@ -320,40 +349,26 @@ impl Node {
     }
 }
 
-impl TryFrom<String> for ConnectionInfo {
-    type Error = anyhow::Error;
+impl ConnectionInfo {
+    fn from_config(value: &NodeConfig) -> Result<(Self, Self)> {
+        Ok((
+            ConnectionInfo::from_url(&value.local_url, value.port)?,
+            ConnectionInfo::from_url(
+                value.remote_url.as_ref().unwrap_or(&value.local_url),
+                value.port,
+            )?,
+        ))
+    }
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = value.split(':').collect();
+    fn from_url(value: &String, port: u32) -> Result<Self> {
         // default to secure connection if no schema provided
-        match parts.len() {
-            2 => {
-                let host = parts[0].to_string();
-                let port = parts[1].parse::<u32>()?;
+        let url = Url::parse(value)?;
 
-                Ok(ConnectionInfo {
-                    host,
-                    port,
-                    secure: true,
-                })
-            }
-            3 => {
-                let schema = parts[0].to_string();
-                let port = parts[2].parse::<u32>()?;
-                let host = parts[1]
-                    .to_string()
-                    .split("//")
-                    .last()
-                    .context("Invalid host")?
-                    .to_string();
-
-                let secure = schema == "https" || schema == "wss";
-                Ok(ConnectionInfo { host, port, secure })
-            }
-            _ => {
-                bail!("Invalid uri");
-            }
-        }
+        Ok(ConnectionInfo {
+            host: url.host_str().context("expected a host")?.to_string(),
+            port,
+            secure: url.scheme() == "https" || url.scheme() == "wss",
+        })
     }
 }
 
@@ -382,12 +397,13 @@ impl NodeStats {
             kills: 0,
             items: 0,
             secrets: 0,
-            play_time: HashMap::new(),
+            player_play_time: HashMap::new(),
+            total_play_time: 0,
             pending_transactions: HashMap::new(),
         }
     }
 
-    pub fn calculate_stats(&mut self, confirmed_txs: Vec<Vec<u8>>) {
+    pub fn calculate_stats(&mut self, confirmed_txs: Vec<Vec<u8>>, stats_file: Option<String>) {
         for tx_id in confirmed_txs {
             match self.pending_transactions.remove(&tx_id) {
                 Some(state_change) => self.update_stats(state_change),
@@ -398,6 +414,21 @@ impl NodeStats {
                 ),
             }
         }
+        if let Some(stats_file) = stats_file {
+            let contents = match serde_json::to_string(&self) {
+                Ok(contents) => contents,
+                Err(e) => {
+                    warn!("failed to serialize stats {}", e);
+                    return;
+                }
+            };
+            match fs::write(stats_file, contents).context("failed to save stats") {
+                Ok(_) => {}
+                Err(e) => {
+                    warn!("failed to save stats file {}", e);
+                }
+            };
+        }
     }
 
     fn update_stats(&mut self, state_change: StateUpdate) {
@@ -406,15 +437,15 @@ impl NodeStats {
         self.kills += state_change.kills;
         self.items += state_change.items;
         self.secrets += state_change.secrets;
-        self.play_time.extend(state_change.play_time)
+        self.player_play_time.extend(state_change.play_time)
     }
 
     pub fn join(&self, other: NodeStats, active_games: usize) -> NodeStats {
         let mut pending_transactions = self.pending_transactions.clone();
         pending_transactions.extend(other.pending_transactions);
 
-        let mut play_time = self.play_time.clone();
-        play_time.extend(other.play_time); // this may be off because a player could have times on both
+        let mut play_time = self.player_play_time.clone();
+        play_time.extend(other.player_play_time); // this may be off because a player could have times on both
 
         NodeStats {
             total_games: self.total_games + other.total_games,
@@ -425,24 +456,8 @@ impl NodeStats {
             items: self.items + other.items,
             secrets: self.secrets + other.secrets,
             pending_transactions: HashMap::new(),
-            play_time,
+            player_play_time: play_time,
+            total_play_time: self.total_play_time + other.total_play_time,
         }
     }
-}
-
-fn serialize_play_time<S>(
-    play_time: &HashMap<Vec<u8>, Vec<u64>>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let mut total_play_time: u64 = 0;
-    play_time.clone().into_values().for_each(|play_times| {
-        play_times.iter().for_each(|x| {
-            total_play_time += x;
-        })
-    });
-
-    total_play_time.serialize(serializer)
 }

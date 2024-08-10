@@ -17,16 +17,28 @@ pub struct NewGameResponse {
     player_utxo_datum_hex: String,
 }
 
-#[get("/new_game?<address>")]
+#[get("/new_game?<address>&<region>&<reserved>")]
 pub async fn new_game(
     address: &str,
+    region: Option<&str>,
+    reserved: bool,
     state: &State<MyState>,
 ) -> Result<Json<NewGameResponse>, Status> {
     let mut state_guard = state.state.state.write().await;
     let node: &mut Node = state_guard
         .nodes
         .iter_mut()
-        .sorted_by_key(|n| n.players.len())
+        // Reserve some machines for the on-site cabinets
+        .filter(|n| reserved == n.reserved)
+        .sorted_by_key(|n| {
+            let same_region = if region == Some(n.region.as_str()) {
+                1
+            } else {
+                10
+            };
+            // give preference to the users preferred region
+            (n.players.len() + 1) * same_region
+        })
         .next() // Get the first with the fewest players
         .ok_or_else(|| {
             warn!("No nodes available");

@@ -7,7 +7,7 @@ use pallas::{
         primitives::conway::{Constr, PlutusData},
         traverse::ComputeHash,
     },
-    txbuilder::{BuildBabbage, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
+    txbuilder::{BuildBabbage, BuiltTransaction, Output, ScriptKind, StagingTransaction},
 };
 
 use crate::{SCRIPT_ADDRESS, SCRIPT_CBOR};
@@ -149,6 +149,7 @@ impl TxBuilder {
             .collect()
     }
 
+    #[allow(dead_code)]
     fn build_redeemer() -> Vec<u8> {
         let mut datum: Vec<u8> = Vec::new();
         let redeemer = PlutusData::Constr(Constr {
