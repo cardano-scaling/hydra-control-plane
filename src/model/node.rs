@@ -157,24 +157,14 @@ impl Node {
         }
     }
 
-    pub async fn add_player(&mut self, player: Player) -> Result<String> {
+    pub async fn add_player(&mut self, player: Player) -> Result<(String, String)> {
         let expired_utxos = self.cleanup_players();
         let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
-        if self.players.len() >= self.max_players {
-            bail!("Max players reached");
-        }
-
-        let new_game_tx = self
-            .tx_builder
-            .build_new_game_state(&player, utxos, expired_utxos)?;
+        let (new_game_tx, player_utxo_datum) =
+            self.tx_builder
+                .build_new_game_state(&player, utxos, expired_utxos)?;
         let player_utxo = hex::encode(new_game_tx.tx_hash.0) + "#0";
-
-        info!(
-            "New Game {}: {}",
-            player_utxo,
-            hex::encode(&new_game_tx.tx_bytes)
-        );
 
         let message: String = NewTx::new(new_game_tx)?.into();
 
@@ -182,7 +172,7 @@ impl Node {
         self.players.push(player);
         self.send(message);
 
-        Ok(player_utxo)
+        Ok((player_utxo, hex::encode(player_utxo_datum)))
     }
 
     pub fn listen(&self) {
@@ -369,7 +359,7 @@ impl TryFrom<String> for ConnectionInfo {
 impl ConnectionInfo {
     pub fn to_websocket_url(&self) -> String {
         let schema = if self.secure { "wss" } else { "ws" };
-        format!("{}://{}:{}", schema, self.host, self.port)
+        format!("{}://{}:{}?history=no", schema, self.host, self.port)
     }
 
     pub fn to_http_url(&self) -> String {

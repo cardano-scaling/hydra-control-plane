@@ -14,9 +14,10 @@ persisted = false
 ttl_minutes = 1
 port = 8000
 address = "0.0.0.0"
+
 [[ec2.nodes]]
-local_url = "ws://3.15.33.186:4001"
-remote_url = "ws://3.15.33.186:4001"
-admin_key_file = "admin.skey"
+local_url = "wss://host1.hydra-doom.sundae.fi:4001"
+remote_url = "wss://host1.hydra-doom.sundae.fi:4001"
+admin_key_file = "admin.sk"
 max_players = 1
 persisted = false

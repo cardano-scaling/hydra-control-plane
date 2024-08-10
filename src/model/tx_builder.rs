@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use pallas::{
     codec::minicbor::encode,
     crypto::{hash::Hash, key::ed25519::SecretKey},
@@ -40,8 +40,8 @@ impl TxBuilder {
         &self,
         player: &Player,
         utxos: Vec<UTxO>,
-        expired_utxos: Vec<UTxO>,
-    ) -> Result<BuiltTransaction> {
+        _expired_utxos: Vec<UTxO>,
+    ) -> Result<(BuiltTransaction, Vec<u8>)> {
         if let Some(_) = player.utxo {
             bail!("Player already has a UTxO created");
         }
@@ -62,9 +62,9 @@ impl TxBuilder {
         let mut datum: Vec<u8> = Vec::new();
         let _ = encode(&game_state, &mut datum)?;
 
-        let mut tx_builder = StagingTransaction::new()
+        let tx_builder = StagingTransaction::new()
             .input(input_utxo.clone().into())
-            .output(Output::new(script_address, 0).set_inline_datum(datum))
+            .output(Output::new(script_address, 0).set_inline_datum(datum.clone()))
             // This is so the player has collateral, we can't clean this up unfortunately
             .output(Output::new(player.address.clone(), 0))
             .output(Output::new(
@@ -74,6 +74,7 @@ impl TxBuilder {
             .change_address(input_utxo.clone().address)
             .fee(0);
 
+        /* Skipping cleanup for now
         if expired_utxos.len() > 0 {
             tx_builder = tx_builder
                 .reference_input(
@@ -96,8 +97,12 @@ impl TxBuilder {
                 }),
             );
         }
+        */
         let tx = tx_builder.build_babbage_raw()?;
-        tx.sign(self.admin_key.clone().into()).map_err(|e| e.into())
+        let signed_tx = tx
+            .sign(self.admin_key.clone().into())
+            .context("failed to sign tx")?;
+        Ok((signed_tx, datum))
     }
 
     pub fn find_script_ref(utxos: Vec<UTxO>) -> Option<UTxO> {
