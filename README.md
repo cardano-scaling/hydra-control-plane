@@ -56,10 +56,33 @@ You can configure the server in the Rocket.toml.
 
 Each `[abc]` section defines a "Profile", which you can switch to by setting the ROCKET_PROFILE environment variable. The default is `[default]`.
 
+### Nodes
+
 You can configure remote hydra nodes with a `[[profile.nodes]]` entry, which can be repeated any number of times.
 
-Each node has a `local_url`, which is the URL the control plane will attempt to connect on, and a `remote_url`, which is the URL the control plane will direct others to connect on.
+Each node has a `local_url`, which is the URL the control plane will attempt to connect on, and a `remote_url`, which is the URL the control plane will direct others to connect on. Don't include the port here.
+
+`port` is the port to connect on
 
 `admin_key_file` must point to the admin key generated above.
 
 `persisted` means the node is persisting events to disk, and is reserved for the on-site cabinets, while remote players will be directed to non-persistent nodes.
+
+`reserved` means the node will only be assigned games that pass the `?reserved` flag
+
+`region` means the aws region the node is in, to give preference for people who ask for `?region=`
+
+`stats_file` is an optional file where stats for this node should be persisted
+
+`max_players` determines the maximum number of players that can be assigned to this node at once
+
+### Hosts
+
+You can configure nodes in bulk by configuring `[[profile.hosts]]` instead.
+
+It has most of the same flags, except:
+
+`port` is replaced by `start_port` and `end_port`;
+`stats_file` is replaced by `stats_file_prefix`; the port will be added to this prefix to determine the actual file
+
+All other flags get copied to the Node config.
