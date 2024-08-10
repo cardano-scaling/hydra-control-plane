@@ -12,13 +12,22 @@ pub struct GameState {
     pub player: Player,
     #[allow(dead_code)]
     pub monsters: Vec<MapObject>,
+    pub leveltime: Vec<u64>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Player {
     player_state: PlayerState,
     map_object: MapObject,
+    pub level_stats: PlayerStats,
+    pub total_stats: PlayerStats,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct PlayerStats {
     pub kill_count: u64,
+    pub secret_count: u64,
+    pub item_count: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -83,6 +92,15 @@ impl Into<PlutusData> for GameState {
                 admin,
                 self.player.into(),
                 PlutusData::Array(vec![]),
+                PlutusData::Array(
+                    self.leveltime
+                        .into_iter()
+                        .map(|x| {
+                            let x = x as i64;
+                            PlutusData::BigInt(alonzo::BigInt::Int(x.into()))
+                        })
+                        .collect(),
+                ),
             ],
         })
     }
@@ -140,12 +158,29 @@ impl TryFrom<PlutusData> for GameState {
                     _ => bail!("Invalid monsters"),
                 };
 
+                let leveltime = match constr.fields[5].clone() {
+                    PlutusData::Array(array) => {
+                        let mut leveltime = vec![];
+                        for time in array {
+                            match time {
+                                PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                                    leveltime.push(u64::try_from(v.0)?)
+                                }
+                                _ => bail!("Invalid leveltime value"),
+                            }
+                        }
+                        leveltime
+                    }
+                    _ => bail!("Invalid leveltime"),
+                };
+
                 Ok(GameState {
                     is_over,
                     owner,
                     admin,
                     player,
                     monsters,
+                    leveltime,
                 })
             }
             _ => Err(anyhow!("Invalid PlutusData variant")),
@@ -161,6 +196,7 @@ impl GameState {
             admin,
             player: Player::new(),
             monsters: Vec::new(),
+            leveltime: Vec::new(),
         }
     }
 }
@@ -170,21 +206,22 @@ impl Player {
         Player {
             player_state: PlayerState::LIVE,
             map_object: MapObject::default(),
-            kill_count: 0,
+            level_stats: PlayerStats::default(),
+            total_stats: PlayerStats::default(),
         }
     }
 }
 
 impl Into<PlutusData> for Player {
     fn into(self) -> PlutusData {
-        let kill_count = self.kill_count as i64;
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
             fields: vec![
                 self.player_state.into(),
                 self.map_object.into(),
-                PlutusData::BigInt(alonzo::BigInt::Int(kill_count.into())),
+                self.total_stats.into(),
+                self.level_stats.into(),
             ],
         })
     }
@@ -197,7 +234,7 @@ impl TryFrom<PlutusData> for Player {
         match value {
             PlutusData::Constr(constr) => {
                 let fields = constr.fields;
-                if fields.len() != 3 {
+                if fields.len() != 4 {
                     bail!("Invalid number of fields");
                 }
 
@@ -213,15 +250,79 @@ impl TryFrom<PlutusData> for Player {
                     _ => bail!("Invalid field type"),
                 };
 
-                let kill_count = match fields[2] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => u64::try_from(v.0)?,
+                let total_stats = match fields[2].clone() {
+                    PlutusData::Constr(constr) => {
+                        PlayerStats::try_from(PlutusData::Constr(constr))?
+                    }
+                    _ => bail!("Invalid field type"),
+                };
+
+                let level_stats = match fields[3].clone() {
+                    PlutusData::Constr(constr) => {
+                        PlayerStats::try_from(PlutusData::Constr(constr))?
+                    }
                     _ => bail!("Invalid field type"),
                 };
 
                 Ok(Player {
                     player_state,
                     map_object,
+                    total_stats,
+                    level_stats,
+                })
+            }
+            _ => Err(anyhow!("Invalid PlutusData type")),
+        }
+    }
+}
+
+impl Into<PlutusData> for PlayerStats {
+    fn into(self) -> PlutusData {
+        let kill_count = self.kill_count as i64;
+        let secret_count = self.secret_count as i64;
+        let item_count = self.item_count as i64;
+        PlutusData::Constr(Constr {
+            tag: 121,
+            any_constructor: None,
+            fields: vec![
+                PlutusData::BigInt(alonzo::BigInt::Int(kill_count.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(secret_count.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(item_count.into())),
+            ],
+        })
+    }
+}
+
+impl TryFrom<PlutusData> for PlayerStats {
+    type Error = anyhow::Error;
+
+    fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
+        match value {
+            PlutusData::Constr(constr) => {
+                let fields = constr.fields;
+                if fields.len() != 3 {
+                    bail!("Invalid number of fields");
+                }
+
+                let kill_count = match fields[0] {
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => u64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
+                };
+
+                let secret_count = match fields[1] {
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => u64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
+                };
+
+                let item_count = match fields[2] {
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => u64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
+                };
+
+                Ok(PlayerStats {
                     kill_count,
+                    secret_count,
+                    item_count,
                 })
             }
             _ => Err(anyhow!("Invalid PlutusData type")),

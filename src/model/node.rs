@@ -17,7 +17,7 @@ use pallas::{
     },
 };
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use std::{collections::HashMap, fs::File, time::Duration};
 use tokio::{sync::mpsc::UnboundedSender, time::sleep};
@@ -72,7 +72,8 @@ pub struct NodeStats {
     pub kills: u64,
     pub items: u64,
     pub secrets: u64,
-    pub play_time: u64,
+    #[serde(serialize_with = "serialize_play_time")]
+    pub play_time: HashMap<Vec<u8>, Vec<u64>>,
 
     #[serde(skip)]
     pub pending_transactions: HashMap<Vec<u8>, StateUpdate>,
@@ -84,7 +85,7 @@ pub struct StateUpdate {
     pub kills: u64,
     pub items: u64,
     pub secrets: u64,
-    pub play_time: u64,
+    pub play_time: HashMap<Vec<u8>, Vec<u64>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -391,7 +392,7 @@ impl NodeStats {
             kills: 0,
             items: 0,
             secrets: 0,
-            play_time: 0,
+            play_time: HashMap::new(),
             pending_transactions: HashMap::new(),
         }
     }
@@ -415,10 +416,16 @@ impl NodeStats {
         self.kills += state_change.kills;
         self.items += state_change.items;
         self.secrets += state_change.secrets;
-        self.play_time += state_change.play_time;
+        self.play_time.extend(state_change.play_time)
     }
 
     pub fn join(&self, other: NodeStats, active_games: usize) -> NodeStats {
+        let mut pending_transactions = self.pending_transactions.clone();
+        pending_transactions.extend(other.pending_transactions);
+
+        let mut play_time = self.play_time.clone();
+        play_time.extend(other.play_time); // this may be off because a player could have times on both
+
         NodeStats {
             total_games: self.total_games + other.total_games,
             active_games: self.active_games + active_games, // TODO: this is awkward; but best way to prune expired games
@@ -427,8 +434,25 @@ impl NodeStats {
             kills: self.kills + other.kills,
             items: self.items + other.items,
             secrets: self.secrets + other.secrets,
-            play_time: self.play_time + other.play_time,
             pending_transactions: HashMap::new(),
+            play_time,
         }
     }
+}
+
+fn serialize_play_time<S>(
+    play_time: &HashMap<Vec<u8>, Vec<u64>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut total_play_time: u64 = 0;
+    play_time.clone().into_values().for_each(|play_times| {
+        play_times.iter().for_each(|x| {
+            total_play_time += x;
+        })
+    });
+
+    total_play_time.serialize(serializer)
 }
