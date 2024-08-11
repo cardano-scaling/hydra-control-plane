@@ -13,6 +13,7 @@ pub struct GameState {
     #[allow(dead_code)]
     pub monsters: Vec<MapObject>,
     pub leveltime: Vec<u64>,
+    pub level: LevelId,
 }
 
 #[derive(Debug, Clone)]
@@ -41,6 +42,13 @@ pub struct Position {
     x: i64,
     y: i64,
     z: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct LevelId {
+    map: i64,
+    skill: i64,
+    episode: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +106,7 @@ impl Into<PlutusData> for GameState {
                         })
                         .collect(),
                 ),
+                self.level.into(),
             ],
         })
     }
@@ -171,6 +180,11 @@ impl TryFrom<PlutusData> for GameState {
                     _ => bail!("Invalid leveltime"),
                 };
 
+                let level = match constr.fields[6].clone() {
+                    PlutusData::Constr(constr) => LevelId::try_from(PlutusData::Constr(constr))?,
+                    _ => bail!("Invalid level"),
+                };
+
                 Ok(GameState {
                     is_over,
                     owner,
@@ -178,6 +192,7 @@ impl TryFrom<PlutusData> for GameState {
                     player,
                     monsters,
                     leveltime,
+                    level,
                 })
             }
             _ => Err(anyhow!("Invalid PlutusData variant")),
@@ -194,6 +209,7 @@ impl GameState {
             player: Player::new(),
             monsters: Vec::new(),
             leveltime: Vec::new(),
+            level: LevelId::default(),
         }
     }
 }
@@ -472,5 +488,66 @@ impl TryFrom<PlutusData> for PlayerState {
             },
             _ => Err(anyhow!("Invalid PlutusData for PlayerState")),
         }
+    }
+}
+
+impl Default for LevelId {
+    fn default() -> Self {
+        LevelId {
+            map: -1,
+            skill: -1,
+            episode: -1,
+        }
+    }
+}
+
+impl TryFrom<PlutusData> for LevelId {
+    type Error = anyhow::Error;
+
+    fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
+        match value {
+            PlutusData::Constr(constr) => {
+                let fields = constr.fields;
+                if fields.len() != 3 {
+                    bail!("Invalid number of fields");
+                }
+
+                let map = match fields[0] {
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => i64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
+                };
+
+                let skill = match fields[1] {
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => i64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
+                };
+
+                let episode = match fields[2] {
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => i64::try_from(v.0)?,
+                    _ => bail!("Invalid field type"),
+                };
+
+                Ok(LevelId {
+                    map,
+                    skill,
+                    episode,
+                })
+            }
+            _ => bail!("Invalid PlutusData for LevelId"),
+        }
+    }
+}
+
+impl Into<PlutusData> for LevelId {
+    fn into(self) -> PlutusData {
+        PlutusData::Constr(Constr {
+            tag: 121,
+            any_constructor: None,
+            fields: vec![
+                PlutusData::BigInt(alonzo::BigInt::Int(self.map.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(self.skill.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(self.episode.into())),
+            ],
+        })
     }
 }
