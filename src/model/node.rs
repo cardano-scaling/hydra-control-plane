@@ -76,7 +76,7 @@ pub struct NodeSummary(pub Node);
 pub struct LeaderboardEntry(String, u64);
 impl Ord for LeaderboardEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.1.cmp(&other.1)
+        other.1.cmp(&self.1)
     }
 }
 
@@ -494,7 +494,7 @@ impl NodeStats {
             self.kills_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *kills));
             self.kills_leaderboard.sort();
-            self.kills_leaderboard = self.kills_leaderboard[0..10].to_vec();
+            self.kills_leaderboard.truncate(10);
         }
         let items = self
             .items
@@ -515,7 +515,7 @@ impl NodeStats {
             self.items_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *items));
             self.items_leaderboard.sort();
-            self.items_leaderboard = self.items_leaderboard[0..10].to_vec();
+            self.items_leaderboard.truncate(10);
         }
         let secrets = self
             .secrets
@@ -536,7 +536,7 @@ impl NodeStats {
             self.secrets_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *secrets));
             self.secrets_leaderboard.sort();
-            self.secrets_leaderboard = self.secrets_leaderboard[0..10].to_vec();
+            self.secrets_leaderboard.truncate(10);
         }
 
         self.player_play_time
@@ -597,6 +597,6 @@ impl NodeStats {
         merged.extend(left.clone());
         merged.extend(right.clone());
         merged.sort();
-        merged[0..10].to_vec()
+        merged.truncate(10);
     }
 }
