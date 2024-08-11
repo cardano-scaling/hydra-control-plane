@@ -38,12 +38,9 @@ pub struct MapObject {
 
 #[derive(Debug, Clone)]
 pub struct Position {
-    momentum_x: i64,
-    momentum_y: i64,
-    momentum_z: i64,
-    angle: i64,
+    x: i64,
+    y: i64,
     z: i64,
-    floor_z: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -381,16 +378,8 @@ impl TryFrom<PlutusData> for MapObject {
     }
 }
 impl Default for Position {
-    // TODO: Determine if this is correct, or if we should have "map based" defaults
     fn default() -> Self {
-        Position {
-            momentum_x: 0,
-            momentum_y: 0,
-            momentum_z: 0,
-            angle: 0,
-            z: 0,
-            floor_z: 0,
-        }
+        Position { x: 0, y: 0, z: 0 }
     }
 }
 
@@ -400,12 +389,9 @@ impl Into<PlutusData> for Position {
             tag: 121,
             any_constructor: None,
             fields: vec![
-                PlutusData::BigInt(alonzo::BigInt::Int(self.momentum_x.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.momentum_y.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.momentum_z.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.angle.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(self.x.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(self.y.into())),
                 PlutusData::BigInt(alonzo::BigInt::Int(self.z.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.floor_z.into())),
             ],
         })
     }
@@ -418,60 +404,32 @@ impl TryFrom<PlutusData> for Position {
         match value {
             PlutusData::Constr(constr) => {
                 let fields = constr.fields;
-                if fields.len() != 6 {
+                if fields.len() != 3 {
                     bail!("Invalid number of fields");
                 }
 
-                let momentum_x = match fields[0] {
+                let x = match fields[0] {
                     PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                        i64::try_from(v.0).context("invalid momentum_x")?
+                        i64::try_from(v.0).context("invalid x")?
                     }
                     _ => bail!("Invalid field type"),
                 };
 
-                let momentum_y = match fields[1] {
+                let y = match fields[1] {
                     PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                        i64::try_from(v.0).context("invalid momentum_y")?
+                        i64::try_from(v.0).context("invalid y")?
                     }
                     _ => bail!("Invalid field type"),
                 };
 
-                let momentum_z = match fields[2] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                        i64::try_from(v.0).context("invalid momentum_z")?
-                    }
-                    _ => bail!("Invalid field type"),
-                };
-
-                let angle = match fields[3] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                        i64::try_from(v.0).context("Invalid angle")?
-                    }
-                    _ => bail!("Invalid field type"),
-                };
-
-                let z = match fields[4] {
+                let z = match fields[2] {
                     PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
                         i64::try_from(v.0).context("invalid z")?
                     }
                     _ => bail!("Invalid field type"),
                 };
 
-                let floor_z = match fields[5] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                        i64::try_from(v.0).context("Invalid floor_z")?
-                    }
-                    _ => bail!("Invalid field type"),
-                };
-
-                Ok(Position {
-                    momentum_x,
-                    momentum_y,
-                    momentum_z,
-                    angle,
-                    z,
-                    floor_z,
-                })
+                Ok(Position { x, y, z })
             }
             _ => Err(anyhow!("Invalid PlutusData type")),
         }
