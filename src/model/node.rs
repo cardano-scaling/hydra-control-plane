@@ -450,6 +450,7 @@ impl NodeStats {
     fn update_stats(&mut self, state_change: StateUpdate) {
         self.transactions += 1;
         self.bytes += state_change.bytes;
+        println!("StateUpdate: {:?}", state_change);
         self.kills
             .entry(state_change.player.clone())
             .and_modify(|k| *k += state_change.kills)
