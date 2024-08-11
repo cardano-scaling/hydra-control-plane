@@ -78,9 +78,14 @@ pub struct NodeStats {
     pub active_games: usize,
     pub transactions: u64,
     pub bytes: u64,
-    pub kills: u64,
-    pub items: u64,
-    pub secrets: u64,
+
+    pub kills: HashMap<String, u64>,
+    pub total_kills: u64,
+    pub items: HashMap<String, u64>,
+    pub total_items: u64,
+    pub secrets: HashMap<String, u64>,
+    pub total_secrets: u64,
+
     pub player_play_time: HashMap<String, Vec<u64>>,
     pub total_play_time: u64,
 
@@ -88,13 +93,14 @@ pub struct NodeStats {
     pub pending_transactions: HashMap<Vec<u8>, StateUpdate>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StateUpdate {
+    pub player: String,
     pub bytes: u64,
     pub kills: u64,
     pub items: u64,
     pub secrets: u64,
-    pub play_time: HashMap<String, Vec<u64>>,
+    pub time: Vec<u64>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -132,6 +138,15 @@ impl Node {
             NodeStats::new()
         };
         // Collapse any previous players into total time
+        for (_, kills) in stats.kills.drain() {
+            stats.total_kills += kills;
+        }
+        for (_, items) in stats.items.drain() {
+            stats.total_items += items;
+        }
+        for (_, secrets) in stats.secrets.drain() {
+            stats.total_secrets += secrets;
+        }
         for (_, play_times) in stats.player_play_time.drain() {
             stats.total_play_time += play_times.iter().sum::<u64>();
         }
@@ -322,14 +337,16 @@ impl Node {
         for (index, player) in self.players.iter().enumerate() {
             if player.is_expired(Duration::from_secs(30)) {
                 let key = hex::encode(&player.pkh);
+                self.stats.total_kills += self.stats.kills.remove(&key).unwrap_or(0);
+                self.stats.total_items += self.stats.items.remove(&key).unwrap_or(0);
+                self.stats.total_secrets += self.stats.secrets.remove(&key).unwrap_or(0);
                 self.stats.total_play_time += self
                     .stats
                     .player_play_time
-                    .get(&key)
-                    .unwrap_or(&vec![])
+                    .remove(&key)
+                    .unwrap_or(vec![])
                     .iter()
                     .sum::<u64>();
-                self.stats.player_play_time.remove(&key);
                 to_remove.push(index);
             }
         }
@@ -388,11 +405,16 @@ impl NodeStats {
             active_games: 0,
             transactions: 0,
             bytes: 0,
-            kills: 0,
-            items: 0,
-            secrets: 0,
+
+            kills: HashMap::new(),
+            total_kills: 0,
+            items: HashMap::new(),
+            total_items: 0,
+            secrets: HashMap::new(),
+            total_secrets: 0,
             player_play_time: HashMap::new(),
             total_play_time: 0,
+
             pending_transactions: HashMap::new(),
         }
     }
@@ -428,30 +450,54 @@ impl NodeStats {
     fn update_stats(&mut self, state_change: StateUpdate) {
         self.transactions += 1;
         self.bytes += state_change.bytes;
-        self.kills += state_change.kills;
-        self.items += state_change.items;
-        self.secrets += state_change.secrets;
-        self.player_play_time.extend(state_change.play_time)
+        self.kills
+            .entry(state_change.player.clone())
+            .and_modify(|k| *k += state_change.kills)
+            .or_insert(state_change.kills);
+        self.items
+            .entry(state_change.player.clone())
+            .and_modify(|k| *k += state_change.items)
+            .or_insert(state_change.items);
+        self.secrets
+            .entry(state_change.player.clone())
+            .and_modify(|k| *k += state_change.secrets)
+            .or_insert(state_change.secrets);
+        self.player_play_time
+            .entry(state_change.player)
+            .and_modify(|k| *k = state_change.time.clone())
+            .or_insert(state_change.time);
     }
 
     pub fn join(&self, other: NodeStats, active_games: usize) -> NodeStats {
         let mut pending_transactions = self.pending_transactions.clone();
         pending_transactions.extend(other.pending_transactions);
 
+        let mut kills = self.kills.clone();
+        kills.extend(other.kills);
+        let mut items = self.items.clone();
+        items.extend(other.items);
+        let mut secrets = self.secrets.clone();
+        secrets.extend(other.secrets);
+
         let mut play_time = self.player_play_time.clone();
-        play_time.extend(other.player_play_time); // this may be off because a player could have times on both
+        play_time.extend(other.player_play_time);
 
         NodeStats {
             total_games: self.total_games + other.total_games,
             active_games: self.active_games + active_games, // TODO: this is awkward; but best way to prune expired games
             transactions: self.transactions + other.transactions,
             bytes: self.bytes + other.bytes,
-            kills: self.kills + other.kills,
-            items: self.items + other.items,
-            secrets: self.secrets + other.secrets,
-            pending_transactions: HashMap::new(),
+
+            kills,
+            total_kills: self.total_kills + other.total_kills,
+            items,
+            total_items: self.total_items + other.total_items,
+            secrets,
+            total_secrets: self.total_secrets + other.total_secrets,
             player_play_time: play_time,
             total_play_time: self.total_play_time + other.total_play_time,
+
+            pending_transactions: HashMap::new(),
         }
     }
 }

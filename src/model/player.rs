@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
 use pallas::ledger::addresses::Address;
 
@@ -34,40 +34,37 @@ impl Player {
         GameState::new(self.pkh.clone(), admin_pkh)
     }
 
-    pub fn generate_state_update(&mut self, byte_count: u64, new_state: GameState) -> StateUpdate {
-        let mut play_time = HashMap::new();
-        if !new_state.level.demo_playback {
-            play_time.insert(hex::encode(&new_state.owner), new_state.leveltime.clone());
-        }
-
+    pub fn generate_state_update(&mut self, bytes: u64, new_state: GameState) -> StateUpdate {
+        let player = hex::encode(&new_state.owner);
         let state_update = if new_state.level.demo_playback {
             StateUpdate {
-                bytes: byte_count,
+                player,
+                bytes,
                 kills: 0,
                 items: 0,
                 secrets: 0,
-                play_time,
+                time: vec![],
+            }
+        } else if let Some(old_state) = &self.game_state {
+            StateUpdate {
+                player,
+                bytes,
+                kills: new_state.player.total_stats.kill_count
+                    - old_state.player.total_stats.kill_count,
+                items: new_state.player.total_stats.item_count
+                    - old_state.player.total_stats.item_count,
+                secrets: new_state.player.total_stats.secret_count
+                    - old_state.player.total_stats.secret_count,
+                time: new_state.leveltime.clone(),
             }
         } else {
-            if let Some(old_state) = &self.game_state {
-                StateUpdate {
-                    bytes: byte_count,
-                    kills: new_state.player.total_stats.kill_count
-                        - old_state.player.total_stats.kill_count,
-                    items: new_state.player.total_stats.item_count
-                        - old_state.player.total_stats.item_count,
-                    secrets: new_state.player.total_stats.secret_count
-                        - old_state.player.total_stats.secret_count,
-                    play_time,
-                }
-            } else {
-                StateUpdate {
-                    bytes: byte_count,
-                    kills: new_state.player.total_stats.kill_count,
-                    items: new_state.player.total_stats.item_count,
-                    secrets: new_state.player.total_stats.secret_count,
-                    play_time,
-                }
+            StateUpdate {
+                player,
+                bytes,
+                kills: new_state.player.total_stats.kill_count,
+                items: new_state.player.total_stats.item_count,
+                secrets: new_state.player.total_stats.secret_count,
+                time: vec![],
             }
         };
 
