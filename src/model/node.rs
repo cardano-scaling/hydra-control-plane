@@ -194,12 +194,9 @@ impl Node {
 
         let message: String = NewTx::new(new_game_tx)?.into();
 
-        let player_pkh = hex::encode(player.pkh.clone());
         self.stats.total_games += 1;
         self.players.push(player);
-        println!("Adding player {:?}", player_pkh);
         self.send(message).await?;
-        println!("Done adding player {:?}", player_pkh);
 
         Ok((player_utxo, hex::encode(player_utxo_datum)))
     }
@@ -325,7 +322,6 @@ impl Node {
         for (index, player) in self.players.iter().enumerate() {
             if player.is_expired(Duration::from_secs(30)) {
                 let key = hex::encode(&player.pkh);
-                println!("Player expired: {:?}", key);
                 self.stats.total_play_time += self
                     .stats
                     .player_play_time
@@ -340,10 +336,6 @@ impl Node {
 
         let mut utxos = vec![];
         for index in to_remove.iter().rev() {
-            println!(
-                "Removing player: {:?}",
-                hex::encode(&self.players[*index].pkh)
-            );
             if let Some(utxo) = self.players.remove(*index).utxo {
                 utxos.push(utxo);
             }
