@@ -72,6 +72,14 @@ pub struct ConnectionInfo {
 #[derive(Serialize)]
 pub struct NodeSummary(pub Node);
 
+#[derive(Eq, PartialEq, PartialOrd, Serialize, Deserialize, Clone)]
+pub struct LeaderboardEntry(String, u64);
+impl Ord for LeaderboardEntry {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.1.cmp(&other.1)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct NodeStats {
     pub total_games: u64,
@@ -81,10 +89,13 @@ pub struct NodeStats {
 
     pub kills: HashMap<String, u64>,
     pub total_kills: u64,
+    pub kills_leaderboard: Vec<LeaderboardEntry>,
     pub items: HashMap<String, u64>,
     pub total_items: u64,
+    pub items_leaderboard: Vec<LeaderboardEntry>,
     pub secrets: HashMap<String, u64>,
     pub total_secrets: u64,
+    pub secrets_leaderboard: Vec<LeaderboardEntry>,
 
     pub player_play_time: HashMap<String, Vec<u64>>,
     pub total_play_time: u64,
@@ -314,8 +325,11 @@ impl Node {
                 // TODO: actually find the index
                 let utxo =
                     UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, output)?;
-                let timestamp: u64 =
-                    transaction.timestamp.parse::<DateTime<Utc>>()?.timestamp() as u64;
+                let timestamp: u64 = transaction
+                    .timestamp
+                    .parse::<DateTime<Utc>>()?
+                    .timestamp()
+                    .clamp(0, i64::max_value()) as u64;
                 player.utxo = Some(utxo);
                 player.utxo_time = timestamp;
 
@@ -408,10 +422,13 @@ impl NodeStats {
 
             kills: HashMap::new(),
             total_kills: 0,
+            kills_leaderboard: vec![],
             items: HashMap::new(),
             total_items: 0,
+            items_leaderboard: vec![],
             secrets: HashMap::new(),
             total_secrets: 0,
+            secrets_leaderboard: vec![],
             player_play_time: HashMap::new(),
             total_play_time: 0,
 
@@ -438,6 +455,14 @@ impl NodeStats {
                     return;
                 }
             };
+            if let Some(path) = Path::new(&stats_file).parent() {
+                match fs::create_dir_all(path) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("failed to create stats directory {}", e)
+                    }
+                }
+            }
             match fs::write(stats_file, contents).context("failed to save stats") {
                 Ok(_) => {}
                 Err(e) => {
@@ -450,18 +475,70 @@ impl NodeStats {
     fn update_stats(&mut self, state_change: StateUpdate) {
         self.transactions += 1;
         self.bytes += state_change.bytes;
-        self.kills
+        let kills = self
+            .kills
             .entry(state_change.player.clone())
             .and_modify(|k| *k += state_change.kills)
             .or_insert(state_change.kills);
-        self.items
+        let mut min = *kills;
+        for entry in self.kills_leaderboard.iter_mut() {
+            if entry.0 == state_change.player && entry.1 < *kills {
+                entry.1 = *kills;
+                break;
+            }
+            if entry.1 < min {
+                min = entry.1;
+            }
+        }
+        if *kills > min || self.kills_leaderboard.len() < 10 {
+            self.kills_leaderboard
+                .push(LeaderboardEntry(state_change.player.clone(), *kills));
+            self.kills_leaderboard.sort();
+            self.kills_leaderboard = self.kills_leaderboard[0..10].to_vec();
+        }
+        let items = self
+            .items
             .entry(state_change.player.clone())
             .and_modify(|k| *k += state_change.items)
             .or_insert(state_change.items);
-        self.secrets
+        let mut min = *items;
+        for entry in self.items_leaderboard.iter_mut() {
+            if entry.0 == state_change.player && entry.1 < *items {
+                entry.1 = *items;
+                break;
+            }
+            if entry.1 < min {
+                min = entry.1;
+            }
+        }
+        if *items > min || self.items_leaderboard.len() < 10 {
+            self.items_leaderboard
+                .push(LeaderboardEntry(state_change.player.clone(), *items));
+            self.items_leaderboard.sort();
+            self.items_leaderboard = self.items_leaderboard[0..10].to_vec();
+        }
+        let secrets = self
+            .secrets
             .entry(state_change.player.clone())
             .and_modify(|k| *k += state_change.secrets)
             .or_insert(state_change.secrets);
+        let mut min = *secrets;
+        for entry in self.secrets_leaderboard.iter_mut() {
+            if entry.0 == state_change.player && entry.1 < *secrets {
+                entry.1 = *secrets;
+                break;
+            }
+            if entry.1 < min {
+                min = entry.1;
+            }
+        }
+        if *secrets > min || self.secrets_leaderboard.len() < 10 {
+            self.secrets_leaderboard
+                .push(LeaderboardEntry(state_change.player.clone(), *secrets));
+            self.secrets_leaderboard.sort();
+            self.secrets_leaderboard = self.secrets_leaderboard[0..10].to_vec();
+        }
+
         self.player_play_time
             .entry(state_change.player)
             .and_modify(|k| *k = state_change.time.clone())
@@ -490,14 +567,36 @@ impl NodeStats {
 
             kills,
             total_kills: self.total_kills + other.total_kills,
+            kills_leaderboard: Self::merge_leaderboards(
+                &self.kills_leaderboard,
+                &other.kills_leaderboard,
+            ),
             items,
             total_items: self.total_items + other.total_items,
+            items_leaderboard: Self::merge_leaderboards(
+                &self.items_leaderboard,
+                &other.items_leaderboard,
+            ),
             secrets,
             total_secrets: self.total_secrets + other.total_secrets,
+            secrets_leaderboard: Self::merge_leaderboards(
+                &self.secrets_leaderboard,
+                &other.secrets_leaderboard,
+            ),
             player_play_time: play_time,
             total_play_time: self.total_play_time + other.total_play_time,
 
             pending_transactions: HashMap::new(),
         }
+    }
+    pub fn merge_leaderboards(
+        left: &Vec<LeaderboardEntry>,
+        right: &Vec<LeaderboardEntry>,
+    ) -> Vec<LeaderboardEntry> {
+        let mut merged = vec![];
+        merged.extend(left.clone());
+        merged.extend(right.clone());
+        merged.sort();
+        merged[0..10].to_vec()
     }
 }
