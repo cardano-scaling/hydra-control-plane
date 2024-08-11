@@ -483,8 +483,10 @@ impl NodeStats {
         let mut min = *kills;
         let mut found = false;
         for entry in self.kills_leaderboard.iter_mut() {
-            if entry.0 == state_change.player && entry.1 < *kills {
-                entry.1 = *kills;
+            if entry.0 == state_change.player {
+                if entry.1 < *kills {
+                    entry.1 = *kills;
+                }
                 found = true;
                 break;
             }
@@ -506,8 +508,10 @@ impl NodeStats {
         let mut min = *items;
         let mut found = false;
         for entry in self.items_leaderboard.iter_mut() {
-            if entry.0 == state_change.player && entry.1 < *items {
-                entry.1 = *items;
+            if entry.0 == state_change.player {
+                if entry.1 < *items {
+                    entry.1 = *items;
+                }
                 found = true;
                 break;
             }
@@ -529,8 +533,10 @@ impl NodeStats {
         let mut min = *secrets;
         let mut found = false;
         for entry in self.secrets_leaderboard.iter_mut() {
-            if entry.0 == state_change.player && entry.1 < *secrets {
-                entry.1 = *secrets;
+            if entry.0 == state_change.player {
+                if entry.1 < *secrets {
+                    entry.1 = *secrets;
+                }
                 found = true;
                 break;
             }
