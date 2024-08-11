@@ -36,7 +36,8 @@ impl Player {
 
     pub fn generate_state_update(&mut self, bytes: u64, new_state: GameState) -> StateUpdate {
         let player = hex::encode(&new_state.owner);
-        let state_update = if new_state.level.demo_playback {
+        // TODO: demo_playback is always true for some reason
+        let state_update = if false && new_state.level.demo_playback {
             StateUpdate {
                 player,
                 bytes,
