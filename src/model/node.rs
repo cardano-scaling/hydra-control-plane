@@ -136,7 +136,12 @@ impl Node {
             stats.total_play_time += play_times.iter().sum::<u64>();
         }
 
-        let socket = HydraSocket::new(local_connection.to_websocket_url().as_str(), writer).await?;
+        let socket = HydraSocket::new(
+            local_connection.to_websocket_url().as_str(),
+            local_connection.to_authority(),
+            writer,
+        )
+        .await?;
         let mut node = Node {
             head_id: None,
             local_connection,
@@ -153,7 +158,7 @@ impl Node {
             tx_builder: TxBuilder::new(admin_key.try_into()?),
         };
 
-        node.listen();
+        node.start_listen();
         Node::set_script_ref(&mut node).await?;
         Ok(node)
     }
@@ -171,7 +176,7 @@ impl Node {
             None => {
                 let tx = node.tx_builder.create_script_ref(utxos)?;
                 let message: String = NewTx::new(tx)?.into();
-                node.send(message);
+                node.send(message).await?;
                 sleep(Duration::from_millis(250)).await;
                 Box::pin(Node::set_script_ref(node)).await
             }
@@ -189,24 +194,23 @@ impl Node {
 
         let message: String = NewTx::new(new_game_tx)?.into();
 
+        let player_pkh = hex::encode(player.pkh.clone());
         self.stats.total_games += 1;
         self.players.push(player);
-        self.send(message);
+        println!("Adding player {:?}", player_pkh);
+        self.send(message).await?;
+        println!("Done adding player {:?}", player_pkh);
 
         Ok((player_utxo, hex::encode(player_utxo_datum)))
     }
 
-    pub fn listen(&self) {
-        let receiver = self.socket.receiver.clone();
-        let identifier = self.local_connection.to_authority();
-        tokio::spawn(async move { receiver.lock().await.listen(identifier.as_str()).await });
+    pub fn start_listen(&self) {
+        let socket = self.socket.clone();
+        tokio::spawn(async move { socket.listen() });
     }
 
-    pub fn send(&self, message: String) {
-        let sender = self.socket.sender.clone();
-        tokio::spawn(async move {
-            let _ = sender.lock().await.send(HydraData::Send(message)).await;
-        });
+    pub async fn send(&self, message: String) -> Result<()> {
+        self.socket.send(message).await
     }
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
@@ -370,9 +374,7 @@ impl ConnectionInfo {
             secure: url.scheme() == "https" || url.scheme() == "wss",
         })
     }
-}
 
-impl ConnectionInfo {
     pub fn to_websocket_url(&self) -> String {
         let schema = if self.secure { "wss" } else { "ws" };
         format!("{}://{}:{}?history=no", schema, self.host, self.port)

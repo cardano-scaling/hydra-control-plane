@@ -172,7 +172,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                     .iter_mut()
                     .find(|n| n.local_connection.to_authority() == authority);
                 if let None = node {
-                    warn!("Node not found: ${:?}", authority);
+                    warn!("Node not found: {}", authority);
                     continue;
                 }
                 let node = node.unwrap();
