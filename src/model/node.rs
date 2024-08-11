@@ -72,8 +72,13 @@ pub struct ConnectionInfo {
 #[derive(Serialize)]
 pub struct NodeSummary(pub Node);
 
-#[derive(Eq, PartialEq, PartialOrd, Serialize, Deserialize, Clone)]
+#[derive(Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct LeaderboardEntry(String, u64);
+impl PartialOrd for LeaderboardEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.1.partial_cmp(&other.1)
+    }
+}
 impl Ord for LeaderboardEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.1.cmp(&other.1)
