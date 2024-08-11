@@ -502,10 +502,10 @@ impl NodeStats {
         if !found && (*kills > min || self.kills_leaderboard.len() < 10) {
             self.kills_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *kills));
-            self.kills_leaderboard.sort();
-            self.kills_leaderboard.reverse();
-            self.kills_leaderboard.truncate(10);
         }
+        self.kills_leaderboard.sort();
+        self.kills_leaderboard.reverse();
+        self.kills_leaderboard.truncate(10);
         let items = self
             .items
             .entry(state_change.player.clone())
@@ -528,10 +528,10 @@ impl NodeStats {
         if !found && (*items > min || self.items_leaderboard.len() < 10) {
             self.items_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *items));
-            self.items_leaderboard.sort();
-            self.items_leaderboard.reverse();
-            self.items_leaderboard.truncate(10);
         }
+        self.items_leaderboard.sort();
+        self.items_leaderboard.reverse();
+        self.items_leaderboard.truncate(10);
         let secrets = self
             .secrets
             .entry(state_change.player.clone())
@@ -554,10 +554,10 @@ impl NodeStats {
         if !found && (*secrets > min || self.secrets_leaderboard.len() < 10) {
             self.secrets_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *secrets));
-            self.secrets_leaderboard.sort();
-            self.secrets_leaderboard.reverse();
-            self.secrets_leaderboard.truncate(10);
         }
+        self.secrets_leaderboard.sort();
+        self.secrets_leaderboard.reverse();
+        self.secrets_leaderboard.truncate(10);
 
         self.player_play_time
             .entry(state_change.player)
