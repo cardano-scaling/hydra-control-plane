@@ -79,6 +79,7 @@ impl HydraSocket {
     }
     async fn connect_and_listen(&self) -> Result<()> {
         let (ws_stream, _) = connect_async(&self.url).await?;
+        println!("Succesfully connected to {}", &self.url);
         let (sender, receiver) = ws_stream.split();
         {
             let mut sender_lock = self.sender.lock().await;
