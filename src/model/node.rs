@@ -481,16 +481,18 @@ impl NodeStats {
             .and_modify(|k| *k += state_change.kills)
             .or_insert(state_change.kills);
         let mut min = *kills;
+        let mut found = false;
         for entry in self.kills_leaderboard.iter_mut() {
             if entry.0 == state_change.player && entry.1 < *kills {
                 entry.1 = *kills;
+                found = true;
                 break;
             }
             if entry.1 < min {
                 min = entry.1;
             }
         }
-        if *kills > min || self.kills_leaderboard.len() < 10 {
+        if !found && (*kills > min || self.kills_leaderboard.len() < 10) {
             self.kills_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *kills));
             self.kills_leaderboard.sort();
@@ -502,16 +504,18 @@ impl NodeStats {
             .and_modify(|k| *k += state_change.items)
             .or_insert(state_change.items);
         let mut min = *items;
+        let mut found = false;
         for entry in self.items_leaderboard.iter_mut() {
             if entry.0 == state_change.player && entry.1 < *items {
                 entry.1 = *items;
+                found = true;
                 break;
             }
             if entry.1 < min {
                 min = entry.1;
             }
         }
-        if *items > min || self.items_leaderboard.len() < 10 {
+        if !found && (*items > min || self.items_leaderboard.len() < 10) {
             self.items_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *items));
             self.items_leaderboard.sort();
@@ -523,16 +527,18 @@ impl NodeStats {
             .and_modify(|k| *k += state_change.secrets)
             .or_insert(state_change.secrets);
         let mut min = *secrets;
+        let mut found = false;
         for entry in self.secrets_leaderboard.iter_mut() {
             if entry.0 == state_change.player && entry.1 < *secrets {
                 entry.1 = *secrets;
+                found = true;
                 break;
             }
             if entry.1 < min {
                 min = entry.1;
             }
         }
-        if *secrets > min || self.secrets_leaderboard.len() < 10 {
+        if !found && (*secrets > min || self.secrets_leaderboard.len() < 10) {
             self.secrets_leaderboard
                 .push(LeaderboardEntry(state_change.player.clone(), *secrets));
             self.secrets_leaderboard.sort();
