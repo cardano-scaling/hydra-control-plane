@@ -598,5 +598,6 @@ impl NodeStats {
         merged.extend(right.clone());
         merged.sort();
         merged.truncate(10);
+        merged
     }
 }
