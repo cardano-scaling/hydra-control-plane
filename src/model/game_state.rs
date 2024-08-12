@@ -14,6 +14,7 @@ pub struct GameState {
     pub monsters: Vec<MapObject>,
     pub leveltime: Vec<u64>,
     pub level: LevelId,
+    pub teleporting: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +91,12 @@ impl Into<PlutusData> for GameState {
             fields: vec![PlutusData::BoundedBytes(admin_bytes)],
         });
 
+        let teleporting = PlutusData::Constr(Constr {
+            tag: if self.teleporting { 122 } else { 121 },
+            any_constructor: None,
+            fields: vec![],
+        });
+
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
@@ -109,6 +116,7 @@ impl Into<PlutusData> for GameState {
                         .collect(),
                 ),
                 self.level.into(),
+                teleporting,
             ],
         })
     }
@@ -192,6 +200,17 @@ impl TryFrom<PlutusData> for GameState {
                     _ => bail!("Invalid level"),
                 };
 
+                let teleporting = match constr.fields[7].clone() {
+                    PlutusData::Constr(constr) => {
+                        if constr.tag == 122 {
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    _ => bail!("Invalid is_over"),
+                };
+
                 Ok(GameState {
                     is_over,
                     owner,
@@ -200,6 +219,7 @@ impl TryFrom<PlutusData> for GameState {
                     monsters,
                     leveltime,
                     level,
+                    teleporting,
                 })
             }
             _ => Err(anyhow!("Invalid PlutusData variant")),
@@ -217,6 +237,7 @@ impl GameState {
             monsters: Vec::new(),
             leveltime: Vec::new(),
             level: LevelId::default(),
+            teleporting: false,
         }
     }
 }
