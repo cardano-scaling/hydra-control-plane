@@ -122,10 +122,10 @@ impl TryFrom<PlutusData> for GameState {
             PlutusData::Constr(constr) => {
                 let is_over = match constr.fields[0].clone() {
                     PlutusData::Constr(constr) => {
-                        if constr.any_constructor == Some(0) {
-                            false
-                        } else {
+                        if constr.tag == 122 {
                             true
+                        } else {
+                            false
                         }
                     }
                     _ => bail!("Invalid is_over"),
@@ -475,7 +475,7 @@ impl Into<PlutusData> for PlayerState {
                 tag: 121,
                 any_constructor: Some(0),
                 fields: vec![],
-            }, // Constr(0, [])
+            },
             PlayerState::DEAD => Constr {
                 tag: 121,
                 any_constructor: Some(1),
@@ -546,10 +546,10 @@ impl TryFrom<PlutusData> for LevelId {
 
                 let demo_playback = match fields[3].clone() {
                     PlutusData::Constr(constr) => {
-                        if constr.any_constructor == Some(0) {
-                            false
-                        } else {
+                        if constr.tag == 122 {
                             true
+                        } else {
+                            false
                         }
                     }
                     _ => bail!("Invalid demoplayback"),
