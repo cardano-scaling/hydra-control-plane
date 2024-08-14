@@ -7,10 +7,10 @@ use pallas::{
         primitives::conway::{Constr, PlutusData},
         traverse::ComputeHash,
     },
-    txbuilder::{BuildBabbage, BuiltTransaction, Output, ScriptKind, StagingTransaction},
+    txbuilder::{BuildBabbage, BuiltTransaction, Output, StagingTransaction},
 };
 
-use crate::{SCRIPT_ADDRESS, SCRIPT_CBOR};
+use crate::SCRIPT_ADDRESS;
 
 use super::{hydra::utxo::UTxO, player::Player};
 
@@ -97,37 +97,6 @@ impl TxBuilder {
             .sign(self.admin_key.clone().into())
             .context("failed to sign tx")?;
         Ok((signed_tx, datum))
-    }
-
-    pub fn find_script_ref(utxos: Vec<UTxO>) -> Option<UTxO> {
-        utxos.into_iter().find(|utxo| {
-            utxo.reference_script.is_some() && utxo.address.to_bech32().unwrap() == SCRIPT_ADDRESS
-        })
-    }
-
-    pub fn create_script_ref(&self, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
-        let admin_utxos = self.find_admin_utxos(utxos);
-        if admin_utxos.is_empty() {
-            bail!("No admin UTxOs found");
-        };
-
-        let input_utxo = admin_utxos.first().unwrap();
-
-        let script_address = Address::from_bech32(SCRIPT_ADDRESS).unwrap();
-
-        let bytes = hex::decode(SCRIPT_CBOR).unwrap();
-
-        let tx = StagingTransaction::new()
-            .input(input_utxo.clone().into())
-            .output(Output::new(script_address, 0).set_inline_script(ScriptKind::PlutusV2, bytes))
-            .output(Output::new(
-                input_utxo.clone().address,
-                input_utxo.value.get("lovelace").unwrap().to_owned(),
-            ))
-            .fee(0)
-            .build_babbage_raw()?;
-
-        tx.sign(self.admin_key.clone().into()).map_err(|e| e.into())
     }
 
     fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {

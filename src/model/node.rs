@@ -24,6 +24,7 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     path::Path,
+    sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
 use tokio::sync::mpsc::UnboundedSender;
@@ -50,6 +51,7 @@ pub struct Node {
     pub max_players: usize,
     pub persisted: bool,
     pub reserved: bool,
+    pub online: Arc<AtomicBool>,
 
     #[serde(skip)]
     pub local_connection: ConnectionInfo,
@@ -182,6 +184,7 @@ impl Node {
             max_players: config.max_players,
             persisted: config.persisted,
             reserved: config.reserved,
+            online: socket.online.clone(),
 
             players: Vec::new(),
             socket,
