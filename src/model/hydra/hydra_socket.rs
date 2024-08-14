@@ -24,6 +24,8 @@ pub struct HydraSocket {
     pub online: Arc<AtomicBool>,
     writer: UnboundedSender<HydraData>,
     sender: Arc<Mutex<Option<HydraSender>>>,
+
+    suppress_noise: bool,
 }
 
 pub type HydraSource = SplitStream<
@@ -45,6 +47,8 @@ impl HydraSocket {
             online: Arc::new(AtomicBool::new(false)),
             writer: writer.clone(),
             sender: Arc::new(Mutex::new(None)),
+
+            suppress_noise: false,
         }
     }
 
@@ -61,15 +65,22 @@ impl HydraSocket {
     }
 
     pub fn listen(&self) {
-        let socket = self.clone();
+        let mut socket = self.clone();
         tokio::spawn(async move {
+            socket.suppress_noise = false;
             loop {
                 match socket.connect_and_listen().await {
                     Ok(()) => {
-                        warn!("Disconnected from {}, reconnecting", socket.url);
+                        if !socket.suppress_noise {
+                            socket.suppress_noise = true;
+                            warn!("Disconnected from {}, reconnecting", socket.url);
+                        }
                     }
                     Err(e) => {
-                        warn!("Error connecting to {}: {}", socket.url, e);
+                        if !socket.suppress_noise {
+                            socket.suppress_noise = true;
+                            warn!("Error connecting to {}: {}", socket.url, e);
+                        }
                     }
                 }
                 socket.online.store(false, Ordering::SeqCst);
@@ -77,9 +88,10 @@ impl HydraSocket {
             }
         });
     }
-    async fn connect_and_listen(&self) -> Result<()> {
+    async fn connect_and_listen(&mut self) -> Result<()> {
         let (ws_stream, _) = connect_async(&self.url).await?;
         println!("Succesfully connected to {}", &self.url);
+        self.suppress_noise = false;
         self.online.store(true, Ordering::SeqCst);
         let (sender, receiver) = ws_stream.split();
         {
