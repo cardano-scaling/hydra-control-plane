@@ -8,22 +8,20 @@ use anyhow::{bail, Result};
 #[derive(Clone)]
 pub struct Player {
     pub pkh: Vec<u8>,
-    pub address: Address,
     pub utxo: Option<UTxO>,
     pub utxo_time: u64,
     pub game_state: Option<GameState>,
 }
 
 impl Player {
-    pub fn new(address: Address) -> Result<Self> {
-        let pkh = match &address {
+    pub fn new(address: &Address) -> Result<Self> {
+        let pkh = match address {
             Address::Shelley(shelley) => shelley.payment().to_vec(),
             _ => bail!("Invalid address type"),
         };
 
         Ok(Player {
             pkh,
-            address,
             utxo: None,
             utxo_time: 0,
             game_state: None,

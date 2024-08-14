@@ -1,7 +1,7 @@
 use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
-use hex::{FromHex, ToHex};
+use hex::FromHex;
 use pallas::{
     codec::{minicbor::decode, utils::KeepRaw},
     crypto::key::ed25519::SecretKey,
@@ -26,7 +26,7 @@ use std::{
     path::Path,
     time::Duration,
 };
-use tokio::{sync::mpsc::UnboundedSender, time::sleep};
+use tokio::sync::mpsc::UnboundedSender;
 
 use super::{
     game_state::GameState,
@@ -171,9 +171,8 @@ impl Node {
             local_connection.to_websocket_url().as_str(),
             local_connection.to_authority(),
             writer,
-        )
-        .await?;
-        let mut node = Node {
+        );
+        let node = Node {
             head_id: None,
             local_connection,
             remote_connection,
@@ -190,37 +189,20 @@ impl Node {
         };
 
         node.start_listen();
-        Node::set_script_ref(&mut node).await?;
         Ok(node)
     }
 
-    // This sucks and is hacky. Definitely a better way to do this, but I can't think
-    async fn set_script_ref(node: &mut Node) -> Result<()> {
-        let utxos = node.fetch_utxos().await.context("Failed to fetch UTxOs")?;
-        let maybe_script_ref = TxBuilder::find_script_ref(utxos.clone());
-        match maybe_script_ref {
-            Some(script_ref) => {
-                node.tx_builder.set_script_ref(&script_ref);
-                debug!("Set script ref! {:?}", script_ref);
-                Ok(())
-            }
-            None => {
-                let tx = node.tx_builder.create_script_ref(utxos)?;
-                let message: String = NewTx::new(tx)?.into();
-                node.send(message).await?;
-                sleep(Duration::from_millis(250)).await;
-                Box::pin(Node::set_script_ref(node)).await
-            }
-        }
-    }
-
-    pub async fn add_player(&mut self, player: Player) -> Result<(String, String)> {
+    pub async fn add_player(
+        &mut self,
+        player: Player,
+        collateral_addr: Address,
+    ) -> Result<(String, String)> {
         let expired_utxos = self.cleanup_players();
         let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
 
         let (new_game_tx, player_utxo_datum) =
             self.tx_builder
-                .build_new_game_state(&player, utxos, expired_utxos)?;
+                .build_new_game_state(&player, utxos, expired_utxos, collateral_addr)?;
         let player_utxo = hex::encode(new_game_tx.tx_hash.0) + "#0";
 
         let message: String = NewTx::new(new_game_tx)?.into();
@@ -319,11 +301,17 @@ impl Node {
                 {
                     Some(player) => player,
                     None => {
-                        warn!(
-                            "Player not found {}",
-                            game_state.owner.encode_hex::<String>()
-                        );
-                        return Ok(());
+                        // We must have restarted, or the player was created through another control plane; create the player now
+                        self.players.push(Player {
+                            pkh: game_state.admin.clone(),
+                            utxo: None,
+                            game_state: Some(game_state.clone()),
+                            utxo_time: 0,
+                        });
+                        self.players
+                            .iter_mut()
+                            .find(|player| player.pkh == game_state.owner)
+                            .expect("Just added")
                     }
                 };
 

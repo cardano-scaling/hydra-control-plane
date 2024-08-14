@@ -1,3 +1,5 @@
+use std::sync::atomic::Ordering;
+
 use crate::{
     model::{node::Node, player::Player},
     MyState,
@@ -11,7 +13,7 @@ use serde::Serialize;
 #[derive(Serialize)]
 pub struct NewGameResponse {
     ip: String,
-    script_ref: Option<String>,
+    script_ref: String,
     admin_pkh: String,
     player_utxo: String,
     player_utxo_datum_hex: String,
@@ -28,6 +30,8 @@ pub async fn new_game(
     let node: &mut Node = state_guard
         .nodes
         .iter_mut()
+        // Only direct games to online games
+        .filter(|n| n.socket.online.load(Ordering::SeqCst))
         // Reserve some machines for the on-site cabinets
         .filter(|n| reserved == n.reserved)
         .sorted_by_key(|n| {
@@ -47,15 +51,20 @@ pub async fn new_game(
 
     let addr = Address::from_bech32(address).map_err(|_| Status::BadRequest)?;
 
-    let player = Player::new(addr).map_err(|_| Status::BadRequest)?;
-    let (player_utxo, player_utxo_datum_hex) = node.add_player(player).await.map_err(|e| {
-        warn!("failed to add player {:?}", e);
-        Status::InternalServerError
-    })?;
+    let player = Player::new(&addr).map_err(|_| Status::BadRequest)?;
+    let (player_utxo, player_utxo_datum_hex) =
+        node.add_player(player, addr).await.map_err(|e| {
+            warn!("failed to add player {:?}", e);
+            Status::InternalServerError
+        })?;
 
+    // TODO: move this to the frontend to lookup
+    // TODO: This is hard coded because our offline nodes have them in the initial-utxo
+    let script_ref =
+        "0000000000000000000000000000000000000000000000000000000000000000#0".to_string();
     Ok(Json(NewGameResponse {
         ip: node.remote_connection.to_authority(),
-        script_ref: node.tx_builder.script_ref.clone().map(|s| s.to_string()),
+        script_ref,
         admin_pkh: node.tx_builder.admin_pkh.to_string(),
         player_utxo,
         player_utxo_datum_hex,

@@ -6,6 +6,7 @@ use async_tungstenite::WebSocketStream;
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::SinkExt;
 use futures_util::StreamExt;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::UnboundedSender;
@@ -20,6 +21,7 @@ use super::hydra_message::{HydraData, HydraEventMessage, HydraMessage};
 pub struct HydraSocket {
     url: String,
     identifier: String,
+    pub online: Arc<AtomicBool>,
     writer: UnboundedSender<HydraData>,
     sender: Arc<Mutex<Option<HydraSender>>>,
 }
@@ -36,17 +38,14 @@ pub struct HydraSender {
 }
 
 impl HydraSocket {
-    pub async fn new(
-        url: &str,
-        identifier: String,
-        writer: &UnboundedSender<HydraData>,
-    ) -> Result<Self> {
-        Ok(HydraSocket {
+    pub fn new(url: &str, identifier: String, writer: &UnboundedSender<HydraData>) -> Self {
+        HydraSocket {
             url: url.to_string(),
             identifier,
+            online: Arc::new(AtomicBool::new(false)),
             writer: writer.clone(),
             sender: Arc::new(Mutex::new(None)),
-        })
+        }
     }
 
     pub async fn send(&self, message: String) -> Result<()> {
@@ -73,6 +72,7 @@ impl HydraSocket {
                         warn!("Error connecting to {}: {}", socket.url, e);
                     }
                 }
+                socket.online.store(false, Ordering::SeqCst);
                 yield_now().await;
             }
         });
@@ -80,6 +80,7 @@ impl HydraSocket {
     async fn connect_and_listen(&self) -> Result<()> {
         let (ws_stream, _) = connect_async(&self.url).await?;
         println!("Succesfully connected to {}", &self.url);
+        self.online.store(true, Ordering::SeqCst);
         let (sender, receiver) = ws_stream.split();
         {
             let mut sender_lock = self.sender.lock().await;

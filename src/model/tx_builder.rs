@@ -18,7 +18,6 @@ use super::{hydra::utxo::UTxO, player::Player};
 pub struct TxBuilder {
     admin_key: SecretKey,
     pub admin_pkh: Hash<28>,
-    pub script_ref: Option<UTxO>,
 }
 
 impl TxBuilder {
@@ -27,12 +26,7 @@ impl TxBuilder {
         TxBuilder {
             admin_key,
             admin_pkh,
-            script_ref: None,
         }
-    }
-
-    pub fn set_script_ref(&mut self, script_ref: &UTxO) {
-        self.script_ref = Some(script_ref.clone());
     }
 
     pub fn build_new_game_state(
@@ -40,6 +34,7 @@ impl TxBuilder {
         player: &Player,
         utxos: Vec<UTxO>,
         _expired_utxos: Vec<UTxO>,
+        collateral_addr: Address,
     ) -> Result<(BuiltTransaction, Vec<u8>)> {
         if let Some(_) = player.utxo {
             bail!("Player already has a UTxO created");
@@ -65,7 +60,7 @@ impl TxBuilder {
             .input(input_utxo.clone().into())
             .output(Output::new(script_address, 0).set_inline_datum(datum.clone()))
             // This is so the player has collateral, we can't clean this up unfortunately
-            .output(Output::new(player.address.clone(), 0))
+            .output(Output::new(collateral_addr, 0))
             .output(Output::new(
                 input_utxo.address.clone(),
                 input_utxo.value.get("lovelace").unwrap().to_owned(),
