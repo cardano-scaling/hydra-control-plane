@@ -302,8 +302,12 @@ impl Node {
                     Some(player) => player,
                     None => {
                         // We must have restarted, or the player was created through another control plane; create the player now
+                        warn!(
+                            "Unrecognized player, adding: {}",
+                            hex::encode(&game_state.owner)
+                        );
                         self.players.push(Player {
-                            pkh: game_state.admin.clone(),
+                            pkh: game_state.owner.clone(),
                             utxo: None,
                             game_state: Some(game_state.clone()),
                             utxo_time: 0,
