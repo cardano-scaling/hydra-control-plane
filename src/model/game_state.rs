@@ -22,7 +22,7 @@ pub struct Player {
     map_object: MapObject,
     pub level_stats: PlayerStats,
     pub total_stats: PlayerStats,
-    pub cheats: u64,
+    pub cheats: u128,
 }
 
 #[derive(Debug, Clone, Default)]
