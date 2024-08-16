@@ -327,12 +327,11 @@ impl Node {
                 let utxo =
                     UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, output)
                         .context("invalid utxo")?;
-                let timestamp: u64 = transaction
+                let timestamp: u128 = transaction
                     .timestamp
                     .parse::<DateTime<Utc>>()
                     .context("timestamp")?
-                    .timestamp()
-                    .clamp(0, i64::max_value()) as u64;
+                    .timestamp() as u128;
                 player.utxo = Some(utxo);
                 player.utxo_time = timestamp;
 

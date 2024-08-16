@@ -9,7 +9,7 @@ use anyhow::{bail, Result};
 pub struct Player {
     pub pkh: Vec<u8>,
     pub utxo: Option<UTxO>,
-    pub utxo_time: u64,
+    pub utxo_time: u128,
     pub game_state: Option<GameState>,
 }
 
@@ -80,8 +80,8 @@ impl Player {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("Time went backwards...")
-            .as_secs();
+            .as_secs() as u128;
 
-        now - self.utxo_time > duration.as_secs()
+        now - self.utxo_time > duration.as_secs() as u128
     }
 }
