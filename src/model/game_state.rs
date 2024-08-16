@@ -12,7 +12,7 @@ pub struct GameState {
     pub player: Player,
     #[allow(dead_code)]
     pub monsters: Vec<MapObject>,
-    pub leveltime: Vec<u64>,
+    pub leveltime: Vec<u128>,
     pub level: LevelId,
 }
 
@@ -156,7 +156,9 @@ impl TryFrom<PlutusData> for GameState {
                 };
 
                 let player = match constr.fields[3].clone() {
-                    PlutusData::Constr(constr) => Player::try_from(PlutusData::Constr(constr))?,
+                    PlutusData::Constr(constr) => {
+                        Player::try_from(PlutusData::Constr(constr)).context("player")?
+                    }
                     _ => bail!("Invalid player"),
                 };
 
@@ -164,7 +166,7 @@ impl TryFrom<PlutusData> for GameState {
                     PlutusData::Array(array) => {
                         let mut monsters = vec![];
                         for monster in array {
-                            monsters.push(MapObject::try_from(monster)?)
+                            monsters.push(MapObject::try_from(monster).context("monster")?)
                         }
                         monsters
                     }
@@ -177,7 +179,7 @@ impl TryFrom<PlutusData> for GameState {
                         for time in array {
                             match time {
                                 PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                                    leveltime.push(u64::try_from(v.0)?)
+                                    leveltime.push(u128::try_from(v.0).context("level time")?)
                                 }
                                 _ => bail!("Invalid leveltime value"),
                             }
