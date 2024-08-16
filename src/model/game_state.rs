@@ -267,26 +267,28 @@ impl TryFrom<PlutusData> for Player {
 
                 let player_state = match fields[0].clone() {
                     PlutusData::Constr(constr) => {
-                        PlayerState::try_from(PlutusData::Constr(constr))?
+                        PlayerState::try_from(PlutusData::Constr(constr)).context("player_state")?
                     }
                     _ => bail!("Invalid field type"),
                 };
 
                 let map_object = match fields[1].clone() {
-                    PlutusData::Constr(constr) => MapObject::try_from(PlutusData::Constr(constr))?,
+                    PlutusData::Constr(constr) => {
+                        MapObject::try_from(PlutusData::Constr(constr)).context("map_object")?
+                    }
                     _ => bail!("Invalid field type"),
                 };
 
                 let total_stats = match fields[2].clone() {
                     PlutusData::Constr(constr) => {
-                        PlayerStats::try_from(PlutusData::Constr(constr))?
+                        PlayerStats::try_from(PlutusData::Constr(constr)).context("total_stats")?
                     }
                     _ => bail!("Invalid field type"),
                 };
 
                 let level_stats = match fields[3].clone() {
                     PlutusData::Constr(constr) => {
-                        PlayerStats::try_from(PlutusData::Constr(constr))?
+                        PlayerStats::try_from(PlutusData::Constr(constr)).context("level_stats")?
                     }
                     _ => bail!("Invalid field type"),
                 };
