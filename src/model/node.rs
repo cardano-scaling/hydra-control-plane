@@ -104,8 +104,8 @@ pub struct NodeStats {
     pub total_secrets: u64,
     pub secrets_leaderboard: Vec<LeaderboardEntry>,
 
-    pub player_play_time: HashMap<String, Vec<u64>>,
-    pub total_play_time: u64,
+    pub player_play_time: HashMap<String, Vec<u128>>,
+    pub total_play_time: u128,
 
     #[serde(skip)]
     pub pending_transactions: HashMap<Vec<u8>, StateUpdate>,
@@ -118,7 +118,7 @@ pub struct StateUpdate {
     pub kills: u64,
     pub items: u64,
     pub secrets: u64,
-    pub time: Vec<u64>,
+    pub time: Vec<u128>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -166,7 +166,7 @@ impl Node {
             stats.total_secrets += secrets;
         }
         for (_, play_times) in stats.player_play_time.drain() {
-            stats.total_play_time += play_times.iter().sum::<u64>();
+            stats.total_play_time += play_times.iter().sum::<u128>();
         }
 
         let socket = HydraSocket::new(
@@ -363,7 +363,7 @@ impl Node {
                     .remove(&key)
                     .unwrap_or(vec![])
                     .iter()
-                    .sum::<u64>();
+                    .sum::<u128>();
                 to_remove.push(index);
             }
         }
