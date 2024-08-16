@@ -290,7 +290,10 @@ impl TryFrom<PlutusData> for Player {
                 };
 
                 let cheats = match fields[4] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => u64::try_from(v.0)?,
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
+                        let r = u128::try_from(v.0);
+                        r.context(format!("cheats: {:?}", v.0))?
+                    }
                     _ => bail!("Invalid field type"),
                 };
 
