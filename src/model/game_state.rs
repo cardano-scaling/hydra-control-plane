@@ -188,7 +188,9 @@ impl TryFrom<PlutusData> for GameState {
                 };
 
                 let level = match constr.fields[6].clone() {
-                    PlutusData::Constr(constr) => LevelId::try_from(PlutusData::Constr(constr))?,
+                    PlutusData::Constr(constr) => {
+                        LevelId::try_from(PlutusData::Constr(constr)).context("level_id")?
+                    }
                     _ => bail!("Invalid level"),
                 };
 

@@ -295,7 +295,8 @@ impl Node {
                     Err(_) => bail!("Failed to deserialize datum"),
                 };
 
-                let game_state: GameState = data.try_into()?;
+                let game_state_result: Result<GameState> = data.try_into();
+                let game_state = game_state_result.context("invalid game state")?;
 
                 let player = match self
                     .players
@@ -324,10 +325,12 @@ impl Node {
 
                 // TODO: actually find the index
                 let utxo =
-                    UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, output)?;
+                    UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, output)
+                        .context("invalid utxo")?;
                 let timestamp: u64 = transaction
                     .timestamp
-                    .parse::<DateTime<Utc>>()?
+                    .parse::<DateTime<Utc>>()
+                    .context("timestamp")?
                     .timestamp()
                     .clamp(0, i64::max_value()) as u64;
                 player.utxo = Some(utxo);
