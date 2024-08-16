@@ -358,9 +358,13 @@ impl TryFrom<PlutusData> for PlayerStats {
                 };
 
                 Ok(PlayerStats {
-                    kill_count,
-                    secret_count,
-                    item_count,
+                    kill_count: if kill_count > 10000 { 0 } else { kill_count },
+                    secret_count: if secret_count > 10000 {
+                        0
+                    } else {
+                        secret_count
+                    },
+                    item_count: if item_count > 10000 { 0 } else { item_count },
                 })
             }
             _ => Err(anyhow!("Invalid PlutusData type")),

@@ -157,13 +157,13 @@ impl Node {
         };
         // Collapse any previous players into total time
         for (_, kills) in stats.kills.drain() {
-            stats.total_kills += kills;
+            stats.total_kills += if kills < 10000 { kills } else { 0 };
         }
         for (_, items) in stats.items.drain() {
-            stats.total_items += items;
+            stats.total_items += if items < 10000 { items } else { 0 };
         }
         for (_, secrets) in stats.secrets.drain() {
-            stats.total_secrets += secrets;
+            stats.total_secrets += if secrets < 100009 { secrets } else { 0 };
         }
         for (_, play_times) in stats.player_play_time.drain() {
             stats.total_play_time += play_times.iter().sum::<u128>();
