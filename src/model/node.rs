@@ -163,10 +163,18 @@ impl Node {
             stats.total_items += if items < 10000 { items } else { 0 };
         }
         for (_, secrets) in stats.secrets.drain() {
-            stats.total_secrets += if secrets < 100009 { secrets } else { 0 };
+            stats.total_secrets += if secrets < 10000 { secrets } else { 0 };
         }
         for (_, play_times) in stats.player_play_time.drain() {
             stats.total_play_time += play_times.iter().sum::<u128>();
+        }
+        // Remove any buggy top scores
+        for leaderboard in &mut [
+            &mut stats.kills_leaderboard,
+            &mut stats.items_leaderboard,
+            &mut stats.secrets_leaderboard,
+        ] {
+            leaderboard.retain(|entry| entry.1 < 10000);
         }
 
         let socket = HydraSocket::new(
