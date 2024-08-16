@@ -35,7 +35,7 @@ pub struct PlayerStats {
 #[derive(Debug, Clone)]
 pub struct MapObject {
     position: Position,
-    health: u128,
+    health: i128,
 }
 
 #[derive(Debug, Clone)]
@@ -411,7 +411,7 @@ impl TryFrom<PlutusData> for MapObject {
 
                 let health = match fields[1] {
                     PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                        u128::try_from(v.0).context("health")?
+                        i128::try_from(v.0).context(format!("health {}", v.0))?
                     }
                     _ => bail!("Invalid field type"),
                 };
