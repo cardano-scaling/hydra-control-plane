@@ -89,9 +89,9 @@ impl Ord for LeaderboardEntry {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct NodeStats {
-    #[serde(skip)]
+    #[serde(default)]
     pub online_nodes: usize,
-    #[serde(skip)]
+    #[serde(default)]
     pub offline_nodes: usize,
     pub total_games: u64,
     pub active_games: usize,
