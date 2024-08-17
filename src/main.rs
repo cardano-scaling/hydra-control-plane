@@ -65,6 +65,7 @@ struct HostConfig {
     admin_key_file: PathBuf,
     persisted: bool,
     reserved: bool,
+    control_plane_port: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -82,6 +83,7 @@ struct NodeConfig {
     admin_key_file: PathBuf,
     persisted: bool,
     reserved: bool,
+    control_plane_port: Option<u32>,
 }
 
 fn default_start_port() -> u32 {
@@ -127,6 +129,7 @@ async fn main() -> Result<()> {
                 max_players: host.max_players,
                 persisted: host.persisted,
                 reserved: host.reserved,
+                control_plane_port: host.control_plane_port,
             };
             let node = Node::try_new(&config, &tx)
                 .await
