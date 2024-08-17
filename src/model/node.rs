@@ -27,7 +27,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::{sync::mpsc::UnboundedSender, time::interval};
 
 use super::{
     game_state::GameState,
@@ -63,6 +63,8 @@ pub struct Node {
     pub players: Vec<Player>,
     #[serde(skip)]
     pub tx_builder: TxBuilder,
+    #[serde(skip)]
+    pub control_plane_port: Option<u32>,
 }
 
 #[derive(Clone, Serialize)]
@@ -182,7 +184,7 @@ impl Node {
             local_connection.to_authority(),
             writer,
         );
-        let node = Node {
+        let mut node = Node {
             head_id: None,
             local_connection,
             remote_connection,
@@ -197,9 +199,13 @@ impl Node {
             players: Vec::new(),
             socket,
             tx_builder: TxBuilder::new(admin_key.try_into()?),
+            control_plane_port: config.control_plane_port,
         };
-
-        node.start_listen();
+        if config.control_plane_port == None {
+            node.start_listen();
+        } else {
+            node.start_fractal_polling().await;
+        }
         Ok(node)
     }
 
@@ -223,6 +229,34 @@ impl Node {
         self.send(message).await?;
 
         Ok((player_utxo, hex::encode(player_utxo_datum)))
+    }
+
+    pub async fn start_fractal_polling(&mut self) {
+        let mut node = self.clone();
+        tokio::spawn(async move {
+            let mut interval = interval(Duration::from_secs(5));
+            loop {
+                interval.tick().await;
+                match node.fractal_poll().await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("Error during fractal polling: {:?}", e);
+                    }
+                }
+            }
+        });
+    }
+
+    async fn fractal_poll(&mut self) -> Result<()> {
+        let port = self.control_plane_port.unwrap();
+        let request_url = self.local_connection.to_http_url_with_port(port) + "/global";
+        let response = reqwest::get(&request_url).await.context("http error")?;
+        let stats = response
+            .json::<NodeStats>()
+            .await
+            .context("invalid response body during fractal polling")?;
+        self.stats = stats;
+        Ok(())
     }
 
     pub fn start_listen(&self) {
@@ -416,6 +450,11 @@ impl ConnectionInfo {
     pub fn to_http_url(&self) -> String {
         let schema = if self.secure { "https" } else { "http" };
         format!("{}://{}:{}", schema, self.host, self.port)
+    }
+
+    pub fn to_http_url_with_port(&self, port: u32) -> String {
+        let schema = if self.secure { "https" } else { "http" };
+        format!("{}://{}:{}", schema, self.host, port)
     }
 
     pub fn to_authority(&self) -> String {
