@@ -494,7 +494,13 @@ impl NodeStats {
         let kills = self
             .kills
             .entry(state_change.player.clone())
-            .and_modify(|k| *k += state_change.kills)
+            .and_modify(|k| {
+                *k += if state_change.kills > 10000 {
+                    0
+                } else {
+                    state_change.kills
+                }
+            })
             .or_insert(state_change.kills);
         let mut min = *kills;
         let mut found = false;
@@ -520,7 +526,13 @@ impl NodeStats {
         let items = self
             .items
             .entry(state_change.player.clone())
-            .and_modify(|k| *k += state_change.items)
+            .and_modify(|k| {
+                *k += if state_change.items > 10000 {
+                    0
+                } else {
+                    state_change.items
+                }
+            })
             .or_insert(state_change.items);
         let mut min = *items;
         let mut found = false;
@@ -546,7 +558,13 @@ impl NodeStats {
         let secrets = self
             .secrets
             .entry(state_change.player.clone())
-            .and_modify(|k| *k += state_change.secrets)
+            .and_modify(|k| {
+                *k += if state_change.secrets > 10000 {
+                    0
+                } else {
+                    state_change.secrets
+                }
+            })
             .or_insert(state_change.secrets);
         let mut min = *secrets;
         let mut found = false;
