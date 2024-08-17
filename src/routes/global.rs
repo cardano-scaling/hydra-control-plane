@@ -6,11 +6,18 @@ use crate::{model::node::NodeStats, MyState};
 
 #[get("/global")]
 pub async fn global(state: &State<MyState>) -> Result<Json<NodeStats>, Status> {
-    let state_guard = state.state.state.read().await;
+    let mut state_guard = state.state.state.write().await;
     let stats = state_guard
         .nodes
-        .iter()
+        .iter_mut()
         .fold(NodeStats::new(), |acc: NodeStats, node| {
+            if node.socket.online.load(std::sync::atomic::Ordering::SeqCst) {
+                node.stats.online_nodes = 1;
+                node.stats.offline_nodes = 0;
+            } else {
+                node.stats.offline_nodes = 1;
+                node.stats.online_nodes = 0;
+            }
             acc.join(
                 node.clone().stats,
                 node.players

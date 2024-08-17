@@ -89,6 +89,8 @@ impl Ord for LeaderboardEntry {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct NodeStats {
+    pub online_nodes: usize,
+    pub offline_nodes: usize,
     pub total_games: u64,
     pub active_games: usize,
     pub transactions: u64,
@@ -425,6 +427,8 @@ impl ConnectionInfo {
 impl NodeStats {
     pub fn new() -> NodeStats {
         NodeStats {
+            online_nodes: 0,
+            offline_nodes: 0,
             total_games: 0,
             active_games: 0,
             transactions: 0,
@@ -585,6 +589,8 @@ impl NodeStats {
         play_time.extend(other.player_play_time);
 
         NodeStats {
+            online_nodes: self.online_nodes + other.online_nodes,
+            offline_nodes: self.offline_nodes + other.offline_nodes,
             total_games: self.total_games + other.total_games,
             active_games: self.active_games + active_games, // TODO: this is awkward; but best way to prune expired games
             transactions: self.transactions + other.transactions,
