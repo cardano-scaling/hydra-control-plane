@@ -13,13 +13,6 @@
       url = "github:hercules-ci/gitignore.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        gitignore.follows = "gitignore";
-      };
-    };
   };
 
   nixConfig = {
@@ -40,7 +33,6 @@
       flake-utils,
       cardano-node,
       hydra,
-      pre-commit-hooks,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -61,25 +53,6 @@
         platform = makeRustPlatform {
           rustc = rust;
           cargo = rust;
-        };
-
-        checks.pre-commit = pre-commit-hooks.lib.${system}.run {
-          src = ./.;
-
-          hooks = {
-            nixfmt-rfc-style = {
-              enable = true;
-            };
-
-            rustfmt = {
-              enable = true;
-
-              packageOverrides = {
-                cargo = rust;
-                rustfmt = rust;
-              };
-            };
-          };
         };
       in
       {
@@ -107,8 +80,6 @@
         };
 
         devShells.default = mkShell {
-          inherit (checks.pre-commit) shellHook;
-
           buildInputs =
             [
               # Runtime dependencies
