@@ -62,16 +62,13 @@
           rustc = rust;
           cargo = rust;
         };
-      in
-      {
-        checks.default = pre-commit-hooks.lib.${system}.run {
+
+        checks.pre-commit = pre-commit-hooks.lib.${system}.run {
           src = ./.;
 
           hooks = {
-            nixfmt = {
+            nixfmt-rfc-style = {
               enable = true;
-
-              package = pkgs.nixfmt-rfc-style;
             };
 
             rustfmt = {
@@ -84,7 +81,8 @@
             };
           };
         };
-
+      in
+      {
         packages.default = platform.buildRustPackage {
           name = "hydra-control-plane";
           src = ./.;
@@ -109,6 +107,8 @@
         };
 
         devShells.default = mkShell {
+          inherit (checks.pre-commit) shellHook;
+
           buildInputs =
             [
               # Runtime dependencies

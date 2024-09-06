@@ -10,3 +10,4 @@ utxo.json
 *.sk
 /hydra-state/
 .DS_Store
+.pre-commit-config.yaml
