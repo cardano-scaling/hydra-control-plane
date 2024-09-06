@@ -28,7 +28,7 @@ use std::{
     time::Duration,
 };
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::{warn, debug};
+use tracing::{debug, warn};
 
 use super::{
     game_state::GameState,
