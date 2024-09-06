@@ -20,7 +20,7 @@ use pallas::{
     txbuilder::{Input, Output},
 };
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -50,8 +50,8 @@ pub struct UTxO {
 
 #[derive(Debug, Clone)]
 pub enum Datum {
-    DatumHash(Vec<u8>),
-    InlineDatum(PlutusData),
+    Hash(Vec<u8>),
+    Inline(PlutusData),
     None,
 }
 
@@ -65,9 +65,9 @@ impl UTxO {
         let is_inline = !value["inlineDatum"].is_null();
         let is_hash = !value["datumHash"].is_null();
         let datum = if is_inline {
-            Datum::InlineDatum(value_to_plutus_data(&value["inlineDatum"])?)
+            Datum::Inline(value_to_plutus_data(&value["inlineDatum"])?)
         } else if is_hash {
-            Datum::DatumHash(hex::decode(
+            Datum::Hash(hex::decode(
                 value["datumHash"].as_str().context("Invalid datumHash")?,
             )?)
         } else {
@@ -111,9 +111,9 @@ impl UTxO {
         let address = Address::from_bytes(output.address.as_ref())?;
         let datum = match &output.datum_option {
             Some(datum) => match datum {
-                PseudoDatumOption::Hash(hash) => Datum::DatumHash(hash.as_ref().to_vec()),
+                PseudoDatumOption::Hash(hash) => Datum::Hash(hash.as_ref().to_vec()),
                 PseudoDatumOption::Data(datum) => {
-                    Datum::InlineDatum(minicbor::decode(datum.raw_cbor())?)
+                    Datum::Inline(minicbor::decode(datum.raw_cbor())?)
                 }
             },
             None => Datum::None,
@@ -172,11 +172,12 @@ impl UTxO {
     }
 }
 
-impl ToString for UTxO {
-    fn to_string(&self) -> String {
-        format!("{}#{}", hex::encode(&self.hash), self.index)
+impl Display for UTxO {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}#{}", hex::encode(&self.hash), self.index)
     }
 }
+
 impl From<UTxO> for Input {
     fn from(val: UTxO) -> Self {
         let hash: Hash<32> = val.hash.as_slice().into();
@@ -248,11 +249,11 @@ impl TryInto<Output> for UTxO {
         }
 
         match self.datum {
-            Datum::DatumHash(datum) => {
+            Datum::Hash(datum) => {
                 let bytes: [u8; 32] = datum.try_into().unwrap();
                 output = output.set_datum_hash(bytes.into());
             }
-            Datum::InlineDatum(datum) => {
+            Datum::Inline(datum) => {
                 let mut bytes: Vec<u8> = Vec::new();
                 encode(datum, &mut bytes)?;
                 output = output.set_inline_datum(bytes);

@@ -55,9 +55,9 @@ pub struct LevelId {
 
 #[derive(Debug, Clone)]
 pub enum PlayerState {
-    LIVE,
-    DEAD,
-    REBORN,
+    Live,
+    Dead,
+    Reborn,
 }
 
 impl From<GameState> for PlutusData {
@@ -228,7 +228,7 @@ impl Default for Player {
 impl Player {
     pub fn new() -> Player {
         Player {
-            player_state: PlayerState::LIVE,
+            player_state: PlayerState::Live,
             map_object: MapObject::default(),
             level_stats: PlayerStats::default(),
             total_stats: PlayerStats::default(),
@@ -414,9 +414,7 @@ impl TryFrom<PlutusData> for MapObject {
                 };
 
                 let health = match fields[1] {
-                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
-                        i128::try_from(v.0).context(format!("health {}", v.0))?
-                    }
+                    PlutusData::BigInt(alonzo::BigInt::Int(v)) => i128::from(v.0),
                     _ => bail!("Invalid field type"),
                 };
 
@@ -483,18 +481,18 @@ impl TryFrom<PlutusData> for Position {
 impl From<PlayerState> for PlutusData {
     fn from(val: PlayerState) -> Self {
         PlutusData::Constr(match val {
-            PlayerState::LIVE => Constr {
+            PlayerState::Live => Constr {
                 tag: 121,
                 any_constructor: Some(0),
                 fields: vec![],
             },
-            PlayerState::DEAD => Constr {
+            PlayerState::Dead => Constr {
                 tag: 121,
                 any_constructor: Some(1),
                 fields: vec![],
             },
             // Constr(1, [])
-            PlayerState::REBORN => Constr {
+            PlayerState::Reborn => Constr {
                 tag: 121,
                 any_constructor: Some(2),
                 fields: vec![],
@@ -509,9 +507,9 @@ impl TryFrom<PlutusData> for PlayerState {
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
             PlutusData::Constr(constr) => match constr.tag {
-                121 => Ok(PlayerState::LIVE),
-                122 => Ok(PlayerState::DEAD),
-                123 => Ok(PlayerState::REBORN),
+                121 => Ok(PlayerState::Live),
+                122 => Ok(PlayerState::Dead),
+                123 => Ok(PlayerState::Reborn),
                 _ => Err(anyhow!("Invalid tag for PlayerState")),
             },
             _ => Err(anyhow!("Invalid PlutusData for PlayerState")),

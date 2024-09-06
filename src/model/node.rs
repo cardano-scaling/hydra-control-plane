@@ -72,16 +72,19 @@ pub struct ConnectionInfo {
     pub port: u32,
     pub secure: bool,
 }
+
 #[derive(Serialize)]
 pub struct NodeSummary(pub Node);
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct LeaderboardEntry(String, u64);
+
 impl PartialOrd for LeaderboardEntry {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.1.partial_cmp(&other.1)
+        Some(self.cmp(other))
     }
 }
+
 impl Ord for LeaderboardEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.1.cmp(&other.1)
@@ -402,7 +405,7 @@ impl ConnectionInfo {
         ))
     }
 
-    fn from_url(value: &String, port: u32) -> Result<Self> {
+    fn from_url(value: &str, port: u32) -> Result<Self> {
         // default to secure connection if no schema provided
         let url = Url::parse(value)?;
 
@@ -641,16 +644,20 @@ impl NodeStats {
             pending_transactions: HashMap::new(),
         }
     }
+
     pub fn merge_leaderboards(
-        left: &Vec<LeaderboardEntry>,
-        right: &Vec<LeaderboardEntry>,
+        left: &[LeaderboardEntry],
+        right: &[LeaderboardEntry],
     ) -> Vec<LeaderboardEntry> {
         let mut merged = vec![];
-        merged.extend(left.clone());
-        merged.extend(right.clone());
+
+        merged.extend(left.iter().cloned());
+        merged.extend(right.iter().cloned());
+
         merged.sort();
         merged.reverse();
         merged.truncate(10);
+
         merged
     }
 }
