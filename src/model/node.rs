@@ -1,4 +1,11 @@
-use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    path::Path,
+    sync::{atomic::AtomicBool, Arc},
+    time::Duration,
+};
+
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use hex::FromHex;
@@ -16,18 +23,11 @@ use pallas::{
         traverse::MultiEraTx,
     },
 };
-
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{
-    collections::HashMap,
-    fs::{self, File},
-    path::Path,
-    sync::{atomic::AtomicBool, Arc},
-    time::Duration,
-};
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::{debug, warn};
 
 use super::{
     game_state::GameState,
@@ -39,6 +39,7 @@ use super::{
     player::Player,
     tx_builder::TxBuilder,
 };
+use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
 
 #[derive(Clone, Serialize)]
 pub struct Node {
@@ -71,16 +72,19 @@ pub struct ConnectionInfo {
     pub port: u32,
     pub secure: bool,
 }
+
 #[derive(Serialize)]
 pub struct NodeSummary(pub Node);
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct LeaderboardEntry(String, u64);
+
 impl PartialOrd for LeaderboardEntry {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.1.partial_cmp(&other.1)
+        Some(self.cmp(other))
     }
 }
+
 impl Ord for LeaderboardEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.1.cmp(&other.1)
@@ -137,13 +141,13 @@ struct KeyEnvelope {
 impl TryInto<SecretKey> for KeyEnvelope {
     type Error = anyhow::Error;
     fn try_into(self) -> Result<SecretKey, Self::Error> {
-        Ok(<[u8; 32]>::from_hex(self.cbor_hex[4..].to_string())?.into())
+        Ok(<[u8; 32]>::from_hex(&self.cbor_hex[4..])?.into())
     }
 }
 
 impl Node {
     pub async fn try_new(config: &NodeConfig, writer: &UnboundedSender<HydraData>) -> Result<Self> {
-        let (local_connection, remote_connection) = ConnectionInfo::from_config(&config)?;
+        let (local_connection, remote_connection) = ConnectionInfo::from_config(config)?;
 
         let admin_key: KeyEnvelope = serde_json::from_reader(
             File::open(&config.admin_key_file).context("unable to open key file")?,
@@ -263,7 +267,7 @@ impl Node {
 
         let outputs = &tx.transaction_body.outputs;
         let script_outputs = outputs
-            .into_iter()
+            .iter()
             .filter(|output| match output {
                 PseudoTransactionOutput::PostAlonzo(output) => {
                     let bytes: Vec<u8> = output.address.clone().into();
@@ -372,7 +376,7 @@ impl Node {
                     .stats
                     .player_play_time
                     .remove(&key)
-                    .unwrap_or(vec![])
+                    .unwrap_or_default()
                     .iter()
                     .sum::<u128>();
                 to_remove.push(index);
@@ -401,7 +405,7 @@ impl ConnectionInfo {
         ))
     }
 
-    fn from_url(value: &String, port: u32) -> Result<Self> {
+    fn from_url(value: &str, port: u32) -> Result<Self> {
         // default to secure connection if no schema provided
         let url = Url::parse(value)?;
 
@@ -640,16 +644,20 @@ impl NodeStats {
             pending_transactions: HashMap::new(),
         }
     }
+
     pub fn merge_leaderboards(
-        left: &Vec<LeaderboardEntry>,
-        right: &Vec<LeaderboardEntry>,
+        left: &[LeaderboardEntry],
+        right: &[LeaderboardEntry],
     ) -> Vec<LeaderboardEntry> {
         let mut merged = vec![];
-        merged.extend(left.clone());
-        merged.extend(right.clone());
+
+        merged.extend(left.iter().cloned());
+        merged.extend(right.iter().cloned());
+
         merged.sort();
         merged.reverse();
         merged.truncate(10);
+
         merged
     }
 }

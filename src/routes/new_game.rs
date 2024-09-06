@@ -1,14 +1,15 @@
 use std::sync::atomic::Ordering;
 
+use itertools::Itertools;
+use pallas::ledger::addresses::Address;
+use rocket::{get, http::Status, serde::json::Json, State};
+use serde::Serialize;
+use tracing::warn;
+
 use crate::{
     model::{node::Node, player::Player},
     MyState,
 };
-use itertools::Itertools;
-use pallas::ledger::addresses::Address;
-use rocket::serde::json::Json;
-use rocket::{http::Status, State};
-use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct NewGameResponse {

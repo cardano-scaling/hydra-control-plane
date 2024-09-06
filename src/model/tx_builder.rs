@@ -10,9 +10,8 @@ use pallas::{
     txbuilder::{BuildBabbage, BuiltTransaction, Output, StagingTransaction},
 };
 
-use crate::SCRIPT_ADDRESS;
-
 use super::{hydra::utxo::UTxO, player::Player};
+use crate::SCRIPT_ADDRESS;
 
 #[derive(Clone)]
 pub struct TxBuilder {
@@ -36,7 +35,7 @@ impl TxBuilder {
         _expired_utxos: Vec<UTxO>,
         collateral_addr: Address,
     ) -> Result<(BuiltTransaction, Vec<u8>)> {
-        if let Some(_) = player.utxo {
+        if player.utxo.is_some() {
             bail!("Player already has a UTxO created");
         }
 
@@ -54,7 +53,7 @@ impl TxBuilder {
             .initialize_state(self.admin_pkh.as_ref().to_vec())
             .into();
         let mut datum: Vec<u8> = Vec::new();
-        let _ = encode(&game_state, &mut datum)?;
+        encode(&game_state, &mut datum)?;
 
         let tx_builder = StagingTransaction::new()
             .input(input_utxo.clone().into())
@@ -121,7 +120,7 @@ impl TxBuilder {
             any_constructor: Some(0),
             fields: vec![],
         });
-        let _ = encode(&redeemer, &mut datum).expect("Fatal error, this should never happen");
+        encode(&redeemer, &mut datum).expect("Fatal error, this should never happen");
 
         datum
     }

@@ -54,8 +54,8 @@ impl Serialize for Transaction {
     }
 }
 
-impl Into<String> for NewTx {
-    fn into(self) -> String {
-        serde_json::to_string(&self).unwrap()
+impl From<NewTx> for String {
+    fn from(val: NewTx) -> Self {
+        serde_json::to_string(&val).unwrap()
     }
 }

@@ -70,8 +70,8 @@ impl TryFrom<Message> for HydraMessage {
     fn try_from(value: Message) -> Result<Self, Self::Error> {
         match value {
             Message::Text(text) => {
-                let json: Value = serde_json::from_str(&text)
-                    .map_err(|err| HydraMessageError::JsonParseError(err))?;
+                let json: Value =
+                    serde_json::from_str(&text).map_err(HydraMessageError::JsonParseError)?;
                 let event = HydraEventMessage::try_from(json)
                     .map_err(|e| HydraMessageError::UnknownError(e.to_string()))?;
                 Ok(HydraMessage::HydraEvent(event))

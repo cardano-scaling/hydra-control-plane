@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rocket::{http::Status, serde::json::Json, State};
+use rocket::{get, http::Status, serde::json::Json, State};
 
 use crate::{model::node::NodeStats, MyState};
 

@@ -1,9 +1,9 @@
 use std::time::Duration;
 
+use anyhow::{bail, Result};
 use pallas::ledger::addresses::Address;
 
 use super::{game_state::GameState, hydra::utxo::UTxO, node::StateUpdate};
-use anyhow::{bail, Result};
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Player {
@@ -72,7 +72,7 @@ impl Player {
     }
 
     pub fn is_expired(&self, duration: Duration) -> bool {
-        if let None = self.utxo {
+        if self.utxo.is_none() {
             // if we don't have a utxo yet, we haven't started playing
             return false;
         }
