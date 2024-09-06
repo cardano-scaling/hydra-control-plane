@@ -1,17 +1,24 @@
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
 use anyhow::{anyhow, Result};
-use async_tungstenite::stream::Stream;
-use async_tungstenite::tokio::{connect_async, TokioAdapter};
-use async_tungstenite::tungstenite::Message;
-use async_tungstenite::WebSocketStream;
-use futures_util::stream::{SplitSink, SplitStream};
-use futures_util::SinkExt;
-use futures_util::StreamExt;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use tokio::net::TcpStream;
-use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::Mutex;
-use tokio::task::yield_now;
+use async_tungstenite::{
+    stream::Stream,
+    tokio::{connect_async, TokioAdapter},
+    tungstenite::Message,
+    WebSocketStream,
+};
+use futures_util::{
+    stream::{SplitSink, SplitStream},
+    SinkExt, StreamExt,
+};
+use tokio::{
+    net::TcpStream,
+    sync::{mpsc::UnboundedSender, Mutex},
+    task::yield_now,
+};
 use tokio_native_tls::TlsStream;
 use tracing::{debug, warn};
 

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::{Context, Result};
 use model::{
     hydra::{
@@ -8,12 +10,8 @@ use model::{
 };
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use routes::global::global;
-use routes::head::head;
-use routes::heads::heads;
-use routes::new_game::new_game;
+use routes::{global::global, head::head, heads::heads, new_game::new_game};
 use serde::Deserialize;
-use std::path::PathBuf;
 use tokio::{
     spawn,
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},

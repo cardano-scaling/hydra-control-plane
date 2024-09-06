@@ -1,4 +1,11 @@
-use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    path::Path,
+    sync::{atomic::AtomicBool, Arc},
+    time::Duration,
+};
+
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use hex::FromHex;
@@ -16,17 +23,9 @@ use pallas::{
         traverse::MultiEraTx,
     },
 };
-
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{
-    collections::HashMap,
-    fs::{self, File},
-    path::Path,
-    sync::{atomic::AtomicBool, Arc},
-    time::Duration,
-};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, warn};
 
@@ -40,6 +39,7 @@ use super::{
     player::Player,
     tx_builder::TxBuilder,
 };
+use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
 
 #[derive(Clone, Serialize)]
 pub struct Node {

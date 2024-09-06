@@ -1,3 +1,5 @@
+use std::{collections::HashMap, fmt::Display};
+
 use anyhow::{anyhow, Context, Result};
 use derivative::Derivative;
 use pallas::{
@@ -20,7 +22,6 @@ use pallas::{
     txbuilder::{Input, Output},
 };
 use serde_json::Value;
-use std::{collections::HashMap, fmt::Display};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

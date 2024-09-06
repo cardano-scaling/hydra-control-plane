@@ -1,9 +1,9 @@
 use std::time::Duration;
 
+use anyhow::{bail, Result};
 use pallas::ledger::addresses::Address;
 
 use super::{game_state::GameState, hydra::utxo::UTxO, node::StateUpdate};
-use anyhow::{bail, Result};
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Player {
