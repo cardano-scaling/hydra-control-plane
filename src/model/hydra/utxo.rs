@@ -122,7 +122,7 @@ impl UTxO {
             Some(script) => {
                 let script = &script.0;
                 let mut cbor = Vec::new();
-                minicbor::encode(&script, &mut cbor)?;
+                minicbor::encode(script, &mut cbor)?;
 
                 match script {
                     PseudoScript::NativeScript(_) => Some(Script {
@@ -145,16 +145,16 @@ impl UTxO {
         let mut value_map: HashMap<String, u64> = HashMap::new();
         match &output.value {
             AlonzoValue::Coin(coin) => {
-                value_map.insert("lovelace".to_owned(), coin.clone());
+                value_map.insert("lovelace".to_owned(), *coin);
             }
             AlonzoValue::Multiasset(coin, multiasset) => {
-                value_map.insert("lovelace".to_owned(), coin.clone());
+                value_map.insert("lovelace".to_owned(), *coin);
                 for (policy_id, assets) in multiasset.iter() {
                     let policy_id_hex = hex::encode(policy_id.as_ref());
                     for (asset_name, amount) in assets.iter() {
                         value_map.insert(
                             format!("{}#{}", policy_id_hex, hex::encode(asset_name.as_slice())),
-                            amount.clone(),
+                            *amount,
                         );
                     }
                 }
@@ -174,13 +174,13 @@ impl UTxO {
 
 impl ToString for UTxO {
     fn to_string(&self) -> String {
-        format!("{}#{}", hex::encode(&self.hash), self.index.to_string())
+        format!("{}#{}", hex::encode(&self.hash), self.index)
     }
 }
-impl Into<Input> for UTxO {
-    fn into(self) -> Input {
-        let hash: Hash<32> = self.hash.as_slice().try_into().unwrap();
-        Input::new(hash, self.index)
+impl From<UTxO> for Input {
+    fn from(val: UTxO) -> Self {
+        let hash: Hash<32> = val.hash.as_slice().into();
+        Input::new(hash, val.index)
     }
 }
 
@@ -232,11 +232,7 @@ impl TryInto<Output> for UTxO {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Output, Self::Error> {
-        let lovelace: u64 = self
-            .value
-            .get("lovelace")
-            .unwrap_or(&u64::default())
-            .clone();
+        let lovelace: u64 = *self.value.get("lovelace").unwrap_or(&u64::default());
 
         let mut output = Output::new(self.address, lovelace);
         for (asset_id, count) in self.value {

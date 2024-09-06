@@ -20,7 +20,7 @@ impl TryFrom<Value> for HeadIsInitializing {
             .to_owned();
         let parties_arr = value["parties"].as_array().context("Invalid parties")?;
         let parties = parties_arr
-            .into_iter()
+            .iter()
             .map(|party| {
                 party
                     .as_object()

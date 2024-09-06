@@ -138,13 +138,13 @@ struct KeyEnvelope {
 impl TryInto<SecretKey> for KeyEnvelope {
     type Error = anyhow::Error;
     fn try_into(self) -> Result<SecretKey, Self::Error> {
-        Ok(<[u8; 32]>::from_hex(self.cbor_hex[4..].to_string())?.into())
+        Ok(<[u8; 32]>::from_hex(&self.cbor_hex[4..])?.into())
     }
 }
 
 impl Node {
     pub async fn try_new(config: &NodeConfig, writer: &UnboundedSender<HydraData>) -> Result<Self> {
-        let (local_connection, remote_connection) = ConnectionInfo::from_config(&config)?;
+        let (local_connection, remote_connection) = ConnectionInfo::from_config(config)?;
 
         let admin_key: KeyEnvelope = serde_json::from_reader(
             File::open(&config.admin_key_file).context("unable to open key file")?,
@@ -264,7 +264,7 @@ impl Node {
 
         let outputs = &tx.transaction_body.outputs;
         let script_outputs = outputs
-            .into_iter()
+            .iter()
             .filter(|output| match output {
                 PseudoTransactionOutput::PostAlonzo(output) => {
                     let bytes: Vec<u8> = output.address.clone().into();
@@ -373,7 +373,7 @@ impl Node {
                     .stats
                     .player_play_time
                     .remove(&key)
-                    .unwrap_or(vec![])
+                    .unwrap_or_default()
                     .iter()
                     .sum::<u128>();
                 to_remove.push(index);

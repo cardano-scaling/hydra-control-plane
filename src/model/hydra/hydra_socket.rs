@@ -15,7 +15,7 @@ use tokio::task::yield_now;
 use tokio_native_tls::TlsStream;
 use tracing::{debug, warn};
 
-use super::hydra_message::{HydraData, HydraEventMessage, HydraMessage};
+use super::hydra_message::{HydraData, HydraMessage};
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -113,7 +113,7 @@ impl HydraSocket {
                 }
 
                 HydraMessage::HydraEvent(event) => {
-                    let message = HydraEventMessage::from(event);
+                    let message = event;
 
                     let data = HydraData::Received {
                         authority: self.identifier.clone(),
@@ -131,7 +131,7 @@ impl HydraSender {
     pub async fn send(&mut self, message: HydraData) -> Result<()> {
         match message {
             HydraData::Send(data) => {
-                let _ = self.sender.send(Message::Text(data)).await?;
+                self.sender.send(Message::Text(data)).await?;
                 debug!("Sent message");
                 Ok(())
             }

@@ -41,10 +41,10 @@ struct Config {
 }
 
 fn default_nodes() -> Vec<NodeConfig> {
-    return vec![];
+    vec![]
 }
 fn default_hosts() -> Vec<HostConfig> {
-    return vec![];
+    vec![]
 }
 
 #[derive(Debug, Deserialize)]
@@ -83,7 +83,7 @@ struct NodeConfig {
 }
 
 fn default_start_port() -> u32 {
-    return 4001;
+    4001
 }
 
 fn default_region() -> String {
@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
 
     let mut nodes = vec![];
     for node in &config.nodes {
-        let node = Node::try_new(&node, &tx)
+        let node = Node::try_new(node, &tx)
             .await
             .context("failed to construct new node")?;
         nodes.push(node);
@@ -120,7 +120,7 @@ async fn main() -> Result<()> {
                 stats_file: host
                     .stats_file_prefix
                     .as_ref()
-                    .and_then(|prefix| Some(format!("{prefix}-{port}"))),
+                    .map(|prefix| format!("{prefix}-{port}")),
                 admin_key_file: host.admin_key_file.clone(),
                 max_players: host.max_players,
                 persisted: host.persisted,
@@ -169,7 +169,7 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                 let node = nodes
                     .iter_mut()
                     .find(|n| n.local_connection.to_authority() == authority);
-                if let None = node {
+                if node.is_none() {
                     warn!("Node not found: {}", authority);
                     continue;
                 }

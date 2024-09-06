@@ -38,7 +38,7 @@ pub struct MapObject {
     health: i128,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Position {
     x: i64,
     y: i64,
@@ -60,9 +60,9 @@ pub enum PlayerState {
     REBORN,
 }
 
-impl Into<PlutusData> for GameState {
-    fn into(self) -> PlutusData {
-        let is_over = if self.is_over {
+impl From<GameState> for PlutusData {
+    fn from(val: GameState) -> Self {
+        let is_over = if val.is_over {
             PlutusData::Constr(Constr {
                 tag: 121,
                 any_constructor: Some(1),
@@ -76,14 +76,14 @@ impl Into<PlutusData> for GameState {
             })
         };
 
-        let owner_bytes: alonzo::BoundedBytes = self.owner.into();
+        let owner_bytes: alonzo::BoundedBytes = val.owner.into();
         let owner = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
             fields: vec![PlutusData::BoundedBytes(owner_bytes)],
         });
 
-        let admin_bytes: alonzo::BoundedBytes = self.admin.into();
+        let admin_bytes: alonzo::BoundedBytes = val.admin.into();
         let admin = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
@@ -97,10 +97,10 @@ impl Into<PlutusData> for GameState {
                 is_over,
                 owner,
                 admin,
-                self.player.into(),
+                val.player.into(),
                 PlutusData::Array(vec![]),
                 PlutusData::Array(
-                    self.leveltime
+                    val.leveltime
                         .into_iter()
                         .map(|x| {
                             let x = x as i64;
@@ -108,7 +108,7 @@ impl Into<PlutusData> for GameState {
                         })
                         .collect(),
                 ),
-                self.level.into(),
+                val.level.into(),
             ],
         })
     }
@@ -121,13 +121,7 @@ impl TryFrom<PlutusData> for GameState {
         match value {
             PlutusData::Constr(constr) => {
                 let is_over = match constr.fields[0].clone() {
-                    PlutusData::Constr(constr) => {
-                        if constr.tag == 122 {
-                            true
-                        } else {
-                            false
-                        }
-                    }
+                    PlutusData::Constr(constr) => constr.tag == 122,
                     _ => bail!("Invalid is_over"),
                 };
 
@@ -225,6 +219,12 @@ impl GameState {
     }
 }
 
+impl Default for Player {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Player {
     pub fn new() -> Player {
         Player {
@@ -237,17 +237,17 @@ impl Player {
     }
 }
 
-impl Into<PlutusData> for Player {
-    fn into(self) -> PlutusData {
-        let cheats = self.cheats as i64;
+impl From<Player> for PlutusData {
+    fn from(val: Player) -> Self {
+        let cheats = val.cheats as i64;
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
             fields: vec![
-                self.player_state.into(),
-                self.map_object.into(),
-                self.total_stats.into(),
-                self.level_stats.into(),
+                val.player_state.into(),
+                val.map_object.into(),
+                val.total_stats.into(),
+                val.level_stats.into(),
                 PlutusData::BigInt(alonzo::BigInt::Int(cheats.into())),
             ],
         })
@@ -314,11 +314,11 @@ impl TryFrom<PlutusData> for Player {
     }
 }
 
-impl Into<PlutusData> for PlayerStats {
-    fn into(self) -> PlutusData {
-        let kill_count = self.kill_count as i64;
-        let secret_count = self.secret_count as i64;
-        let item_count = self.item_count as i64;
+impl From<PlayerStats> for PlutusData {
+    fn from(val: PlayerStats) -> Self {
+        let kill_count = val.kill_count as i64;
+        let secret_count = val.secret_count as i64;
+        let item_count = val.item_count as i64;
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
@@ -381,14 +381,14 @@ impl Default for MapObject {
     }
 }
 
-impl Into<PlutusData> for MapObject {
-    fn into(self) -> PlutusData {
-        let health: i64 = self.health as i64;
+impl From<MapObject> for PlutusData {
+    fn from(val: MapObject) -> Self {
+        let health: i64 = val.health as i64;
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
             fields: vec![
-                self.position.into(),
+                val.position.into(),
                 PlutusData::BigInt(alonzo::BigInt::Int(health.into())),
             ],
         })
@@ -426,21 +426,16 @@ impl TryFrom<PlutusData> for MapObject {
         }
     }
 }
-impl Default for Position {
-    fn default() -> Self {
-        Position { x: 0, y: 0, z: 0 }
-    }
-}
 
-impl Into<PlutusData> for Position {
-    fn into(self) -> PlutusData {
+impl From<Position> for PlutusData {
+    fn from(val: Position) -> Self {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
             fields: vec![
-                PlutusData::BigInt(alonzo::BigInt::Int(self.x.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.y.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.z.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(val.x.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(val.y.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(val.z.into())),
             ],
         })
     }
@@ -485,9 +480,9 @@ impl TryFrom<PlutusData> for Position {
     }
 }
 
-impl Into<PlutusData> for PlayerState {
-    fn into(self) -> PlutusData {
-        PlutusData::Constr(match self {
+impl From<PlayerState> for PlutusData {
+    fn from(val: PlayerState) -> Self {
+        PlutusData::Constr(match val {
             PlayerState::LIVE => Constr {
                 tag: 121,
                 any_constructor: Some(0),
@@ -562,13 +557,7 @@ impl TryFrom<PlutusData> for LevelId {
                 };
 
                 let demo_playback = match fields[3].clone() {
-                    PlutusData::Constr(constr) => {
-                        if constr.tag == 122 {
-                            true
-                        } else {
-                            false
-                        }
-                    }
+                    PlutusData::Constr(constr) => constr.tag == 122,
                     _ => bail!("Invalid demoplayback"),
                 };
 
@@ -584,18 +573,18 @@ impl TryFrom<PlutusData> for LevelId {
     }
 }
 
-impl Into<PlutusData> for LevelId {
-    fn into(self) -> PlutusData {
+impl From<LevelId> for PlutusData {
+    fn from(val: LevelId) -> Self {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
             fields: vec![
-                PlutusData::BigInt(alonzo::BigInt::Int(self.map.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.skill.into())),
-                PlutusData::BigInt(alonzo::BigInt::Int(self.episode.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(val.map.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(val.skill.into())),
+                PlutusData::BigInt(alonzo::BigInt::Int(val.episode.into())),
                 PlutusData::Constr(Constr {
                     tag: 121,
-                    any_constructor: Some(if self.demo_playback { 1 } else { 0 }),
+                    any_constructor: Some(if val.demo_playback { 1 } else { 0 }),
                     fields: vec![],
                 }),
             ],
