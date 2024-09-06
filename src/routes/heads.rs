@@ -1,7 +1,6 @@
 use crate::model::node::NodeSummary;
 use crate::MyState;
-use rocket::serde::json::Json;
-use rocket::State;
+use rocket::{get, serde::json::Json, State};
 
 #[get("/heads")]
 pub async fn heads(state: &State<MyState>) -> Json<Vec<NodeSummary>> {
