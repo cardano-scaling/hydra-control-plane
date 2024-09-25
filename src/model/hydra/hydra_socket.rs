@@ -139,7 +139,6 @@ impl HydraSender {
         match message {
             HydraData::Send(data) => {
                 self.sender.send(Message::Text(data)).await?;
-                debug!("Sent message");
                 Ok(())
             }
             _ => Err(anyhow!("Can only send data of variant Send")),

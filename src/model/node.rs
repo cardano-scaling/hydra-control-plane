@@ -29,7 +29,7 @@ use super::{
     hydra::{
         hydra_message::HydraData,
         hydra_socket::HydraSocket,
-        messages::{new_tx::NewTx, tx_valid::TxValid},
+        messages::{init, new_tx::NewTx, tx_valid::TxValid},
     },
     player::Player,
     tx_builder::TxBuilder,
@@ -48,6 +48,7 @@ pub struct Node {
     pub persisted: bool,
     pub reserved: bool,
     pub online: Arc<AtomicBool>,
+    pub occupied: bool,
 
     #[serde(skip)]
     pub local_connection: ConnectionInfo,
@@ -196,6 +197,7 @@ impl Node {
             persisted: config.persisted,
             reserved: config.reserved,
             online: socket.online.clone(),
+            occupied: false,
 
             players: Vec::new(),
             socket,
@@ -235,6 +237,16 @@ impl Node {
 
     pub async fn send(&self, message: String) -> Result<()> {
         self.socket.send(message).await
+    }
+
+    pub async fn init_head(&self) -> Result<()> {
+        if self.occupied {
+            bail!("Node is already occupied, cannot initialize a head.")
+        }
+
+        self.send(init::get_message()).await?;
+
+        Ok(())
     }
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
