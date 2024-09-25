@@ -194,6 +194,16 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                             warn!("failed to add transaction {:?}", e);
                         }
                     },
+                    HydraEventMessage::CommandFailed(command_failed) => {
+                        println!("command failed {:?}", command_failed);
+                    }
+                    HydraEventMessage::HeadIsInitializing(_) => {
+                        info!(
+                            "node {:?} is initializing a head, marking as occupied",
+                            node.local_connection.to_authority()
+                        );
+                        node.occupied = true;
+                    }
                     _ => {}
                 }
             }
