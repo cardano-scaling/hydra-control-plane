@@ -13,6 +13,7 @@
       url = "github:hercules-ci/gitignore.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-inclusive.url = "github:input-output-hk/nix-inclusive";
   };
 
   nixConfig = {
@@ -34,7 +35,7 @@
       cardano-node,
       hydra,
       ...
-    }:
+    }@inputs:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -58,12 +59,17 @@
       {
         packages.default = platform.buildRustPackage {
           name = "hydra-control-plane";
-          src = ./.;
+          src = inputs.nix-inclusive.lib.inclusive ./. [
+            ./Cargo.lock
+            ./Cargo.toml
+            ./rust-toolchain.toml
+            ./src
+          ];
+          nativeBuildInputs = with pkgs; [ pkg-config ];
           buildInputs =
             with pkgs;
             (
               [
-                pkg-config
                 openssl
               ]
               ++ optionals isDarwin [
@@ -77,6 +83,7 @@
               "pallas-0.29.0" = "sha256-P//R/17kMaqN4JGHFFTMy2gbo7k+xWUaqkF0LFVUxWQ=";
             };
           };
+          meta.mainProgram = "hydra_control_plane";
         };
 
         devShells.default = mkShell {
