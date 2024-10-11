@@ -20,13 +20,16 @@ pub struct NewGameResponse {
     player_utxo_datum_hex: String,
 }
 
-#[get("/new_game")]
+#[get("/new_game?<public_key>&<players>&<bots>")]
 pub async fn new_game(
-    // address: &str,
-    // region: Option<&str>,
-    // reserved: bool,
+    public_key: &str,
+    players: &str,
+    bots: &str,
     state: &State<MyState>,
 ) -> Result<Json<NewGameResponse>, Status> {
+    let bots: Vec<&str> = bots.split(",").collect();
+    let players: Vec<&str> = players.split(",").collect();
+
     let mut state_guard = state.state.state.write().await;
     let node: &mut Node = state_guard
         .nodes
