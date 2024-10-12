@@ -1,7 +1,9 @@
 use pallas::ledger::primitives::{
     alonzo,
-    conway::{Constr, PlutusData},
+    conway::{Constr, PlutusData, PlutusV2Script},
 };
+
+use super::input::InputWrapper;
 
 // Note: I am using i64 to avoid using `as` type casts. BigInt requires an i64, although typically they should be u64.
 pub struct HeadParameters {
@@ -12,8 +14,8 @@ pub struct HeadParameters {
 impl HeadParameters {
     pub fn to_head_datum(
         &self,
-        token_policy_id: Vec<u8>,
-        seed_tx_in: (Vec<u8>, i64),
+        token_policy_id: PlutusV2Script,
+        seed_tx_in: InputWrapper,
     ) -> PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
@@ -32,21 +34,10 @@ impl HeadParameters {
                         .map(|v| PlutusData::BoundedBytes(alonzo::BoundedBytes::from(v.clone())))
                         .collect(),
                 ),
-                PlutusData::BoundedBytes(alonzo::BoundedBytes::from(token_policy_id)),
-                PlutusData::Constr(Constr {
-                    tag: 121,
-                    any_constructor: None,
-                    fields: vec![
-                        PlutusData::Constr(Constr {
-                            tag: 121,
-                            any_constructor: None,
-                            fields: vec![PlutusData::BoundedBytes(alonzo::BoundedBytes::from(
-                                seed_tx_in.0,
-                            ))],
-                        }),
-                        PlutusData::BigInt(alonzo::BigInt::Int(seed_tx_in.1.into())),
-                    ],
-                }),
+                PlutusData::BoundedBytes(alonzo::BoundedBytes::from(
+                    token_policy_id.as_ref().to_vec(),
+                )),
+                seed_tx_in.to_plutus_data(),
             ],
         })
     }
