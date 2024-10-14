@@ -7,10 +7,10 @@ use uplc::tx::apply_params_to_script;
 
 use crate::model::hydra::tx::input::InputWrapper;
 
-const HYDRA_SCRIPT: &str = "Hello, World!";
+const HYDRA_MINT_VALIDATOR: &str = "Hello, World!";
 
 pub fn make_head_token_script(input: &InputWrapper) -> anyhow::Result<PlutusV2Script> {
-    let bytes = hex::decode(HYDRA_SCRIPT).context("Invalid hydra script")?;
+    let bytes = hex::decode(HYDRA_MINT_VALIDATOR).context("Invalid hydra script")?;
     let parameters = PlutusData::Array(vec![input.to_plutus_data()]);
     let mut parameter_bytes: Vec<u8> = Vec::new();
     encode(&parameters, &mut parameter_bytes).context("failed to encode parameters")?;
