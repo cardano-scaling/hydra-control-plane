@@ -1,6 +1,9 @@
-use pallas::ledger::primitives::{
-    alonzo,
-    conway::{Constr, PlutusData, PlutusV2Script},
+use pallas::{
+    crypto::hash::Hash,
+    ledger::primitives::{
+        alonzo,
+        conway::{Constr, PlutusData},
+    },
 };
 
 use super::input::InputWrapper;
@@ -12,11 +15,7 @@ pub struct HeadParameters {
 }
 
 impl HeadParameters {
-    pub fn to_head_datum(
-        &self,
-        token_policy_id: PlutusV2Script,
-        seed_tx_in: InputWrapper,
-    ) -> PlutusData {
+    pub fn to_head_datum(&self, token_policy_id: Hash<28>, seed_tx_in: InputWrapper) -> PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
@@ -34,9 +33,7 @@ impl HeadParameters {
                         .map(|v| PlutusData::BoundedBytes(alonzo::BoundedBytes::from(v.clone())))
                         .collect(),
                 ),
-                PlutusData::BoundedBytes(alonzo::BoundedBytes::from(
-                    token_policy_id.as_ref().to_vec(),
-                )),
+                PlutusData::BoundedBytes(alonzo::BoundedBytes::from(token_policy_id.to_vec())),
                 seed_tx_in.to_plutus_data(),
             ],
         })
@@ -45,7 +42,7 @@ impl HeadParameters {
 
 #[cfg(test)]
 mod tests {
-    use pallas::codec::minicbor::encode;
+    use pallas::{codec::minicbor::encode, txbuilder::Input};
 
     use super::*;
 
@@ -56,20 +53,28 @@ mod tests {
             hex::decode("b37aabd81024c043f53a069c91e51a5b52e4ea399ae17ee1fe3cb9c44db707eb")
                 .expect("Failed to decode participant key");
 
-        let token_policy_id =
+        let token_policy_id: Hash<28> = Hash::new(
             hex::decode("983a93519f98636e38f2d8050f4f66c046bca4be38b06384a2fd6cd6")
-                .expect("Failed to decode token policy id");
+                .expect("Failed to decode token policy id")
+                .as_slice()
+                .try_into()
+                .expect("Slice was incorrect size"),
+        );
 
         let head_parameters = HeadParameters {
             contenstation_period: 60000,
             parties: vec![particpant_key],
         };
 
-        let seed_tx_in = (
+        let tx_hash: Hash<32> =
             hex::decode("800a656c030ed34c071598f5beb361494b88092011fa4895578d820aadba397d")
-                .expect("Failed to decode seed tx in"),
-            0,
-        );
+                .expect("Failed to decode seed tx in")
+                .as_slice()
+                .try_into()
+                .expect("Slice was incorrect size");
+
+        let seed_tx_in = InputWrapper::from(Input::new(tx_hash, 0));
+
         let datum = head_parameters.to_head_datum(token_policy_id, seed_tx_in);
         let mut datum_bytes: Vec<u8> = Vec::new();
         encode(&datum, &mut datum_bytes).expect("Failed to encode datum");
