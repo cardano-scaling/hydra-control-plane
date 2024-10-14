@@ -10,8 +10,8 @@ use super::input::InputWrapper;
 
 // Note: I am using i64 to avoid using `as` type casts. BigInt requires an i64, although typically they should be u64.
 pub struct HeadParameters {
-    contenstation_period: i64, // Number of seconds
-    parties: Vec<Vec<u8>>,     // VerificationKey
+    pub contenstation_period: i64, // Number of seconds
+    pub parties: Vec<Vec<u8>>,     // VerificationKeyHash
 }
 
 impl HeadParameters {
@@ -79,7 +79,7 @@ mod tests {
 
         let seed_tx_in = InputWrapper::from(Input::new(tx_hash, 0));
 
-        let datum = head_parameters.to_head_datum(token_policy_id, seed_tx_in);
+        let datum = head_parameters.to_head_datum(token_policy_id, &seed_tx_in);
         let mut datum_bytes: Vec<u8> = Vec::new();
         encode(&datum, &mut datum_bytes).expect("Failed to encode datum");
         assert_eq!(hex::encode(datum_bytes), "d8799fd8799f19ea60ff9f5820b37aabd81024c043f53a069c91e51a5b52e4ea399ae17ee1fe3cb9c44db707ebff581c983a93519f98636e38f2d8050f4f66c046bca4be38b06384a2fd6cd6d8799fd8799f5820800a656c030ed34c071598f5beb361494b88092011fa4895578d820aadba397dff00ffff".to_string())
