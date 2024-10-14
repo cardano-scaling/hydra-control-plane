@@ -50,3 +50,11 @@ impl From<InputWrapper> for Input {
         value.inner
     }
 }
+
+impl Clone for InputWrapper {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Input::new(self.inner.tx_hash.0.into(), self.inner.txo_index),
+        }
+    }
+}

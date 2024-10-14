@@ -15,7 +15,11 @@ pub struct HeadParameters {
 }
 
 impl HeadParameters {
-    pub fn to_head_datum(&self, token_policy_id: Hash<28>, seed_tx_in: InputWrapper) -> PlutusData {
+    pub fn to_head_datum(
+        &self,
+        token_policy_id: Hash<28>,
+        seed_tx_in: &InputWrapper,
+    ) -> PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
