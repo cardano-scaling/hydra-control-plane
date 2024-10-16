@@ -69,11 +69,7 @@ impl InitTx {
         let mut datum_bytes = Vec::new();
         encode(&datum, &mut datum_bytes).expect("failed to encode datum");
 
-        let validator: PlutusV2Script = HydraValidator::VInitial.into();
-        let mut address_bytes = validator.compute_hash().to_vec();
-        address_bytes.insert(0, 0b01110000 | self.network_id);
-        let address =
-            Address::from_bytes(address_bytes.as_slice()).expect("Failed to create address");
+        let address: Address = HydraValidator::VInitial.to_address(self.network_id);
 
         Output::new(address, 1290000)
             .set_inline_datum(datum_bytes)
@@ -106,6 +102,7 @@ impl InitTx {
 }
 
 mod tests {
+
     use pallas::txbuilder::Input;
 
     use super::*;

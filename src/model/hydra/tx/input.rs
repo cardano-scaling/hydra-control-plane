@@ -12,25 +12,6 @@ pub struct InputWrapper {
     pub inner: Input,
 }
 
-impl InputWrapper {
-    pub fn to_plutus_data(&self) -> PlutusData {
-        PlutusData::Constr(Constr {
-            tag: 121,
-            any_constructor: None,
-            fields: vec![
-                PlutusData::Constr(Constr {
-                    tag: 121,
-                    any_constructor: None,
-                    fields: vec![PlutusData::BoundedBytes(alonzo::BoundedBytes::from(
-                        self.inner.tx_hash.0.to_vec(),
-                    ))],
-                }),
-                PlutusData::BigInt(alonzo::BigInt::Int((self.inner.txo_index as i64).into())),
-            ],
-        })
-    }
-}
-
 impl Deref for InputWrapper {
     type Target = Input;
 
@@ -48,6 +29,43 @@ impl From<Input> for InputWrapper {
 impl From<InputWrapper> for Input {
     fn from(value: InputWrapper) -> Self {
         value.inner
+    }
+}
+
+impl Into<PlutusData> for InputWrapper {
+    fn into(self) -> PlutusData {
+        PlutusData::Constr(Constr {
+            tag: 121,
+            any_constructor: None,
+            fields: vec![
+                PlutusData::Constr(Constr {
+                    tag: 121,
+                    any_constructor: None,
+                    fields: vec![PlutusData::BoundedBytes(alonzo::BoundedBytes::from(
+                        self.inner.tx_hash.0.to_vec(),
+                    ))],
+                }),
+                PlutusData::BigInt(alonzo::BigInt::Int((self.inner.txo_index as i64).into())),
+            ],
+        })
+    }
+}
+impl Into<PlutusData> for &InputWrapper {
+    fn into(self) -> PlutusData {
+        PlutusData::Constr(Constr {
+            tag: 121,
+            any_constructor: None,
+            fields: vec![
+                PlutusData::Constr(Constr {
+                    tag: 121,
+                    any_constructor: None,
+                    fields: vec![PlutusData::BoundedBytes(alonzo::BoundedBytes::from(
+                        self.inner.tx_hash.0.to_vec(),
+                    ))],
+                }),
+                PlutusData::BigInt(alonzo::BigInt::Int((self.inner.txo_index as i64).into())),
+            ],
+        })
     }
 }
 
