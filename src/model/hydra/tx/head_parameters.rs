@@ -38,7 +38,7 @@ impl HeadParameters {
                         .collect(),
                 ),
                 PlutusData::BoundedBytes(alonzo::BoundedBytes::from(token_policy_id.to_vec())),
-                seed_tx_in.to_plutus_data(),
+                seed_tx_in.into(),
             ],
         })
     }
