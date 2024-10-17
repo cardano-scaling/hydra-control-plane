@@ -3,21 +3,14 @@ use std::{collections::HashMap, fmt::Display};
 use anyhow::{anyhow, Context, Result};
 use derivative::Derivative;
 use pallas::{
-    codec::{
-        minicbor::{self, encode},
-        utils::KeepRaw,
-    },
+    codec::minicbor::{self, encode},
     crypto::hash::Hash,
     ledger::{
         addresses::Address,
-        primitives::{
-            alonzo::Value as AlonzoValue,
-            babbage::PseudoScript,
-            conway::{
-                BigInt, Constr, NativeScript, PlutusData, PolicyId, PseudoDatumOption,
-                PseudoPostAlonzoTransactionOutput,
-            },
+        primitives::conway::{
+            BigInt, Constr, PlutusData, PolicyId, PseudoDatumOption, PseudoScript,
         },
+        traverse::MultiEraOutput,
     },
     txbuilder::{Input, Output},
 };
@@ -100,17 +93,11 @@ impl UTxO {
         })
     }
 
-    pub fn try_from_pallas(
-        tx_id: &str,
-        tx_ix: u64,
-        output: &PseudoPostAlonzoTransactionOutput<
-            PseudoDatumOption<KeepRaw<'_, PlutusData>>,
-            PseudoScript<KeepRaw<'_, NativeScript>>,
-        >,
-    ) -> Result<Self> {
+    pub fn try_from_pallas(tx_id: &str, tx_ix: u64, output: &MultiEraOutput) -> Result<Self> {
         let hash = hex::decode(tx_id)?;
-        let address = Address::from_bytes(output.address.as_ref())?;
-        let datum = match &output.datum_option {
+        let address = output.address()?;
+
+        let datum = match &output.datum() {
             Some(datum) => match datum {
                 PseudoDatumOption::Hash(hash) => Datum::Hash(hash.as_ref().to_vec()),
                 PseudoDatumOption::Data(datum) => {
@@ -119,46 +106,29 @@ impl UTxO {
             },
             None => Datum::None,
         };
-        let reference_script = match &output.script_ref {
-            Some(script) => {
-                let script = &script.0;
-                let mut cbor = Vec::new();
-                minicbor::encode(script, &mut cbor)?;
 
-                match script {
-                    PseudoScript::NativeScript(_) => Some(Script {
-                        cbor,
-                        script_type: ScriptType::NativeScript,
-                    }),
-                    PseudoScript::PlutusV1Script(_) => Some(Script {
-                        cbor,
-                        script_type: ScriptType::PlutusV1,
-                    }),
-                    PseudoScript::PlutusV2Script(_) => Some(Script {
-                        cbor,
-                        script_type: ScriptType::PlutusV2,
-                    }),
-                }
-            }
-            None => None,
-        };
+        let reference_script = output.script_ref().map(|script| Script {
+            cbor: pallas::codec::minicbor::to_vec(&script).unwrap(), //infallibe
+            script_type: match script {
+                PseudoScript::NativeScript(_) => ScriptType::NativeScript,
+                PseudoScript::PlutusV1Script(_) => ScriptType::PlutusV1,
+                PseudoScript::PlutusV2Script(_) => ScriptType::PlutusV2,
+                PseudoScript::PlutusV3Script(_) => todo!(),
+            },
+        });
 
         let mut value_map: HashMap<String, u64> = HashMap::new();
-        match &output.value {
-            AlonzoValue::Coin(coin) => {
-                value_map.insert("lovelace".to_owned(), *coin);
-            }
-            AlonzoValue::Multiasset(coin, multiasset) => {
-                value_map.insert("lovelace".to_owned(), *coin);
-                for (policy_id, assets) in multiasset.iter() {
-                    let policy_id_hex = hex::encode(policy_id.as_ref());
-                    for (asset_name, amount) in assets.iter() {
-                        value_map.insert(
-                            format!("{}#{}", policy_id_hex, hex::encode(asset_name.as_slice())),
-                            *amount,
-                        );
-                    }
-                }
+        let value = output.value();
+
+        value_map.insert("lovelace".to_owned(), value.coin());
+
+        for multiassets in value.assets() {
+            let policy_id_hex = hex::encode(multiassets.policy().as_ref());
+            for asset in multiassets.assets().iter() {
+                value_map.insert(
+                    format!("{}#{}", policy_id_hex, hex::encode(asset.name())),
+                    asset.output_coin().unwrap_or_default(),
+                );
             }
         }
 
