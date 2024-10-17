@@ -10,16 +10,11 @@ use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use hex::FromHex;
 use pallas::{
-    codec::{minicbor::decode, utils::KeepRaw},
+    codec::minicbor::decode,
     crypto::key::ed25519::SecretKey,
     ledger::{
         addresses::Address,
-        primitives::{
-            babbage::{PseudoScript, PseudoTransactionOutput},
-            conway::{
-                NativeScript, PlutusData, PseudoDatumOption, PseudoPostAlonzoTransactionOutput,
-            },
-        },
+        primitives::conway::{PlutusData, PseudoDatumOption},
         traverse::MultiEraTx,
     },
 };
@@ -263,105 +258,80 @@ impl Node {
         let bytes = transaction.cbor.as_slice();
         let tx = MultiEraTx::decode(bytes).context("Failed to decode transaction")?;
 
-        let tx = tx.as_babbage().context("Invalid babbage era tx")?;
+        //let tx = tx.as_babbage().context("Invalid babbage era tx")?;
 
-        let outputs = &tx.transaction_body.outputs;
-        let script_outputs = outputs
+        let outputs = tx.outputs();
+        let script_outputs: Vec<_> = outputs
             .iter()
-            .filter(|output| match output {
-                PseudoTransactionOutput::PostAlonzo(output) => {
-                    let bytes: Vec<u8> = output.address.clone().into();
-                    let address = match Address::from_bytes(bytes.as_slice()) {
-                        Ok(address) => address,
-                        Err(_) => return false,
-                    };
-                    // unwrapping here because it came from hydra, so it is valid
-                    let address = address.to_bech32().unwrap();
-
-                    address.as_str() == SCRIPT_ADDRESS
-                }
-                _ => false,
-            })
-            .collect::<Vec<
-                &PseudoTransactionOutput<
-                    PseudoPostAlonzoTransactionOutput<
-                        PseudoDatumOption<KeepRaw<PlutusData>>,
-                        PseudoScript<KeepRaw<NativeScript>>,
-                    >,
-                >,
-            >>();
+            .filter(|output| (output.address().unwrap().to_bech32().unwrap() == SCRIPT_ADDRESS))
+            .collect();
 
         if script_outputs.len() != 1 {
             bail!("Invalid number of script outputs");
         }
 
         let script_output = script_outputs.first().unwrap();
-        match script_output {
-            PseudoTransactionOutput::PostAlonzo(output) => {
-                let datum = match output.datum_option.as_ref() {
-                    Some(PseudoDatumOption::Data(datum)) => datum,
-                    // If there's no datum, or a datum hash, it's an unrelated transaction
-                    _ => return Ok(()),
-                }
-                .0
-                .raw_cbor();
 
-                let data = match decode::<PlutusData>(datum) {
-                    Ok(data) => data,
-                    Err(_) => bail!("Failed to deserialize datum"),
-                };
+        let datum = match script_output.datum() {
+            Some(PseudoDatumOption::Data(x)) => x.raw_cbor(),
+            // If there's no datum, or a datum hash, it's an unrelated transaction
+            _ => return Ok(()),
+        };
 
-                let game_state_result: Result<GameState> = data.try_into();
-                let game_state = game_state_result.context("invalid game state")?;
+        let data = match decode::<PlutusData>(datum) {
+            Ok(data) => data,
+            Err(_) => bail!("Failed to deserialize datum"),
+        };
 
-                let player = match self
-                    .players
+        let game_state_result: Result<GameState> = data.try_into();
+        let game_state = game_state_result.context("invalid game state")?;
+
+        let player = match self
+            .players
+            .iter_mut()
+            .find(|player| player.pkh == game_state.owner)
+        {
+            Some(player) => player,
+            None => {
+                // We must have restarted, or the player was created through another control plane; create the player now
+                warn!(
+                    "Unrecognized player, adding: {}",
+                    hex::encode(&game_state.owner)
+                );
+                self.players.push(Player {
+                    pkh: game_state.owner.clone(),
+                    utxo: None,
+                    game_state: Some(game_state.clone()),
+                    utxo_time: 0,
+                });
+                self.players
                     .iter_mut()
                     .find(|player| player.pkh == game_state.owner)
-                {
-                    Some(player) => player,
-                    None => {
-                        // We must have restarted, or the player was created through another control plane; create the player now
-                        warn!(
-                            "Unrecognized player, adding: {}",
-                            hex::encode(&game_state.owner)
-                        );
-                        self.players.push(Player {
-                            pkh: game_state.owner.clone(),
-                            utxo: None,
-                            game_state: Some(game_state.clone()),
-                            utxo_time: 0,
-                        });
-                        self.players
-                            .iter_mut()
-                            .find(|player| player.pkh == game_state.owner)
-                            .expect("Just added")
-                    }
-                };
-
-                // TODO: actually find the index
-                let utxo =
-                    UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, output)
-                        .context("invalid utxo")?;
-                let timestamp: u128 = transaction
-                    .timestamp
-                    .parse::<DateTime<Utc>>()
-                    .context("timestamp")?
-                    .timestamp() as u128;
-                player.utxo = Some(utxo);
-                player.utxo_time = timestamp;
-
-                let state_update =
-                    player.generate_state_update(transaction.cbor.len() as u64, game_state);
-
-                self.stats
-                    .pending_transactions
-                    .insert(transaction.tx_id, state_update);
-
-                Ok(())
+                    .expect("Just added")
             }
-            _ => bail!("Invalid output type"),
-        }
+        };
+
+        // TODO: actually find the index
+        let utxo =
+            UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, &script_output)
+                .context("invalid utxo")?;
+
+        let timestamp: u128 = transaction
+            .timestamp
+            .parse::<DateTime<Utc>>()
+            .context("timestamp")?
+            .timestamp() as u128;
+
+        player.utxo = Some(utxo);
+        player.utxo_time = timestamp;
+
+        let state_update = player.generate_state_update(transaction.cbor.len() as u64, game_state);
+
+        self.stats
+            .pending_transactions
+            .insert(transaction.tx_id, state_update);
+
+        Ok(())
     }
 
     pub fn cleanup_players(&mut self) -> Vec<UTxO> {
