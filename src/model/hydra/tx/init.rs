@@ -34,7 +34,6 @@ impl InitTx {
 
         let mut tx_builder = Some(
             StagingTransaction::new()
-                // this is temporary until we figure out script data hash calculation
                 .script_data_hash(Hash::from(
                     hex::decode("b2c22f2ef164d35e32999971e77bcd422c5838d2491ee84c5fcfe6d9295c2785")
                         .expect("failed to decode script data hash")
@@ -54,7 +53,6 @@ impl InitTx {
                     }),
                 )
                 .script(ScriptKind::PlutusV2, script.as_ref().to_vec())
-                .output(change_output)
                 .output(self.make_head_output_initial(script_hash))
                 .fee(5000000),
         );
@@ -74,14 +72,19 @@ impl InitTx {
         // Gotta be a better way to update the tx builder in a loop, but this works for now
         tx_builder
             .ok_or(anyhow!("fatal error: no tx builder"))
-            .and_then(|builder| builder.build_babbage_raw().map_err(|e| anyhow!("{}", e)))
+            .and_then(|builder| {
+                builder
+                    .output(change_output)
+                    .build_babbage_raw()
+                    .map_err(|e| anyhow!("{}", e))
+            })
             .map_err(|e| anyhow!("Failed to build tx: {}", e))
     }
 
     // TODO: actually do proper error handling here
     // TODO: calculate proper lovelace amount
     fn make_initial_output(&self, script_hash: Hash<28>, participant: Vec<u8>) -> Output {
-        let datum = PlutusData::BoundedBytes(participant.clone().into());
+        let datum = PlutusData::BoundedBytes(script_hash.to_vec().into());
         let mut datum_bytes = Vec::new();
         encode(&datum, &mut datum_bytes).expect("failed to encode datum");
 
@@ -100,10 +103,8 @@ impl InitTx {
         let mut datum_bytes = Vec::new();
         encode(&datum, &mut datum_bytes).expect("failed to encode parameters");
         let validator: PlutusV2Script = HydraValidator::VHead.into();
-        let mut address_bytes = validator.compute_hash().to_vec();
-        address_bytes.insert(0, 0b01110000 | self.network_id);
-        let address =
-            Address::from_bytes(address_bytes.as_slice()).expect("Failed to create address");
+        let address = HydraValidator::VHead.to_address(self.network_id);
+
         Output::new(address, 2000000)
             .set_inline_datum(datum_bytes)
             .add_asset(script_hash, "HydraHeadV1".as_bytes().to_vec(), 1)
@@ -126,23 +127,23 @@ mod tests {
     #[test]
     fn test_init_tx() {
         let tx_hash: Hash<32> =
-            hex::decode("997d6cc7903555fb0bcc5a84a8aa672d4ce8d8cff4657c571f193a33f6f10cf2")
+            hex::decode("f09baeeedf28cb2a3cf8c15dbc3dc3acf44e54329b547855ffa197d2058391b2")
                 .expect("Failed to decode seed tx in")
                 .as_slice()
                 .try_into()
                 .expect("Slice was incorrect size");
 
         let network_id = 0;
-        let seed_input = Input::new(tx_hash, 1);
+        let seed_input = Input::new(tx_hash, 0);
         let participants =
             vec![
-                hex::decode("7bbfc8ffc6da9e6f6f070f0f28a4c0de8e099c34485e192660475059d8bb9557")
+                hex::decode("9b29dd55b38a5e824775d303723e83e08d83c4ba72ceab284154b8a2")
                     .expect("Failed to decode participant 1"),
             ];
         let parameters = HeadParameters {
             contenstation_period: 60000,
             parties: vec![hex::decode(
-                "8d66bf436073cf0ff32c4a99439bd056c9d9388e9456977bda33b2cb34320def",
+                "7bbfc8ffc6da9e6f6f070f0f28a4c0de8e099c34485e192660475059d8bb9557",
             )
             .expect("failed to decode party 1")],
         };
@@ -160,7 +161,7 @@ mod tests {
                     "addr_test1vzdjnh24kw99aqj8whfsxu37s0sgmq7yhfeva2egg92t3gsws2hwn",
                 )
                 .expect("invalid address"),
-                9990439494 - 2000000 - 2000000 - 5000000,
+                9983285986 - 2000000 - 2000000 - 5000000,
             ))
             .expect("Failed to build tx");
 
