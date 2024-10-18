@@ -1,7 +1,7 @@
 use pallas::txbuilder::Input;
 
 pub struct ScriptRegistry {
-    initial_reference: Input,
-    commit_reference: Input,
-    head_reference: Input,
+    pub initial_reference: Input,
+    pub commit_reference: Input,
+    pub head_reference: Input,
 }
