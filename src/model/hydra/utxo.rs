@@ -102,6 +102,7 @@ impl UTxO {
                 PseudoDatumOption::Hash(hash) => Datum::Hash(hash.as_ref().to_vec()),
                 PseudoDatumOption::Data(datum) => {
                     Datum::Inline(minicbor::decode(datum.raw_cbor())?)
+                    // Datum::None
                 }
             },
             None => Datum::None,
