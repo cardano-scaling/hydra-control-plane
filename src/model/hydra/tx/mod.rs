@@ -7,6 +7,7 @@ pub mod commit;
 pub mod head_parameters;
 pub mod init;
 pub mod input;
+pub mod output;
 pub mod script_registry;
 
 pub fn void_redeemer() -> Vec<u8> {
