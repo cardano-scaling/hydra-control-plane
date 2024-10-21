@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 
 use pallas::{
     codec::{minicbor::encode, utils::CborWrap},
@@ -43,31 +43,32 @@ impl CommitTx {
     }
 
     fn make_commit_datum(&self) -> Result<Vec<u8>> {
+        let fields = vec![
+            PlutusData::BoundedBytes(self.party.clone().into()),
+            PlutusData::Array(
+                self.commit_inputs
+                    .clone()
+                    .into_iter()
+                    .map(|(commit_input, commit_input_output)| {
+                        let conway_output = commit_input_output.build_babbage_raw()?;
+                        let mut output_bytes = Vec::new();
+                        encode(&conway_output, &mut output_bytes)?;
+                        Ok(PlutusData::Constr(Constr {
+                            tag: 121,
+                            any_constructor: None,
+                            fields: vec![
+                                commit_input.into(),
+                                PlutusData::BoundedBytes(output_bytes.into()),
+                            ],
+                        }))
+                    })
+                    .collect::<Result<Vec<PlutusData>, anyhow::Error>>()?,
+            ),
+        ];
         let data = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
-                PlutusData::BoundedBytes(self.party.clone().into()),
-                PlutusData::Array(
-                    self.commit_inputs
-                        .clone()
-                        .into_iter()
-                        .map(|(commit_input, commit_input_output)| {
-                            // let conway_output = commit_input_output.build_babbage_raw()?;
-                            // let mut output_bytes = Vec::new();
-                            // encode(&conway_output, &mut output_bytes)?;
-                            PlutusData::Constr(Constr {
-                                tag: 121,
-                                any_constructor: None,
-                                fields: vec![
-                                    commit_input.into(),
-                                    // PlutusData::BoundedBytes(output_bytes.into()),
-                                ],
-                            })
-                        })
-                        .collect(),
-                ),
-            ],
+            fields,
         });
 
         let mut bytes: Vec<u8> = Vec::new();
