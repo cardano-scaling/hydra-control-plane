@@ -9,6 +9,7 @@ use pallas::{
     txbuilder::Output,
 };
 
+#[derive(Debug, Clone)]
 pub struct OutputWrapper {
     pub inner: Output,
 }

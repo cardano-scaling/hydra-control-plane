@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anyhow::{anyhow, Context, Result};
 
 use pallas::{
@@ -17,7 +19,7 @@ use pallas::{
 
 use crate::model::hydra::contract::hydra_validator::HydraValidator;
 
-use super::{input::InputWrapper, script_registry::ScriptRegistry};
+use super::{input::InputWrapper, output::OutputWrapper, script_registry::ScriptRegistry};
 
 pub struct CommitTx {
     network_id: u8,
@@ -25,13 +27,16 @@ pub struct CommitTx {
     head_id: Vec<u8>,
     party: Vec<u8>,
     initial_input: (InputWrapper, Output, PaymentKeyHash),
-    commit_inputs: Vec<(InputWrapper, Output)>,
+    commit_inputs: Vec<(InputWrapper, OutputWrapper)>,
 }
 
 impl CommitTx {
     pub fn build_tx(&self) -> Result<StagingTransaction> {
         let commit_output = build_base_commit_output(
-            self.commit_inputs.iter().map(|(_, o)| o.clone()).collect(),
+            self.commit_inputs
+                .iter()
+                .map(|(_, o)| o.inner.clone())
+                .collect(),
             self.network_id,
         )
         .context("Failed to construct base commit output")?
@@ -50,9 +55,9 @@ impl CommitTx {
                     .clone()
                     .into_iter()
                     .map(|(commit_input, commit_input_output)| {
-                        let conway_output = commit_input_output.build_babbage_raw()?;
+                        let output_data: PlutusData = commit_input_output.into();
                         let mut output_bytes = Vec::new();
-                        encode(&conway_output, &mut output_bytes)?;
+                        encode(&output_data, &mut output_bytes)?;
                         Ok(PlutusData::Constr(Constr {
                             tag: 121,
                             any_constructor: None,
@@ -64,6 +69,7 @@ impl CommitTx {
                     })
                     .collect::<Result<Vec<PlutusData>, anyhow::Error>>()?,
             ),
+            PlutusData::BoundedBytes(self.head_id.clone().into()),
         ];
         let data = PlutusData::Constr(Constr {
             tag: 121,
@@ -106,7 +112,8 @@ mod tests {
 
     #[test]
     fn test_make_commit_datum() {
-        let head_id = hex::decode("d8799fd8799fd8799f581c299650d431de775c65eed15c122aa975237e5b4a235a596c0b5edcf3ffd8799fd8799fd8799f581c496ab2039877b6386666a3d651e38eaf04c7c0a46c09f7f939ebfd6effffffffa140a1401a00989680d87980d87a80ff").expect("Failed to decode head_id");
+        let head_id = hex::decode("2505642019121D9B2D92437D8B8EA493BACFCB4FB535013B70E7F528")
+            .expect("Failed to decode head_id");
         let party = hex::decode("3302e982ae2514964bcd2b2d7187277a2424e44b553efafaf786677ff5db9a5e")
             .expect("Failed to decode party");
         let initial_input: (InputWrapper, Output, PaymentKeyHash) = (
@@ -161,7 +168,7 @@ mod tests {
                     )
                     .expect("failed to decode bech32"),
                     10000000
-                ),
+                ).into(),
             ),
             (
                 Input::new(
@@ -181,7 +188,7 @@ mod tests {
                     )
                     .expect("failed to decode bech32"),
                     97000000
-                ),
+                ).into(),
             ),
             (
                 Input::new(
@@ -201,7 +208,7 @@ mod tests {
                     )
                     .expect("failed to decode bech32"),
                     51000000
-                )
+                ).into()
             )
             ],
         };
@@ -211,8 +218,6 @@ mod tests {
             .expect("Failed to make commit datum");
 
         let datum_string = hex::encode(datum);
-        println!("{}", datum_string);
-
-        assert!(true);
+        assert_eq!(datum_string, "d8799f58203302e982ae2514964bcd2b2d7187277a2424e44b553efafaf786677ff5db9a5e9fd8799fd8799fd8799f582008e378358bffd92fc354ee757b5c47204ba58e7c72347a08877abab5ba202948ff182eff5f5840d8799fd8799fd8799f581c299650d431de775c65eed15c122aa975237e5b4a235a596c0b5edcf3ffd8799fd8799fd8799f581c496ab2039877b6386666a3d6515823e38eaf04c7c0a46c09f7f939ebfd6effffffffa140a1401a00989680d87980d87a80ffffffd8799fd8799fd8799f58205a41c22049880541a23954877bd2e5e6069b5ecb8eed6505dbf16f5ee45e9fa8ff03ff5f5840d8799fd8799fd8799f581cb9343d7c6de66302960110db759633e7bc4ce1ef8d3faa2386938dedffd8799fd8799fd8799f581c8202e1e5de55b5025e8a4afe4558239cea10057e97825c3d34623ad28d1fffffffffa140a1401a05c81a40d87980d87a80ffffffd8799fd8799fd8799f58207663bc29c18d4d3647ff6f5054815c2b5f0fd76fafd1e6f5613f7471a88d8fa0ff07ff5f5840d8799fd8799fd8799f581cee1a6e03cbd9ede8d40ae6fdb6ab51a9de7b603af218730fe5e56d35ffd8799fd8799fd8799f581c504be8610c412878fb01c9ef7758239f1e6bbd1c1aeafe3c6c6c8f50d142ffffffffa140a1401a030a32c0d87980d87a80ffffffff581c2505642019121d9b2d92437d8b8ea493bacfcb4fb535013b70e7f528ff");
     }
 }
