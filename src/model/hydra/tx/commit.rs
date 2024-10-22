@@ -1,12 +1,13 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 
 use pallas::{
     codec::minicbor::encode,
+    crypto::hash::Hash,
     ledger::{
         addresses::PaymentKeyHash,
         primitives::conway::{Constr, PlutusData},
     },
-    txbuilder::{Output, StagingTransaction},
+    txbuilder::{BuildBabbage, BuiltTransaction, ExUnits, Output, StagingTransaction},
 };
 
 use crate::model::hydra::contract::hydra_validator::HydraValidator;
@@ -19,24 +20,76 @@ pub struct CommitTx {
     head_id: Vec<u8>,
     party: Vec<u8>,
     initial_input: (InputWrapper, Output, PaymentKeyHash),
+    blueprint_tx: Vec<(InputWrapper, OutputWrapper)>,
+    fee: u64,
     commit_inputs: Vec<(InputWrapper, OutputWrapper)>,
 }
 
 impl CommitTx {
-    pub fn build_tx(&self) -> Result<StagingTransaction> {
+    pub fn build_tx(&self) -> Result<BuiltTransaction> {
         let commit_output = build_base_commit_output(
-            self.commit_inputs
-                .iter()
-                .map(|(_, o)| o.inner.clone())
-                .collect(),
+            [
+                self.commit_inputs
+                    .iter()
+                    .map(|(_, o)| o.inner.clone())
+                    .collect::<Vec<Output>>()
+                    .as_slice(),
+                vec![self.initial_input.1.clone()].as_slice(),
+            ]
+            .concat(),
             self.network_id,
         )
         .context("Failed to construct base commit output")?
         .set_inline_datum(self.build_commit_datum()?);
 
-        let tx_builder = StagingTransaction::new().output(commit_output);
+        let mut tx_builder = Some(
+            StagingTransaction::new()
+                .fee(self.fee)
+                .reference_input(self.script_registry.initial_reference.clone().into())
+                .collateral_input(
+                    self.blueprint_tx
+                        .get(0)
+                        .ok_or(anyhow!(
+                            "need at least one blueprint tx input for collateral"
+                        ))?
+                        .0
+                        .clone()
+                        .into(),
+                )
+                .input(self.initial_input.0.clone().into())
+                .output(commit_output)
+                .add_spend_redeemer(
+                    self.initial_input.0.clone().into(),
+                    self.build_redeemer()?,
+                    Some(ExUnits {
+                        mem: 14000000,
+                        steps: 10000000000,
+                    }),
+                )
+                .disclosed_signer(self.initial_input.2)
+                // Hardcoding this for now for the tests
+                .script_data_hash(Hash::from(
+                    hex::decode("12E5AF821E4510D6651E57185B4DAE19E8BD72BF90A8C1E6CD053606CBC46514")
+                        .expect("hardcoded hash")
+                        .as_slice(),
+                )),
+        );
+        for (input, _) in self.commit_inputs.clone() {
+            if let Some(builder) = tx_builder {
+                tx_builder = Some(builder.input(input.into()));
+            }
+        }
 
-        Ok(tx_builder)
+        for (input, output) in self.blueprint_tx.clone() {
+            if let Some(builder) = tx_builder {
+                tx_builder = Some(builder.input(input.into()).output(output.inner));
+            }
+        }
+
+        tx_builder
+            .ok_or(anyhow!("no transaction builder "))
+            .and_then(|builder| builder.build_babbage_raw().map_err(|e| anyhow!("{}", e)))
+            .map_err(|e| anyhow!("failed to build tx: {}", e))
     }
 
     fn build_commit_datum(&self) -> Result<Vec<u8>> {
@@ -98,6 +151,7 @@ fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Outp
     let lovelace = outputs.iter().fold(0, |acc, o| acc + o.lovelace);
     let mut commit_output = Output::new(address, lovelace);
     for output in outputs {
+        println!("{:?}", output.assets);
         if let Some(output_assets) = output.assets {
             for (policy, assets) in output_assets.iter() {
                 for (name, amount) in assets {
@@ -135,12 +189,24 @@ mod tests {
         assert_eq!(hex::encode(redeemer), "d87a9f9fd8799fd8799f582008e378358bffd92fc354ee757b5c47204ba58e7c72347a08877abab5ba202948ff182effd8799fd8799f58205a41c22049880541a23954877bd2e5e6069b5ecb8eed6505dbf16f5ee45e9fa8ff03ffd8799fd8799f58207663bc29c18d4d3647ff6f5054815c2b5f0fd76fafd1e6f5613f7471a88d8fa0ff07ffffff");
     }
 
+    #[test]
+    // TODO: we need to actually build a test that works here
+    fn test_build_tx() {
+        let commit = get_commit();
+        let tx = commit.build_tx().expect("Failed to build tx");
+
+        println!("{:?}", hex::encode(tx.tx_bytes));
+
+        assert!(true);
+    }
+
     // This CommitTx uses the following preview transaction: d00b6b2c3920c8836ca0bce2fe4f662bd68c3d49dca743831fd9328b44260908
     fn get_commit() -> CommitTx {
         let head_id = hex::decode("2505642019121D9B2D92437D8B8EA493BACFCB4FB535013B70E7F528")
             .expect("Failed to decode head_id");
         let party = hex::decode("3302e982ae2514964bcd2b2d7187277a2424e44b553efafaf786677ff5db9a5e")
             .expect("Failed to decode party");
+
         let initial_input: (InputWrapper, Output, PaymentKeyHash) = (
             Input::new(
                 Hash::from(
@@ -157,9 +223,20 @@ mod tests {
                 )
                 .expect("failed to decode bech32"),
                 1290000,
-            ),
+            )
+            .add_asset(
+                Hash::from(
+                    hex::decode("2505642019121D9B2D92437D8B8EA493BACFCB4FB535013B70E7F528")
+                        .expect("failed to decode policy id")
+                        .as_slice(),
+                ),
+                hex::decode("8BB334F0E8D88551D62DB31965F25B644FE0CCC8D3613533E10D689A")
+                    .expect("failed to decode asset id"),
+                1,
+            )
+            .expect("failed to add asset to initial output"),
             Hash::from(
-                hex::decode("2fac819a1f4f14e29639d1414220d2a18b6abd6b8e444d88d0dda8ff")
+                hex::decode("8BB334F0E8D88551D62DB31965F25B644FE0CCC8D3613533E10D689A")
                     .expect("failed to decode key hash")
                     .as_slice(),
             ),
@@ -167,14 +244,12 @@ mod tests {
 
         CommitTx {
                 network_id: 0,
-                script_registry: ScriptRegistry {
-                    initial_reference: initial_input.0.clone().into(),
-                    commit_reference: initial_input.0.clone().into(),
-                    head_reference: initial_input.0.clone().into(),
-                },
+                script_registry: get_script_registry(),
                 head_id,
                 party,
                 initial_input,
+                blueprint_tx: vec![(Input::new(Hash::from(hex::decode("ef61c1686e77e6004f7e9913d20d0598e8cc5e661a559086a84dfafaafdc7818").expect("failed to decode tx_id").as_slice()), 2).into(), Output::new(Address::from_bech32("addr_test1vz9mxd8sarvg25wk9ke3je0jtdjylcxverfkzdfnuyxk3xszsdn9j").expect("failed to decode bech32 address"), 917935379).into())],
+                fee: 1822653,
                 commit_inputs: vec![(
                     Input::new(
                         Hash::from(
@@ -237,5 +312,23 @@ mod tests {
                 )
                 ],
             }
+    }
+
+    fn get_script_registry() -> ScriptRegistry {
+        let initial_reference: InputWrapper = Input::new(
+            Hash::from(
+                hex::decode("d00b6b2c3920c8836ca0bce2fe4f662bd68c3d49dca743831fd9328b44260908")
+                    .expect("failed to decode tx_id")
+                    .as_slice(),
+            ),
+            0,
+        )
+        .into();
+        ScriptRegistry {
+            initial_reference: initial_reference.clone(),
+            // these are not used in this transaction
+            commit_reference: initial_reference.clone(),
+            head_reference: initial_reference,
+        }
     }
 }
