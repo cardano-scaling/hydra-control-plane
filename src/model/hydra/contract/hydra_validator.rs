@@ -6,6 +6,7 @@ use pallas::ledger::{
 // For more info on what each script does, read the protocol spec: https://hydra.family/head-protocol/assets/files/hydra-spec-74c85a9e8c75aeca7735137947b39453.pdf
 pub enum HydraValidator {
     MHead,
+    VCommit,
     VDeposit,
     VHead,
     VInitial,
@@ -15,6 +16,7 @@ impl HydraValidator {
     pub fn cbor(&self) -> &str {
         match self {
             Self::MHead => include_str!("_mhead.cbor").trim_end(),
+            Self::VCommit => include_str!("_vcommit.cbor").trim_end(),
             Self::VDeposit => include_str!("_vdeposit.cbor").trim_end(),
             Self::VHead => include_str!("_vhead.cbor").trim_end(),
             Self::VInitial => include_str!("_vinitial.cbor").trim_end(),

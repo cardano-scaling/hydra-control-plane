@@ -69,7 +69,7 @@ impl CommitTx {
                 .disclosed_signer(self.initial_input.2)
                 // Hardcoding this for now for the tests
                 .script_data_hash(Hash::from(
-                    hex::decode("12E5AF821E4510D6651E57185B4DAE19E8BD72BF90A8C1E6CD053606CBC46514")
+                    hex::decode("124da7622889cc76cb140faf934a7f836a3e7847c7a4e9317ad20b6ba6f7b0cd")
                         .expect("hardcoded hash")
                         .as_slice(),
                 )),
@@ -147,7 +147,7 @@ impl CommitTx {
 }
 
 fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Output> {
-    let address = HydraValidator::VDeposit.to_address(network_id);
+    let address = HydraValidator::VCommit.to_address(network_id);
     let lovelace = outputs.iter().fold(0, |acc, o| acc + o.lovelace);
     let mut commit_output = Output::new(address, lovelace);
     for output in outputs {
@@ -189,15 +189,108 @@ mod tests {
         assert_eq!(hex::encode(redeemer), "d87a9f9fd8799fd8799f582008e378358bffd92fc354ee757b5c47204ba58e7c72347a08877abab5ba202948ff182effd8799fd8799f58205a41c22049880541a23954877bd2e5e6069b5ecb8eed6505dbf16f5ee45e9fa8ff03ffd8799fd8799f58207663bc29c18d4d3647ff6f5054815c2b5f0fd76fafd1e6f5613f7471a88d8fa0ff07ffffff");
     }
 
-    #[test]
     // TODO: we need to actually build a test that works here
+    #[test]
     fn test_build_tx() {
-        let commit = get_commit();
+        let commit = build_preprod_commit();
         let tx = commit.build_tx().expect("Failed to build tx");
 
         println!("{:?}", hex::encode(tx.tx_bytes));
 
         assert!(true);
+    }
+
+    fn build_preprod_commit() -> CommitTx {
+        let head_id = hex::decode("bfab6b5ece7eba6d4cdde8cfc5e0f91ac8a097c90b14d7eb934126da")
+            .expect("Failed to decode head_id");
+        let party = hex::decode("7bbfc8ffc6da9e6f6f070f0f28a4c0de8e099c34485e192660475059d8bb9557")
+            .expect("Failed to decode party");
+
+        let initial_input: (InputWrapper, Output, PaymentKeyHash) = (
+            Input::new(
+                Hash::from(
+                    hex::decode("12b552763c92793685bafc8854112d2868373bafa03b1f011dbdb426dc226fc8")
+                        .expect("Failed to decode txid")
+                        .as_slice(),
+                ),
+                1,
+            )
+            .into(),
+            Output::new(
+                Address::from_bech32(
+                    "addr_test1wqh6eqv6ra83fc5k88g5zs3q62sck64adw8ygnvg6rw63lc70pepc",
+                )
+                .expect("failed to decode bech32"),
+                2000000,
+            )
+            .add_asset(
+                Hash::from(
+                    hex::decode("bfab6b5ece7eba6d4cdde8cfc5e0f91ac8a097c90b14d7eb934126da")
+                        .expect("failed to decode policy id")
+                        .as_slice(),
+                ),
+                hex::decode("9b29dd55b38a5e824775d303723e83e08d83c4ba72ceab284154b8a2")
+                    .expect("failed to decode asset id"),
+                1,
+            )
+            .expect("failed to add asset to initial output"),
+            Hash::from(
+                hex::decode("9b29dd55b38a5e824775d303723e83e08d83c4ba72ceab284154b8a2")
+                    .expect("failed to decode key hash")
+                    .as_slice(),
+            ),
+        );
+
+        CommitTx {
+            network_id: 0,
+            script_registry: get_script_registry(),
+            head_id,
+            party,
+            initial_input,
+            blueprint_tx: vec![(
+                Input::new(
+                    Hash::from(
+                        hex::decode(
+                            "12b552763c92793685bafc8854112d2868373bafa03b1f011dbdb426dc226fc8",
+                        )
+                        .expect("failed to decode tx_id")
+                        .as_slice(),
+                    ),
+                    2,
+                )
+                .into(),
+                Output::new(
+                    Address::from_bech32(
+                        "addr_test1vzdjnh24kw99aqj8whfsxu37s0sgmq7yhfeva2egg92t3gsws2hwn",
+                    )
+                    .expect("failed to decode bech32 address"),
+                    9974285986 - 1875229,
+                )
+                .into(),
+            )],
+            fee: 1875229,
+            commit_inputs: vec![(
+                Input::new(
+                    Hash::from(
+                        hex::decode(
+                            "4991e003de580e917c5ab659f7c6d054c0827e6fc30695351d6d9c13adb44c0c",
+                        )
+                        .expect("failed to decode tx_id")
+                        .as_slice(),
+                    ),
+                    0,
+                )
+                .into(),
+                Output::new(
+                    Address::from_bech32(
+                        "addr_test1vzdjnh24kw99aqj8whfsxu37s0sgmq7yhfeva2egg92t3gsws2hwn",
+                    )
+                    .expect("failed to decode bech32 address"),
+                    10000000000,
+                )
+                .into(),
+            )],
+        }
     }
 
     // This CommitTx uses the following preview transaction: d00b6b2c3920c8836ca0bce2fe4f662bd68c3d49dca743831fd9328b44260908
@@ -314,21 +407,17 @@ mod tests {
             }
     }
 
+    // These are the preprod values
     fn get_script_registry() -> ScriptRegistry {
-        let initial_reference: InputWrapper = Input::new(
-            Hash::from(
-                hex::decode("d00b6b2c3920c8836ca0bce2fe4f662bd68c3d49dca743831fd9328b44260908")
-                    .expect("failed to decode tx_id")
-                    .as_slice(),
-            ),
-            0,
-        )
-        .into();
+        let tx_hash = Hash::from(
+            hex::decode("03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a")
+                .expect("failed to decode tx_id")
+                .as_slice(),
+        );
         ScriptRegistry {
-            initial_reference: initial_reference.clone(),
-            // these are not used in this transaction
-            commit_reference: initial_reference.clone(),
-            head_reference: initial_reference,
+            initial_reference: Input::new(tx_hash, 0).into(),
+            commit_reference: Input::new(tx_hash, 1).into(),
+            head_reference: Input::new(tx_hash, 2).into(),
         }
     }
 }
