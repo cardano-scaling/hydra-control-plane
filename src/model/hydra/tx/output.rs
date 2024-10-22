@@ -112,27 +112,18 @@ impl Into<PlutusData> for OutputWrapper {
                             fields: vec![PlutusData::BoundedBytes(self.payment_key_hash().into())],
                         }),
                         // Maybe<Delegation Part>
-                        PlutusData::Constr(Constr {
-                            tag: 121,
-                            any_constructor: None,
-                            fields: vec![PlutusData::Constr(Constr {
+                        PlutusData::Constr(match self.delegation_key_hash() {
+                            // NOTE: this case is probably not correct. Might need another wrapper, but unclear.
+                            Some(stake_key_hash) => Constr {
                                 tag: 121,
                                 any_constructor: None,
-                                fields: vec![match self.delegation_key_hash() {
-                                    Some(stake_key_hash) => PlutusData::Constr(Constr {
-                                        tag: 121,
-                                        any_constructor: None,
-                                        fields: vec![PlutusData::BoundedBytes(
-                                            stake_key_hash.into(),
-                                        )],
-                                    }),
-                                    None => PlutusData::Constr(Constr {
-                                        tag: 122,
-                                        any_constructor: None,
-                                        fields: vec![],
-                                    }),
-                                }],
-                            })],
+                                fields: vec![PlutusData::BoundedBytes(stake_key_hash.into())],
+                            },
+                            None => Constr {
+                                tag: 122,
+                                any_constructor: None,
+                                fields: vec![],
+                            },
                         }),
                     ],
                 }),

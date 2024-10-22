@@ -6,3 +6,9 @@ pub struct ScriptRegistry {
     pub commit_reference: InputWrapper,
     pub head_reference: InputWrapper,
 }
+
+// pub enum ScriptRegistry {
+//     Preprod,
+// }
+
+// impl ScriptRegistry {}
