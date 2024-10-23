@@ -17,19 +17,26 @@ use crate::model::hydra::{
 
 use super::{input::InputWrapper, void_redeemer};
 
-struct InitTx {
-    network_id: u8,
-    seed_input: InputWrapper,
-    participants: Vec<Vec<u8>>,
-    parameters: HeadParameters,
+pub struct InitTx {
+    pub network_id: u8,
+    pub seed_input: InputWrapper,
+    pub participants: Vec<Vec<u8>>,
+    pub parameters: HeadParameters,
 }
 
 impl InitTx {
-    fn build_tx(&self, change_output: Output) -> Result<BuiltTransaction> {
+    pub fn get_head_id(&self) -> Result<Vec<u8>> {
+        Ok(self.get_minting_validator()?.1.to_vec())
+    }
+    fn get_minting_validator(&self) -> Result<(PlutusV2Script, Hash<28>)> {
         let script =
             make_head_token_script(&self.seed_input).context("Failed to make head token script")?;
-
         let script_hash = script.compute_hash();
+
+        Ok((script, script_hash))
+    }
+    fn build_tx(&self, change_output: Output) -> Result<BuiltTransaction> {
+        let (script, script_hash) = self.get_minting_validator()?;
         // TODO: fee calculation? Currently just hardcoding for the test
 
         let mut tx_builder = Some(
@@ -83,7 +90,7 @@ impl InitTx {
 
     // TODO: actually do proper error handling here
     // TODO: calculate proper lovelace amount
-    fn make_initial_output(&self, script_hash: Hash<28>, participant: Vec<u8>) -> Output {
+    pub fn make_initial_output(&self, script_hash: Hash<28>, participant: Vec<u8>) -> Output {
         let datum = PlutusData::BoundedBytes(script_hash.to_vec().into());
         let mut datum_bytes = Vec::new();
         encode(&datum, &mut datum_bytes).expect("failed to encode datum");
@@ -102,13 +109,16 @@ impl InitTx {
         let datum = self.parameters.to_head_datum(script_hash, &self.seed_input);
         let mut datum_bytes = Vec::new();
         encode(&datum, &mut datum_bytes).expect("failed to encode parameters");
-        let validator: PlutusV2Script = HydraValidator::VHead.into();
         let address = HydraValidator::VHead.to_address(self.network_id);
 
         Output::new(address, 2000000)
             .set_inline_datum(datum_bytes)
             .add_asset(script_hash, "HydraHeadV1".as_bytes().to_vec(), 1)
             .expect("Failed to add asset")
+    }
+
+    pub fn to_tx(&self, change_output: Output) -> Result<BuiltTransaction> {
+        self.build_tx(change_output)
     }
 
     // I hate the passing around of change_output, will reorganize later
@@ -141,7 +151,7 @@ mod tests {
                     .expect("Failed to decode participant 1"),
             ];
         let parameters = HeadParameters {
-            contenstation_period: 60000,
+            contestation_period: 60000,
             parties: vec![hex::decode(
                 "7bbfc8ffc6da9e6f6f070f0f28a4c0de8e099c34485e192660475059d8bb9557",
             )

@@ -10,8 +10,8 @@ use super::input::InputWrapper;
 
 // Note: I am using i64 to avoid using `as` type casts. BigInt requires an i64, although typically they should be u64.
 pub struct HeadParameters {
-    pub contenstation_period: i64, // Number of seconds
-    pub parties: Vec<Vec<u8>>,     // VerificationKeyHash
+    pub contestation_period: i64, // Number of seconds
+    pub parties: Vec<Vec<u8>>,    // VerificationKeyHash
 }
 
 impl HeadParameters {
@@ -28,7 +28,7 @@ impl HeadParameters {
                     tag: 121,
                     any_constructor: None,
                     fields: vec![PlutusData::BigInt(alonzo::BigInt::Int(
-                        self.contenstation_period.into(),
+                        self.contestation_period.into(),
                     ))],
                 }),
                 PlutusData::Array(
@@ -66,7 +66,7 @@ mod tests {
         );
 
         let head_parameters = HeadParameters {
-            contenstation_period: 60000,
+            contestation_period: 60000,
             parties: vec![particpant_key],
         };
 

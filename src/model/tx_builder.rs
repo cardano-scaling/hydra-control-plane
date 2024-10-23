@@ -10,8 +10,9 @@ use pallas::{
     txbuilder::{BuildBabbage, BuiltTransaction, Output, StagingTransaction},
 };
 
-use super::{hydra::utxo::UTxO, player::Player};
 use crate::SCRIPT_ADDRESS;
+
+use super::{hydra::utxo::UTxO, player::Player};
 
 #[derive(Clone)]
 pub struct TxBuilder {
