@@ -3,12 +3,20 @@ name = "hydra_control_plane"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "open-head"
+path = "src/bin/open_head.rs"
+
+[[bin]]
+name = "hydra-control-plane"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.86"
 async-tungstenite = { version = "0.26.1", features = ["tokio-native-tls"] }
+blockfrost = "1.0.3"
 chrono = "0.4.38"
+clap = { version = "4.5.20", features = ["derive"] }
 derivative = "2.2.0"
 futures-util = "0.3.30"
 hex = "0.4.3"

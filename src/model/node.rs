@@ -34,7 +34,9 @@ use super::{
     player::Player,
     tx_builder::TxBuilder,
 };
-use crate::{model::hydra::utxo::UTxO, NodeConfig, SCRIPT_ADDRESS};
+
+use crate::SCRIPT_ADDRESS;
+use crate::{model::hydra::utxo::UTxO, NodeConfig};
 
 #[derive(Clone, Serialize)]
 pub struct Node {
@@ -126,7 +128,7 @@ pub struct StateUpdate {
 }
 
 #[derive(Serialize, Deserialize)]
-struct KeyEnvelope {
+pub struct KeyEnvelope {
     #[serde(rename = "type")]
     envelope_type: String,
     description: String,

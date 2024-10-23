@@ -15,14 +15,14 @@ use crate::model::hydra::contract::hydra_validator::HydraValidator;
 use super::{input::InputWrapper, output::OutputWrapper, script_registry::ScriptRegistry};
 
 pub struct CommitTx {
-    network_id: u8,
-    script_registry: ScriptRegistry,
-    head_id: Vec<u8>,
-    party: Vec<u8>,
-    initial_input: (InputWrapper, Output, PaymentKeyHash),
-    blueprint_tx: Vec<(InputWrapper, OutputWrapper)>,
-    fee: u64,
-    commit_inputs: Vec<(InputWrapper, OutputWrapper)>,
+    pub network_id: u8,
+    pub script_registry: ScriptRegistry,
+    pub head_id: Vec<u8>,
+    pub party: Vec<u8>,
+    pub initial_input: (InputWrapper, Output, PaymentKeyHash),
+    pub blueprint_tx: Vec<(InputWrapper, OutputWrapper)>,
+    pub fee: u64,
+    pub commit_inputs: Vec<(InputWrapper, OutputWrapper)>,
 }
 
 impl CommitTx {
@@ -151,7 +151,6 @@ fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Outp
     let lovelace = outputs.iter().fold(0, |acc, o| acc + o.lovelace);
     let mut commit_output = Output::new(address, lovelace);
     for output in outputs {
-        println!("{:?}", output.assets);
         if let Some(output_assets) = output.assets {
             for (policy, assets) in output_assets.iter() {
                 for (name, amount) in assets {
@@ -168,6 +167,8 @@ fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Outp
 
 mod tests {
     use pallas::{crypto::hash::Hash, ledger::addresses::Address, txbuilder::Input};
+
+    use crate::model::hydra::tx::script_registry::NetworkScriptRegistry;
 
     use super::*;
 
@@ -243,7 +244,7 @@ mod tests {
 
         CommitTx {
             network_id: 0,
-            script_registry: get_script_registry(),
+            script_registry: NetworkScriptRegistry::Preprod.into(),
             head_id,
             party,
             initial_input,
@@ -337,7 +338,7 @@ mod tests {
 
         CommitTx {
                 network_id: 0,
-                script_registry: get_script_registry(),
+                script_registry: NetworkScriptRegistry::Preprod.into(),
                 head_id,
                 party,
                 initial_input,
@@ -405,19 +406,5 @@ mod tests {
                 )
                 ],
             }
-    }
-
-    // These are the preprod values
-    fn get_script_registry() -> ScriptRegistry {
-        let tx_hash = Hash::from(
-            hex::decode("03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a")
-                .expect("failed to decode tx_id")
-                .as_slice(),
-        );
-        ScriptRegistry {
-            initial_reference: Input::new(tx_hash, 0).into(),
-            commit_reference: Input::new(tx_hash, 1).into(),
-            head_reference: Input::new(tx_hash, 2).into(),
-        }
     }
 }

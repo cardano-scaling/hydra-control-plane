@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use pallas::{
+    crypto::hash::Hash,
     ledger::primitives::{
         alonzo,
         conway::{Constr, PlutusData},
@@ -29,6 +30,19 @@ impl From<Input> for InputWrapper {
 impl From<InputWrapper> for Input {
     fn from(value: InputWrapper) -> Self {
         value.inner
+    }
+}
+
+impl TryFrom<String> for InputWrapper {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let hash_index = value.split("#").collect::<Vec<&str>>();
+        let index = hash_index[1].parse::<u64>()?;
+        let hash_bytes = hex::decode(hash_index[0])?;
+        let hash = hash_bytes.as_slice();
+
+        Ok(Input::new(Hash::from(hash), index).into())
     }
 }
 
