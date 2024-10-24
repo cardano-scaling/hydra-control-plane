@@ -3,7 +3,10 @@ use std::{collections::HashMap, fmt::Display};
 use anyhow::{anyhow, Context, Result};
 use derivative::Derivative;
 use pallas::{
-    codec::minicbor::{self, encode},
+    codec::{
+        minicbor::{self, encode},
+        utils::MaybeIndefArray,
+    },
     crypto::hash::Hash,
     ledger::{
         addresses::Address,
@@ -102,6 +105,7 @@ impl UTxO {
                 PseudoDatumOption::Hash(hash) => Datum::Hash(hash.as_ref().to_vec()),
                 PseudoDatumOption::Data(datum) => {
                     Datum::Inline(minicbor::decode(datum.raw_cbor())?)
+                    // Datum::None
                 }
             },
             None => Datum::None,
@@ -176,7 +180,7 @@ fn value_to_plutus_data(value: &Value) -> Result<PlutusData> {
         Ok(PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: Some(constructor),
-            fields,
+            fields: MaybeIndefArray::Indef(fields),
         }))
     } else if value.contains_key("int") {
         let int = value

@@ -1,6 +1,6 @@
 use anyhow::{bail, Context, Result};
 use pallas::{
-    codec::minicbor::encode,
+    codec::{minicbor::encode, utils::MaybeIndefArray},
     crypto::{hash::Hash, key::ed25519::SecretKey},
     ledger::{
         addresses::{Address, ShelleyPaymentPart},
@@ -10,8 +10,9 @@ use pallas::{
     txbuilder::{BuildBabbage, BuiltTransaction, Output, StagingTransaction},
 };
 
-use super::{hydra::utxo::UTxO, player::Player};
 use crate::SCRIPT_ADDRESS;
+
+use super::{hydra::utxo::UTxO, player::Player};
 
 #[derive(Clone)]
 pub struct TxBuilder {
@@ -118,7 +119,7 @@ impl TxBuilder {
         let redeemer = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: Some(0),
-            fields: vec![],
+            fields: MaybeIndefArray::Indef(vec![]),
         });
         encode(&redeemer, &mut datum).expect("Fatal error, this should never happen");
 

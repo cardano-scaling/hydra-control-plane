@@ -66,13 +66,13 @@ impl From<GameState> for PlutusData {
             PlutusData::Constr(Constr {
                 tag: 121,
                 any_constructor: Some(1),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             })
         } else {
             PlutusData::Constr(Constr {
                 tag: 121,
                 any_constructor: Some(0),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             })
         };
 
@@ -80,36 +80,36 @@ impl From<GameState> for PlutusData {
         let owner = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![PlutusData::BoundedBytes(owner_bytes)],
+            fields: alonzo::MaybeIndefArray::Indef(vec![PlutusData::BoundedBytes(owner_bytes)]),
         });
 
         let admin_bytes: alonzo::BoundedBytes = val.admin.into();
         let admin = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![PlutusData::BoundedBytes(admin_bytes)],
+            fields: alonzo::MaybeIndefArray::Indef(vec![PlutusData::BoundedBytes(admin_bytes)]),
         });
 
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: alonzo::MaybeIndefArray::Indef(vec![
                 is_over,
                 owner,
                 admin,
                 val.player.into(),
-                PlutusData::Array(vec![]),
-                PlutusData::Array(
+                PlutusData::Array(alonzo::MaybeIndefArray::Indef(vec![])),
+                PlutusData::Array(alonzo::MaybeIndefArray::Indef(
                     val.leveltime
                         .into_iter()
                         .map(|x| {
                             let x = x as i64;
                             PlutusData::BigInt(alonzo::BigInt::Int(x.into()))
                         })
-                        .collect(),
-                ),
+                        .collect::<Vec<_>>(),
+                )),
                 val.level.into(),
-            ],
+            ]),
         })
     }
 }
@@ -159,7 +159,7 @@ impl TryFrom<PlutusData> for GameState {
                 let monsters = match constr.fields[4].clone() {
                     PlutusData::Array(array) => {
                         let mut monsters = vec![];
-                        for monster in array {
+                        for monster in array.to_vec() {
                             monsters.push(MapObject::try_from(monster).context("monster")?)
                         }
                         monsters
@@ -170,7 +170,7 @@ impl TryFrom<PlutusData> for GameState {
                 let leveltime = match constr.fields[5].clone() {
                     PlutusData::Array(array) => {
                         let mut leveltime = vec![];
-                        for time in array {
+                        for time in array.to_vec() {
                             match time {
                                 PlutusData::BigInt(alonzo::BigInt::Int(v)) => {
                                     leveltime.push(u128::try_from(v.0).context("level time")?)
@@ -243,13 +243,13 @@ impl From<Player> for PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: alonzo::MaybeIndefArray::Indef(vec![
                 val.player_state.into(),
                 val.map_object.into(),
                 val.total_stats.into(),
                 val.level_stats.into(),
                 PlutusData::BigInt(alonzo::BigInt::Int(cheats.into())),
-            ],
+            ]),
         })
     }
 }
@@ -322,11 +322,11 @@ impl From<PlayerStats> for PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: alonzo::MaybeIndefArray::Indef(vec![
                 PlutusData::BigInt(alonzo::BigInt::Int(kill_count.into())),
                 PlutusData::BigInt(alonzo::BigInt::Int(secret_count.into())),
                 PlutusData::BigInt(alonzo::BigInt::Int(item_count.into())),
-            ],
+            ]),
         })
     }
 }
@@ -387,10 +387,10 @@ impl From<MapObject> for PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: alonzo::MaybeIndefArray::Indef(vec![
                 val.position.into(),
                 PlutusData::BigInt(alonzo::BigInt::Int(health.into())),
-            ],
+            ]),
         })
     }
 }
@@ -430,11 +430,11 @@ impl From<Position> for PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: alonzo::MaybeIndefArray::Indef(vec![
                 PlutusData::BigInt(alonzo::BigInt::Int(val.x.into())),
                 PlutusData::BigInt(alonzo::BigInt::Int(val.y.into())),
                 PlutusData::BigInt(alonzo::BigInt::Int(val.z.into())),
-            ],
+            ]),
         })
     }
 }
@@ -484,18 +484,18 @@ impl From<PlayerState> for PlutusData {
             PlayerState::Live => Constr {
                 tag: 121,
                 any_constructor: Some(0),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
             PlayerState::Dead => Constr {
                 tag: 121,
                 any_constructor: Some(1),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
             // Constr(1, [])
             PlayerState::Reborn => Constr {
                 tag: 121,
                 any_constructor: Some(2),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             }, // Constr(2, [])
         })
     }
@@ -576,16 +576,16 @@ impl From<LevelId> for PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: alonzo::MaybeIndefArray::Indef(vec![
                 PlutusData::BigInt(alonzo::BigInt::Int(val.map.into())),
                 PlutusData::BigInt(alonzo::BigInt::Int(val.skill.into())),
                 PlutusData::BigInt(alonzo::BigInt::Int(val.episode.into())),
                 PlutusData::Constr(Constr {
                     tag: 121,
                     any_constructor: Some(if val.demo_playback { 1 } else { 0 }),
-                    fields: vec![],
+                    fields: alonzo::MaybeIndefArray::Indef(vec![]),
                 }),
-            ],
+            ]),
         })
     }
 }

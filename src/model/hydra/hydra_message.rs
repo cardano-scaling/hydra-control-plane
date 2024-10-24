@@ -5,8 +5,9 @@ use async_tungstenite::tungstenite::Message;
 use serde_json::Value;
 
 use super::messages::{
-    committed::Committed, greetings::Greetings, head_is_initializing::HeadIsInitializing,
-    head_is_open::HeadIsOpen, peer_connected::PeerConnected, peer_disconnected::PeerDisconnected,
+    command_failed::CommandFailed, committed::Committed, greetings::Greetings,
+    head_is_initializing::HeadIsInitializing, head_is_open::HeadIsOpen,
+    peer_connected::PeerConnected, peer_disconnected::PeerDisconnected,
     snapshot_confirmed::SnapshotConfirmed, tx_valid::TxValid,
 };
 
@@ -35,6 +36,7 @@ pub enum HydraEventMessage {
     HeadIsOpen(HeadIsOpen),
     Committed(Committed),
     Greetings(Greetings),
+    CommandFailed(CommandFailed),
     Unimplemented(Value),
 }
 
@@ -43,7 +45,6 @@ impl TryFrom<Value> for HydraEventMessage {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         let tag = value["tag"].as_str().context("Invalid tag")?;
-
         match tag {
             "SnapshotConfirmed" => {
                 SnapshotConfirmed::try_from(value).map(HydraEventMessage::SnapshotConfirmed)
@@ -59,6 +60,7 @@ impl TryFrom<Value> for HydraEventMessage {
             "HeadIsOpen" => HeadIsOpen::try_from(value).map(HydraEventMessage::HeadIsOpen),
             "Committed" => Committed::try_from(value).map(HydraEventMessage::Committed),
             "Greetings" => Greetings::try_from(value).map(HydraEventMessage::Greetings),
+            "CommandFailed" => CommandFailed::try_from(value).map(HydraEventMessage::CommandFailed),
             _ => Ok(HydraEventMessage::Unimplemented(value)),
         }
     }
