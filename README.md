@@ -86,3 +86,17 @@ It has most of the same flags, except:
 `stats_file` is replaced by `stats_file_prefix`; the port will be added to this prefix to determine the actual file
 
 All other flags get copied to the Node config.
+
+
+## Open Head Binary
+The `open-head` binary will build and submit the transactions necessary to open a hydra head with the specified arguments. Currently, it only supports one participant per head.
+
+Example:
+```
+cargo run --bin open-head -- --seed-input e9a81012c52f175287ca2f0b73912915f6a75aa0d21b339e9af0af707674d0ad#2 \
+--cardano-key-file preprod.sk \
+--blockfrost-key [redacted] \
+--party 7bbfc8ffc6da9e6f6f070f0f28a4c0de8e099c34485e192660475059d8bb9557 \
+--participant addr_test1vzdjnh24kw99aqj8whfsxu37s0sgmq7yhfeva2egg92t3gsws2hwn \
+--commit-inputs fee65a89c2f26958bceb29233ef5cc9d5ad20b67f55150bdc38711e7cff4e0fa#0
+```

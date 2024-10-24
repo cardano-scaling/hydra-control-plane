@@ -1,6 +1,4 @@
-use pallas::ledger::{
-    addresses::Address, primitives::conway::PlutusV2Script, traverse::ComputeHash,
-};
+use pallas::ledger::{addresses::Address, primitives::PlutusScript, traverse::ComputeHash};
 
 // Named after the scripts here: https://github.com/cardano-scaling/hydra/tree/master/hydra-plutus/scripts
 // For more info on what each script does, read the protocol spec: https://hydra.family/head-protocol/assets/files/hydra-spec-74c85a9e8c75aeca7735137947b39453.pdf
@@ -23,8 +21,8 @@ impl HydraValidator {
         }
     }
 
-    pub fn to_plutus(&self) -> PlutusV2Script {
-        PlutusV2Script(
+    pub fn to_plutus(&self) -> PlutusScript<2> {
+        PlutusScript(
             hex::decode(self.cbor())
                 .expect("invalid script cbor hex string")
                 .into(),
@@ -40,9 +38,9 @@ impl HydraValidator {
 }
 
 // I feel OK with an expect here, as if we have invalid script cbor encoding, it's because we have a bug in the codebase
-impl Into<PlutusV2Script> for HydraValidator {
-    fn into(self) -> PlutusV2Script {
-        PlutusV2Script(
+impl Into<PlutusScript<2>> for HydraValidator {
+    fn into(self) -> PlutusScript<2> {
+        PlutusScript(
             hex::decode(self.cbor())
                 .expect("invalid script cbor hex string")
                 .into(),

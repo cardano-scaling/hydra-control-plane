@@ -74,7 +74,7 @@ async fn main() {
             seed_input.txo_index as i32,
         )
         .await
-        .expect("Failed to fech seed input");
+        .expect("Failed to fetch seed input");
 
     println!("Building init transaction...");
 
@@ -111,7 +111,11 @@ async fn main() {
             .expect("failed to parse address"),
             seed_input_output.lovelace - 9000000,
         ))
-        .expect("Failed to build tx")
+        .expect("Failed to build tx");
+
+    println!("Tx bytes: {}", hex::encode(built_init_tx.tx_bytes.clone()));
+
+    let built_init_tx = built_init_tx
         .sign(admin_key.clone().into())
         .expect("Failed to sign tx");
 

@@ -3,7 +3,10 @@ use std::{collections::HashMap, fmt::Display};
 use anyhow::{anyhow, Context, Result};
 use derivative::Derivative;
 use pallas::{
-    codec::minicbor::{self, encode},
+    codec::{
+        minicbor::{self, encode},
+        utils::MaybeIndefArray,
+    },
     crypto::hash::Hash,
     ledger::{
         addresses::Address,
@@ -177,7 +180,7 @@ fn value_to_plutus_data(value: &Value) -> Result<PlutusData> {
         Ok(PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: Some(constructor),
-            fields,
+            fields: MaybeIndefArray::Indef(fields),
         }))
     } else if value.contains_key("int") {
         let int = value

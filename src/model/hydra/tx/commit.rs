@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 
 use pallas::{
-    codec::minicbor::encode,
+    codec::{minicbor::encode, utils::MaybeIndefArray},
     crypto::hash::Hash,
     ledger::{
         addresses::PaymentKeyHash,
@@ -12,7 +12,10 @@ use pallas::{
 
 use crate::model::hydra::contract::hydra_validator::HydraValidator;
 
-use super::{input::InputWrapper, output::OutputWrapper, script_registry::ScriptRegistry};
+use super::{
+    cost_models::COST_MODEL_PLUTUS_V2, input::InputWrapper, output::OutputWrapper,
+    script_registry::ScriptRegistry,
+};
 
 pub struct CommitTx {
     pub network_id: u8,
@@ -67,12 +70,10 @@ impl CommitTx {
                     }),
                 )
                 .disclosed_signer(self.initial_input.2)
-                // Hardcoding this for now for the tests
-                .script_data_hash(Hash::from(
-                    hex::decode("124da7622889cc76cb140faf934a7f836a3e7847c7a4e9317ad20b6ba6f7b0cd")
-                        .expect("hardcoded hash")
-                        .as_slice(),
-                )),
+                .language_view(
+                    pallas::txbuilder::ScriptKind::PlutusV2,
+                    COST_MODEL_PLUTUS_V2.clone(),
+                ),
         );
         for (input, _) in self.commit_inputs.clone() {
             if let Some(builder) = tx_builder {
@@ -93,33 +94,32 @@ impl CommitTx {
     }
 
     fn build_commit_datum(&self) -> Result<Vec<u8>> {
-        let fields = vec![
-            PlutusData::BoundedBytes(self.party.clone().into()),
-            PlutusData::Array(
-                self.commit_inputs
-                    .clone()
-                    .into_iter()
-                    .map(|(commit_input, commit_input_output)| {
-                        let output_data: PlutusData = commit_input_output.into();
-                        let mut output_bytes = Vec::new();
-                        encode(&output_data, &mut output_bytes)?;
-                        Ok(PlutusData::Constr(Constr {
-                            tag: 121,
-                            any_constructor: None,
-                            fields: vec![
-                                commit_input.into(),
-                                PlutusData::BoundedBytes(output_bytes.into()),
-                            ],
-                        }))
-                    })
-                    .collect::<Result<Vec<PlutusData>, anyhow::Error>>()?,
-            ),
-            PlutusData::BoundedBytes(self.head_id.clone().into()),
-        ];
         let data = PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields,
+            fields: MaybeIndefArray::Indef(vec![
+                PlutusData::BoundedBytes(self.party.clone().into()),
+                PlutusData::Array(MaybeIndefArray::Indef(
+                    self.commit_inputs
+                        .clone()
+                        .into_iter()
+                        .map(|(commit_input, commit_input_output)| {
+                            let output_data: PlutusData = commit_input_output.into();
+                            let mut output_bytes = Vec::new();
+                            encode(&output_data, &mut output_bytes)?;
+                            Ok(PlutusData::Constr(Constr {
+                                tag: 121,
+                                any_constructor: None,
+                                fields: MaybeIndefArray::Indef(vec![
+                                    commit_input.into(),
+                                    PlutusData::BoundedBytes(output_bytes.into()),
+                                ]),
+                            }))
+                        })
+                        .collect::<Result<Vec<PlutusData>, anyhow::Error>>()?,
+                )),
+                PlutusData::BoundedBytes(self.head_id.clone().into()),
+            ]),
         });
 
         let mut bytes: Vec<u8> = Vec::new();
@@ -132,12 +132,12 @@ impl CommitTx {
         let redeemer_data = PlutusData::Constr(Constr {
             tag: 122,
             any_constructor: None,
-            fields: vec![PlutusData::Array(
+            fields: MaybeIndefArray::Indef(vec![PlutusData::Array(MaybeIndefArray::Indef(
                 self.commit_inputs
                     .iter()
                     .map(|(input, _)| input.into())
                     .collect::<Vec<_>>(),
-            )],
+            ))]),
         });
 
         let mut bytes: Vec<u8> = Vec::new();
