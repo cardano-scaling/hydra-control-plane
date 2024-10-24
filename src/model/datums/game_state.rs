@@ -22,19 +22,24 @@ pub struct GameState {
 
 impl From<GameState> for PlutusData {
     fn from(value: GameState) -> Self {
-        let players: PlutusData =
-            PlutusData::Array(value.players.into_iter().map(|x| x.into()).collect());
+        let players: PlutusData = PlutusData::Array(alonzo::MaybeIndefArray::Indef(
+            value
+                .players
+                .into_iter()
+                .map(|x| x.into())
+                .collect::<Vec<_>>(),
+        ));
 
         let winner: PlutusData = match value.winner {
             Some(winner) => PlutusData::Constr(Constr {
                 tag: 121,
                 any_constructor: None,
-                fields: vec![winner.into()],
+                fields: alonzo::MaybeIndefArray::Indef(vec![winner.into()]),
             }),
             None => PlutusData::Constr(Constr {
                 tag: 122,
                 any_constructor: None,
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             }),
         };
 
@@ -42,25 +47,25 @@ impl From<GameState> for PlutusData {
             Some(cheater) => PlutusData::Constr(Constr {
                 tag: 121,
                 any_constructor: None,
-                fields: vec![cheater.into()],
+                fields: alonzo::MaybeIndefArray::Indef(vec![cheater.into()]),
             }),
             None => PlutusData::Constr(Constr {
                 tag: 122,
                 any_constructor: None,
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             }),
         };
 
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: alonzo::MaybeIndefArray::Indef(vec![
                 value.referee.into(),
                 players,
                 value.state.into(),
                 winner,
                 cheater,
-            ],
+            ]),
         })
     }
 }
@@ -85,7 +90,7 @@ impl TryFrom<PlutusData> for GameState {
                 let players: Vec<PaymentCredential> = match constr.fields[1].clone() {
                     PlutusData::Array(array) => {
                         let mut players = Vec::new();
-                        for player in array {
+                        for player in array.to_vec() {
                             players.push(player.try_into().context("players")?);
                         }
 
@@ -147,7 +152,7 @@ impl From<PaymentCredential> for PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![PlutusData::BoundedBytes(bytes)],
+            fields: alonzo::MaybeIndefArray::Indef(vec![PlutusData::BoundedBytes(bytes)]),
         })
     }
 }
@@ -191,22 +196,22 @@ impl From<State> for PlutusData {
             State::LOBBY => Constr {
                 tag: 121,
                 any_constructor: Some(0),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
             State::RUNNING => Constr {
                 tag: 121,
                 any_constructor: Some(1),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
             State::CHEATED => Constr {
                 tag: 121,
                 any_constructor: Some(2),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
             State::FINISHED => Constr {
                 tag: 121,
                 any_constructor: Some(4),
-                fields: vec![],
+                fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
         })
     }

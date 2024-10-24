@@ -1,4 +1,5 @@
 use pallas::{
+    codec::utils::MaybeIndefArray,
     crypto::hash::Hash,
     ledger::primitives::{
         alonzo,
@@ -23,23 +24,23 @@ impl HeadParameters {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: MaybeIndefArray::Indef(vec![
                 PlutusData::Constr(Constr {
                     tag: 121,
                     any_constructor: None,
-                    fields: vec![PlutusData::BigInt(alonzo::BigInt::Int(
+                    fields: MaybeIndefArray::Indef(vec![PlutusData::BigInt(alonzo::BigInt::Int(
                         self.contestation_period.into(),
-                    ))],
+                    ))]),
                 }),
-                PlutusData::Array(
+                PlutusData::Array(MaybeIndefArray::Indef(
                     self.parties
                         .iter()
                         .map(|v| PlutusData::BoundedBytes(alonzo::BoundedBytes::from(v.clone())))
                         .collect(),
-                ),
+                )),
                 PlutusData::BoundedBytes(alonzo::BoundedBytes::from(token_policy_id.to_vec())),
                 seed_tx_in.into(),
-            ],
+            ]),
         })
     }
 }

@@ -1,7 +1,7 @@
-use std::{collections::HashMap, ops::Deref};
+use std::ops::Deref;
 
 use pallas::{
-    codec::{minicbor::data::Int, utils::KeyValuePairs},
+    codec::utils::MaybeIndefArray,
     ledger::{
         addresses::{Address, ShelleyDelegationPart, ShelleyPaymentPart},
         primitives::conway::{BigInt, Constr, PlutusData},
@@ -99,17 +99,19 @@ impl Into<PlutusData> for OutputWrapper {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: vec![
+            fields: MaybeIndefArray::Indef(vec![
                 // Address Object
                 PlutusData::Constr(Constr {
                     tag: 121,
                     any_constructor: None,
-                    fields: vec![
+                    fields: MaybeIndefArray::Indef(vec![
                         // Payment Part
                         PlutusData::Constr(Constr {
                             tag: 121,
                             any_constructor: None,
-                            fields: vec![PlutusData::BoundedBytes(self.payment_key_hash().into())],
+                            fields: MaybeIndefArray::Indef(vec![PlutusData::BoundedBytes(
+                                self.payment_key_hash().into(),
+                            )]),
                         }),
                         // Maybe<Delegation Part>
                         PlutusData::Constr(match self.delegation_key_hash() {
@@ -117,15 +119,17 @@ impl Into<PlutusData> for OutputWrapper {
                             Some(stake_key_hash) => Constr {
                                 tag: 121,
                                 any_constructor: None,
-                                fields: vec![PlutusData::BoundedBytes(stake_key_hash.into())],
+                                fields: MaybeIndefArray::Indef(vec![PlutusData::BoundedBytes(
+                                    stake_key_hash.into(),
+                                )]),
                             },
                             None => Constr {
                                 tag: 122,
                                 any_constructor: None,
-                                fields: vec![],
+                                fields: MaybeIndefArray::Indef(vec![]),
                             },
                         }),
-                    ],
+                    ]),
                 }),
                 // Value
                 self.assets_to_plutus_data(),
@@ -134,16 +138,16 @@ impl Into<PlutusData> for OutputWrapper {
                 PlutusData::Constr(Constr {
                     tag: 121,
                     any_constructor: None,
-                    fields: vec![],
+                    fields: MaybeIndefArray::Indef(vec![]),
                 }),
                 // Script Ref
                 // TODO: figure out expected encoding for script ref variant besides None
                 PlutusData::Constr(Constr {
                     tag: 122,
                     any_constructor: None,
-                    fields: vec![],
+                    fields: MaybeIndefArray::Indef(vec![]),
                 }),
-            ],
+            ]),
         })
     }
 }

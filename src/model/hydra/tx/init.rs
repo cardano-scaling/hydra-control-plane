@@ -15,7 +15,7 @@ use crate::model::hydra::{
     tx::head_parameters::HeadParameters,
 };
 
-use super::{input::InputWrapper, void_redeemer};
+use super::{cost_models::COST_MODEL_PLUTUS_V2, input::InputWrapper, void_redeemer};
 
 pub struct InitTx {
     pub network_id: u8,
@@ -41,11 +41,7 @@ impl InitTx {
 
         let mut tx_builder = Some(
             StagingTransaction::new()
-                .script_data_hash(Hash::from(
-                    hex::decode("b2c22f2ef164d35e32999971e77bcd422c5838d2491ee84c5fcfe6d9295c2785")
-                        .expect("failed to decode script data hash")
-                        .as_slice(),
-                ))
+                .language_view(ScriptKind::PlutusV2, COST_MODEL_PLUTUS_V2.clone())
                 .network_id(self.network_id)
                 .input(self.seed_input.clone().into())
                 .collateral_input(self.seed_input.clone().into())
