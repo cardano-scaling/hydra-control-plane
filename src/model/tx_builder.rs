@@ -7,7 +7,7 @@ use pallas::{
         primitives::conway::{Constr, PlutusData},
         traverse::ComputeHash,
     },
-    txbuilder::{BuildBabbage, BuiltTransaction, Output, StagingTransaction},
+    txbuilder::{BuildConway, BuiltTransaction, Output, StagingTransaction},
 };
 
 use crate::SCRIPT_ADDRESS;
@@ -92,7 +92,7 @@ impl TxBuilder {
             );
         }
         */
-        let tx = tx_builder.build_babbage_raw()?;
+        let tx = tx_builder.build_conway_raw()?;
         let signed_tx = tx
             .sign(self.admin_key.clone().into())
             .context("failed to sign tx")?;

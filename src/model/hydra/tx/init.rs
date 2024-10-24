@@ -7,7 +7,7 @@ use pallas::{
         primitives::conway::{PlutusData, PlutusV2Script},
         traverse::ComputeHash,
     },
-    txbuilder::{BuildBabbage, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
+    txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
 
 use crate::model::hydra::{
@@ -78,7 +78,7 @@ impl InitTx {
             .and_then(|builder| {
                 builder
                     .output(change_output)
-                    .build_babbage_raw()
+                    .build_conway_raw()
                     .map_err(|e| anyhow!("{}", e))
             })
             .map_err(|e| anyhow!("Failed to build tx: {}", e))
