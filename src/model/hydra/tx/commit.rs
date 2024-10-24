@@ -7,7 +7,7 @@ use pallas::{
         addresses::PaymentKeyHash,
         primitives::conway::{Constr, PlutusData},
     },
-    txbuilder::{BuildBabbage, BuiltTransaction, ExUnits, Output, StagingTransaction},
+    txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, StagingTransaction},
 };
 
 use crate::model::hydra::contract::hydra_validator::HydraValidator;
@@ -89,7 +89,7 @@ impl CommitTx {
 
         tx_builder
             .ok_or(anyhow!("no transaction builder "))
-            .and_then(|builder| builder.build_babbage_raw().map_err(|e| anyhow!("{}", e)))
+            .and_then(|builder| builder.build_conway_raw().map_err(|e| anyhow!("{}", e)))
             .map_err(|e| anyhow!("failed to build tx: {}", e))
     }
 
