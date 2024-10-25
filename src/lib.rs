@@ -14,8 +14,6 @@ pub struct NodeConfig {
     pub region: String,
     pub port: u32,
 
-    pub stats_file: Option<String>,
-
     pub max_players: usize,
     pub admin_key_file: PathBuf,
     pub persisted: bool,

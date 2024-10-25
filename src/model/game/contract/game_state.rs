@@ -76,7 +76,7 @@ impl From<GameState> for PlutusData {
             None => PlutusData::Constr(Constr {
                 tag: 122,
                 any_constructor: None,
-                fields: alonzo::MaybeIndefArray::Indef(vec![]),
+                fields: alonzo::MaybeIndefArray::Def(vec![]),
             }),
         };
 
@@ -89,7 +89,7 @@ impl From<GameState> for PlutusData {
             None => PlutusData::Constr(Constr {
                 tag: 122,
                 any_constructor: None,
-                fields: alonzo::MaybeIndefArray::Indef(vec![]),
+                fields: alonzo::MaybeIndefArray::Def(vec![]),
             }),
         };
 
@@ -241,17 +241,17 @@ impl From<State> for PlutusData {
             State::RUNNING => Constr {
                 tag: 121,
                 any_constructor: Some(0),
-                fields: alonzo::MaybeIndefArray::Indef(vec![]),
+                fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
             State::CHEATED => Constr {
                 tag: 121,
                 any_constructor: Some(1),
-                fields: alonzo::MaybeIndefArray::Indef(vec![]),
+                fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
             State::FINISHED => Constr {
                 tag: 121,
                 any_constructor: Some(2),
-                fields: alonzo::MaybeIndefArray::Indef(vec![]),
+                fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
         })
     }

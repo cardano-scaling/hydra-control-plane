@@ -25,7 +25,7 @@ use tracing::{debug, warn};
 use super::hydra_message::{HydraData, HydraMessage};
 
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HydraSocket {
     url: String,
     identifier: String,
@@ -43,6 +43,7 @@ pub type HydraSink = SplitSink<
     WebSocketStream<Stream<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TcpStream>>>>,
     Message,
 >;
+#[derive(Debug)]
 pub struct HydraSender {
     sender: HydraSink,
 }
@@ -139,6 +140,7 @@ impl HydraSender {
     pub async fn send(&mut self, message: HydraData) -> Result<()> {
         match message {
             HydraData::Send(data) => {
+                println!("SENDING DATA");
                 self.sender.send(Message::Text(data)).await?;
                 Ok(())
             }
