@@ -126,7 +126,7 @@ impl Into<PlutusData> for OutputWrapper {
                             None => Constr {
                                 tag: 122,
                                 any_constructor: None,
-                                fields: MaybeIndefArray::Indef(vec![]),
+                                fields: MaybeIndefArray::Def(vec![]),
                             },
                         }),
                     ]),
@@ -138,14 +138,14 @@ impl Into<PlutusData> for OutputWrapper {
                 PlutusData::Constr(Constr {
                     tag: 121,
                     any_constructor: None,
-                    fields: MaybeIndefArray::Indef(vec![]),
+                    fields: MaybeIndefArray::Def(vec![]),
                 }),
                 // Script Ref
                 // TODO: figure out expected encoding for script ref variant besides None
                 PlutusData::Constr(Constr {
                     tag: 122,
                     any_constructor: None,
-                    fields: MaybeIndefArray::Indef(vec![]),
+                    fields: MaybeIndefArray::Def(vec![]),
                 }),
             ]),
         })

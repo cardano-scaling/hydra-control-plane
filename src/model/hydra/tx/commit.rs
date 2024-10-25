@@ -4,7 +4,7 @@ use pallas::{
     codec::{minicbor::encode, utils::MaybeIndefArray},
     crypto::hash::Hash,
     ledger::{
-        addresses::PaymentKeyHash,
+        addresses::{Address, PaymentKeyHash},
         primitives::conway::{Constr, PlutusData},
     },
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, StagingTransaction},
@@ -147,6 +147,12 @@ impl CommitTx {
 }
 
 fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Output> {
+    // let address = Address::from_bytes(
+    //     hex::decode("702043A9F1A685BCF491413A5F139EE42E335157C8C6BC8D9E4018669D")
+    //         .expect("failed to decode commit address")
+    //         .as_slice(),
+    // )
+    // .expect("failed to build address struct");
     let address = HydraValidator::VCommit.to_address(network_id);
     let lovelace = outputs.iter().fold(0, |acc, o| acc + o.lovelace);
     let mut commit_output = Output::new(address, lovelace);
