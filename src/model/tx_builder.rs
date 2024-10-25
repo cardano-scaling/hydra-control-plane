@@ -1,18 +1,23 @@
 use anyhow::{bail, Context, Result};
 use pallas::{
-    codec::{minicbor::encode, utils::MaybeIndefArray},
+    codec::minicbor::encode,
     crypto::{hash::Hash, key::ed25519::SecretKey},
     ledger::{
         addresses::{Address, Network, PaymentKeyHash, ShelleyPaymentPart},
-        primitives::conway::{Constr, PlutusData},
+        primitives::conway::PlutusData,
         traverse::ComputeHash,
     },
-    txbuilder::{BuildConway, BuiltTransaction, Output, StagingTransaction},
+    txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
 
-use crate::SCRIPT_ADDRESS;
+use crate::model::{
+    game::contract::redeemer::{Redeemer, SpendAction},
+    hydra::utxo::Datum,
+};
 
-use super::{datums::game_state::GameState, hydra::utxo::UTxO};
+use super::{
+    game::contract::game_state::GameState, game::contract::validator::Validator, hydra::utxo::UTxO,
+};
 
 #[derive(Clone)]
 pub struct TxBuilder {
@@ -43,9 +48,17 @@ impl TxBuilder {
 
         let input_utxo = admin_utxos.first().unwrap();
 
-        let script_address = Address::from_bech32(SCRIPT_ADDRESS).unwrap();
+        let script_address = Validator::address(network);
         let mut player_address_bytes = player.to_vec();
-        player_address_bytes.insert(0, 0b01100000 | network.into());
+        player_address_bytes.insert(
+            0,
+            0b01100000
+                | match network {
+                    Network::Mainnet => 1,
+                    Network::Testnet => 0,
+                    Network::Other(_) => bail!("Unsupported network"),
+                },
+        );
         let player_address = Address::from_bytes(player_address_bytes.as_slice()).unwrap();
 
         let game_state: PlutusData = GameState::new(self.admin_pkh.into())
@@ -57,7 +70,7 @@ impl TxBuilder {
         let tx_builder = StagingTransaction::new()
             .input(input_utxo.clone().into())
             // GameState Datum
-            .output(Output::new(script_address, 0).set_inline_datum(datum.clone()))
+            .output(Output::new(script_address, 0).set_inline_datum(datum))
             // Player Output
             .output(Output::new(player_address, 0))
             // Maintain Initial UTxO
@@ -74,6 +87,66 @@ impl TxBuilder {
         Ok(signed_tx)
     }
 
+    pub fn add_player(
+        &self,
+        player: PaymentKeyHash,
+        game_state_utxo: UTxO,
+        network: Network,
+    ) -> Result<BuiltTransaction> {
+        let game_state: PlutusData = match game_state_utxo.datum.clone() {
+            Datum::Hash(_) => bail!("Unexpected datum hash in game utxo"),
+            Datum::Inline(data) => GameState::try_from(data)?,
+            Datum::None => bail!("No datum in game utxo"),
+        }
+        .add_player(player.into())
+        .into();
+
+        let mut datum: Vec<u8> = Vec::new();
+        encode(&game_state, &mut datum)?;
+
+        let script_address = Validator::address(network);
+
+        let mut player_address_bytes = player.to_vec();
+        player_address_bytes.insert(
+            0,
+            0b01100000
+                | match network {
+                    Network::Mainnet => 1,
+                    Network::Testnet => 0,
+                    Network::Other(_) => bail!("Unsupported network"),
+                },
+        );
+        let player_address = Address::from_bytes(player_address_bytes.as_slice()).unwrap();
+
+        let redeemer: PlutusData = Redeemer::new(0, SpendAction::AddPlayer).into();
+        let mut redeemer_bytes = Vec::new();
+        encode(&redeemer, &mut redeemer_bytes)?;
+
+        let tx_builder = StagingTransaction::new()
+            .input(game_state_utxo.clone().into())
+            // GameState Output
+            .output(Output::new(script_address, 0).set_inline_datum(datum))
+            // Player Output
+            .output(Output::new(player_address, 0))
+            .add_spend_redeemer(
+                game_state_utxo.into(),
+                redeemer_bytes,
+                Some(ExUnits {
+                    mem: 14000000,
+                    steps: 10000000000,
+                }),
+            )
+            .script(ScriptKind::PlutusV2, Validator::to_plutus().0.to_vec())
+            .fee(0);
+
+        let tx = tx_builder.build_conway_raw()?;
+        let signed_tx = tx
+            .sign(self.admin_key.clone().into())
+            .context("failed to sign tx")?;
+
+        Ok(signed_tx)
+    }
+
     fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {
         let admin_kh = self.admin_key.public_key().compute_hash();
         utxos
@@ -87,17 +160,52 @@ impl TxBuilder {
             })
             .collect()
     }
+}
 
-    #[allow(dead_code)]
-    fn build_redeemer() -> Vec<u8> {
-        let mut datum: Vec<u8> = Vec::new();
-        let redeemer = PlutusData::Constr(Constr {
-            tag: 121,
-            any_constructor: Some(0),
-            fields: MaybeIndefArray::Indef(vec![]),
-        });
-        encode(&redeemer, &mut datum).expect("Fatal error, this should never happen");
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::node::KeyEnvelope;
+    use std::{collections::HashMap, fs::File};
 
-        datum
+    // TODO write an actual test with an assertion
+    // I did this just to confirm the transaction is built as I expected manually
+    #[test]
+    fn test_build_new_game() {
+        let admin_key: KeyEnvelope =
+            serde_json::from_reader(File::open("preprod.sk").expect("Failed to open key file"))
+                .expect("unable to parse key file");
+        let tx_builder = TxBuilder::new(admin_key.try_into().expect("Failed to create SecretKey"));
+
+        let player = match Address::from_bech32(
+            "addr_test1qpq0htjtaygzwtj3h4akj2mvzaxgpru4yje4ca9a507jtdw5pcy8kzccynfps4ayhmtc38j6tyjrkyfccdytnxwnd6psfelznq",
+        )
+        .expect("Failed to decode player address")
+        {
+            Address::Shelley(shelley) => shelley.payment().as_hash().clone(),
+            _ => panic!("Expected Shelley address"),
+        };
+
+        let mut value: HashMap<String, u64> = HashMap::new();
+        value.insert("lovelace".to_string(), 0);
+
+        let utxos = vec![UTxO {
+            hash: hex::decode("6809163f29212d08b80d619c29f0a99306ffa6e875c62121bc2b0a58da826490")
+                .expect("Failed to decode hash"),
+            index: 0,
+            address: Address::from_bech32(
+                "addr_test1vzdjnh24kw99aqj8whfsxu37s0sgmq7yhfeva2egg92t3gsws2hwn",
+            )
+            .expect("Failed to decode admin address"),
+            datum: Datum::None,
+            reference_script: None,
+            value,
+        }];
+
+        let tx = tx_builder
+            .build_new_game(player, utxos, Network::Testnet)
+            .expect("Failed to build tx");
+
+        println!("{}", hex::encode(tx.tx_bytes));
     }
 }

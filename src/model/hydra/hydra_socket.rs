@@ -96,6 +96,7 @@ impl HydraSocket {
             }
         });
     }
+
     async fn connect_and_listen(&mut self) -> Result<()> {
         let (ws_stream, _) = connect_async(&self.url).await?;
         println!("Succesfully connected to {}", &self.url);

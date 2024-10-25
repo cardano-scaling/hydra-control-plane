@@ -11,7 +11,7 @@ use model::{
 };
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use routes::{global::global, head::head, heads::heads, new_game::new_game};
+use routes::{head::head, heads::heads, new_game::new_game};
 use serde::Deserialize;
 use tokio::{
     spawn,
@@ -132,7 +132,7 @@ async fn main() -> Result<()> {
 
     let _rocket = rocket::build()
         .manage(MyState { state: hydra_state })
-        .mount("/", routes![new_game, heads, head, global])
+        .mount("/", routes![new_game, heads, head])
         .attach(cors.to_cors().unwrap())
         .launch()
         .await?;
@@ -164,18 +164,18 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                         node.head_id = Some(head_is_open.head_id.to_string());
                     }
                     HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => {
-                        node.stats.calculate_stats(
-                            snapshot_confirmed.confirmed_transactions,
-                            node.stats_file.clone(),
-                        );
+                        // node.stats.calculate_stats(
+                        //     snapshot_confirmed.confirmed_transactions,
+                        //     node.stats_file.clone(),
+                        // );
                     }
 
-                    HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            warn!("failed to add transaction {:?}", e);
-                        }
-                    },
+                    // HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
+                    //     Ok(_) => {}
+                    //     Err(e) => {
+                    //         warn!("failed to add transaction {:?}", e);
+                    //     }
+                    // },
                     HydraEventMessage::CommandFailed(command_failed) => {
                         println!("command failed {:?}", command_failed);
                     }
