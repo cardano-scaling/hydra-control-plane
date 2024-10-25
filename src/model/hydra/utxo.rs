@@ -40,7 +40,7 @@ pub struct UTxO {
     pub hash: Vec<u8>,
     pub index: u64,
     pub address: Address,
-    datum: Datum,
+    pub datum: Datum,
     pub reference_script: Option<Script>,
     pub value: HashMap<String, u64>,
 }

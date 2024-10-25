@@ -115,7 +115,7 @@ impl Into<PlutusData> for OutputWrapper {
                         }),
                         // Maybe<Delegation Part>
                         PlutusData::Constr(match self.delegation_key_hash() {
-                            // NOTE: this case is probably not correct. Might need another wrapper, but unclear.
+                            // NOTE: this case may not be correct. Might need another wrapper, but unclear.
                             Some(stake_key_hash) => Constr {
                                 tag: 121,
                                 any_constructor: None,
@@ -160,6 +160,7 @@ impl Deref for OutputWrapper {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use pallas::codec::minicbor::encode;
 

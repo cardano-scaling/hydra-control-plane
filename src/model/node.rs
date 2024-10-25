@@ -2,40 +2,28 @@ use std::{
     collections::HashMap,
     fs::File,
     sync::{atomic::AtomicBool, Arc},
-    time::Duration,
 };
 
-use anyhow::{bail, Context, Result};
-use chrono::{DateTime, Utc};
+use anyhow::{anyhow, Context, Result};
 use hex::FromHex;
 use pallas::{
-    codec::minicbor::decode,
     crypto::key::ed25519::SecretKey,
-    ledger::{
-        addresses::{Address, Network, PaymentKeyHash},
-        primitives::conway::{PlutusData, PseudoDatumOption},
-        traverse::MultiEraTx,
-    },
+    ledger::addresses::{Network, PaymentKeyHash},
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::warn;
 
 use super::{
-    game_state::GameState,
-    hydra::{
-        hydra_message::HydraData,
-        hydra_socket::HydraSocket,
-        messages::{init, new_tx::NewTx, tx_valid::TxValid},
-    },
-    player::Player,
+    hydra::{hydra_message::HydraData, hydra_socket::HydraSocket, messages::new_tx::NewTx},
     tx_builder::TxBuilder,
 };
 
-use crate::SCRIPT_ADDRESS;
-use crate::{model::hydra::utxo::UTxO, NodeConfig};
+use crate::{
+    model::{game::contract::validator::Validator, hydra::utxo::UTxO},
+    NodeConfig,
+};
 
 #[derive(Clone, Serialize)]
 pub struct Node {
@@ -54,8 +42,6 @@ pub struct Node {
     pub remote_connection: ConnectionInfo,
     #[serde(skip)]
     pub socket: HydraSocket,
-    #[serde(skip)]
-    pub players: Vec<Player>,
     #[serde(skip)]
     pub tx_builder: TxBuilder,
 }
@@ -121,7 +107,6 @@ impl Node {
             online: socket.online.clone(),
             occupied: false,
 
-            players: Vec::new(),
             socket,
             tx_builder: TxBuilder::new(admin_key.try_into()?),
         };
@@ -138,6 +123,25 @@ impl Node {
         let tx_hash = new_game_tx.tx_hash.0.to_vec();
 
         let message = NewTx::new(new_game_tx)?.into();
+        self.send(message).await?;
+
+        Ok(tx_hash)
+    }
+
+    //TODO: don't hardcode network
+    pub async fn add_player(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
+        let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+        let game_state_utxo = utxos
+            .iter()
+            .find(|utxo| utxo.address == Validator::address(Network::Testnet))
+            .ok_or_else(|| anyhow!("game state UTxO not found"))?;
+        let add_player_tx =
+            self.tx_builder
+                .add_player(player_key, game_state_utxo.clone(), Network::Testnet)?;
+
+        let tx_hash = add_player_tx.tx_hash.0.to_vec();
+
+        let message = NewTx::new(add_player_tx)?.into();
         self.send(message).await?;
 
         Ok(tx_hash)
@@ -167,101 +171,6 @@ impl Node {
             .collect::<Result<Vec<UTxO>>>()?;
 
         Ok(utxos)
-    }
-
-    pub fn add_transaction(&mut self, transaction: TxValid) -> Result<()> {
-        let bytes = transaction.cbor.as_slice();
-        let tx = MultiEraTx::decode(bytes).context("Failed to decode transaction")?;
-
-        //let tx = tx.as_babbage().context("Invalid babbage era tx")?;
-
-        let outputs = tx.outputs();
-        let script_outputs: Vec<_> = outputs
-            .iter()
-            .filter(|output| (output.address().unwrap().to_bech32().unwrap() == SCRIPT_ADDRESS))
-            .collect();
-
-        if script_outputs.len() != 1 {
-            bail!("Invalid number of script outputs");
-        }
-
-        let script_output = script_outputs.first().unwrap();
-
-        let datum = match script_output.datum() {
-            Some(PseudoDatumOption::Data(x)) => x.raw_cbor(),
-            // If there's no datum, or a datum hash, it's an unrelated transaction
-            _ => return Ok(()),
-        };
-
-        let data = match decode::<PlutusData>(datum) {
-            Ok(data) => data,
-            Err(_) => bail!("Failed to deserialize datum"),
-        };
-
-        let game_state_result: Result<GameState> = data.try_into();
-        let game_state = game_state_result.context("invalid game state")?;
-
-        let player = match self
-            .players
-            .iter_mut()
-            .find(|player| player.pkh == game_state.owner)
-        {
-            Some(player) => player,
-            None => {
-                // We must have restarted, or the player was created through another control plane; create the player now
-                warn!(
-                    "Unrecognized player, adding: {}",
-                    hex::encode(&game_state.owner)
-                );
-                self.players.push(Player {
-                    pkh: game_state.owner.clone(),
-                    utxo: None,
-                    game_state: Some(game_state.clone()),
-                    utxo_time: 0,
-                });
-                self.players
-                    .iter_mut()
-                    .find(|player| player.pkh == game_state.owner)
-                    .expect("Just added")
-            }
-        };
-
-        // TODO: actually find the index
-        let utxo =
-            UTxO::try_from_pallas(hex::encode(&transaction.tx_id).as_str(), 0, &script_output)
-                .context("invalid utxo")?;
-
-        let timestamp: u128 = transaction
-            .timestamp
-            .parse::<DateTime<Utc>>()
-            .context("timestamp")?
-            .timestamp() as u128;
-
-        player.utxo = Some(utxo);
-        player.utxo_time = timestamp;
-
-        let state_update = player.generate_state_update(transaction.cbor.len() as u64, game_state);
-
-        Ok(())
-    }
-
-    pub fn cleanup_players(&mut self) -> Vec<UTxO> {
-        let mut to_remove = vec![];
-        for (index, player) in self.players.iter().enumerate() {
-            if player.is_expired(Duration::from_secs(30)) {
-                let key = hex::encode(&player.pkh);
-                to_remove.push(index);
-            }
-        }
-
-        let mut utxos = vec![];
-        for index in to_remove.iter().rev() {
-            if let Some(utxo) = self.players.remove(*index).utxo {
-                utxos.push(utxo);
-            }
-        }
-
-        utxos
     }
 }
 

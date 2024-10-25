@@ -2,9 +2,8 @@ use anyhow::{anyhow, Context, Result};
 
 use pallas::{
     codec::{minicbor::encode, utils::MaybeIndefArray},
-    crypto::hash::Hash,
     ledger::{
-        addresses::{Address, PaymentKeyHash},
+        addresses::PaymentKeyHash,
         primitives::conway::{Constr, PlutusData},
     },
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, StagingTransaction},
@@ -171,6 +170,7 @@ fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Outp
     Ok(commit_output)
 }
 
+#[cfg(test)]
 mod tests {
     use pallas::{crypto::hash::Hash, ledger::addresses::Address, txbuilder::Input};
 

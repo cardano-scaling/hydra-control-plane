@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context};
-use pallas::ledger::primitives::{conway::PlutusV2Script, PlutusScript};
+use pallas::ledger::primitives::PlutusScript;
 
 use crate::model::hydra::tx::input::InputWrapper;
 

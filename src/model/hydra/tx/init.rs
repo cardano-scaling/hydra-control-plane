@@ -4,7 +4,7 @@ use pallas::{
     crypto::hash::Hash,
     ledger::{
         addresses::Address,
-        primitives::conway::{PlutusData, PlutusV2Script},
+        primitives::{conway::PlutusData, PlutusScript},
         traverse::ComputeHash,
     },
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
@@ -28,7 +28,7 @@ impl InitTx {
     pub fn get_head_id(&self) -> Result<Vec<u8>> {
         Ok(self.get_minting_validator()?.1.to_vec())
     }
-    fn get_minting_validator(&self) -> Result<(PlutusV2Script, Hash<28>)> {
+    fn get_minting_validator(&self) -> Result<(PlutusScript<2>, Hash<28>)> {
         let script =
             make_head_token_script(&self.seed_input).context("Failed to make head token script")?;
         let script_hash = script.compute_hash();
@@ -124,6 +124,7 @@ impl InitTx {
     }
 }
 
+#[cfg(test)]
 mod tests {
 
     use pallas::txbuilder::Input;
