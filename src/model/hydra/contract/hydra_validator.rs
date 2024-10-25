@@ -31,6 +31,7 @@ impl HydraValidator {
 
     pub fn to_address(&self, network_id: u8) -> Address {
         let mut hash = self.to_plutus().compute_hash().to_vec();
+        println!("SCRIPT HASH: {}", hex::encode(hash.clone()));
         hash.insert(0, 0b01110000 | network_id);
 
         Address::from_bytes(hash.as_slice()).expect("Failed to create address for a script")

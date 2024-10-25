@@ -186,6 +186,11 @@ async fn main() {
         .sign(admin_key.into())
         .expect("Failed to sign commit tx");
 
+    println!(
+        "Signed commit tx: {}",
+        hex::encode(built_commit_tx.tx_bytes.clone())
+    );
+
     let commit_tx_id = blockfrost
         .submit_transaction(built_commit_tx)
         .await
