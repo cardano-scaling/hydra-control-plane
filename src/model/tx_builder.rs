@@ -3,7 +3,7 @@ use pallas::{
     codec::{minicbor::encode, utils::MaybeIndefArray},
     crypto::{hash::Hash, key::ed25519::SecretKey},
     ledger::{
-        addresses::{Address, ShelleyPaymentPart},
+        addresses::{Address, Network, PaymentKeyHash, ShelleyPaymentPart},
         primitives::conway::{Constr, PlutusData},
         traverse::ComputeHash,
     },
@@ -12,7 +12,7 @@ use pallas::{
 
 use crate::SCRIPT_ADDRESS;
 
-use super::{hydra::utxo::UTxO, player::Player};
+use super::{datums::game_state::GameState, hydra::utxo::UTxO};
 
 #[derive(Clone)]
 pub struct TxBuilder {
@@ -29,17 +29,12 @@ impl TxBuilder {
         }
     }
 
-    pub fn build_new_game_state(
+    pub fn build_new_game(
         &self,
-        player: &Player,
+        player: PaymentKeyHash,
         utxos: Vec<UTxO>,
-        _expired_utxos: Vec<UTxO>,
-        collateral_addr: Address,
-    ) -> Result<(BuiltTransaction, Vec<u8>)> {
-        if player.utxo.is_some() {
-            bail!("Player already has a UTxO created");
-        }
-
+        network: Network,
+    ) -> Result<BuiltTransaction> {
         let admin_utxos = self.find_admin_utxos(utxos);
 
         if admin_utxos.is_empty() {
@@ -49,54 +44,34 @@ impl TxBuilder {
         let input_utxo = admin_utxos.first().unwrap();
 
         let script_address = Address::from_bech32(SCRIPT_ADDRESS).unwrap();
+        let mut player_address_bytes = player.to_vec();
+        player_address_bytes.insert(0, 0b01100000 | network.into());
+        let player_address = Address::from_bytes(player_address_bytes.as_slice()).unwrap();
 
-        let game_state: PlutusData = player
-            .initialize_state(self.admin_pkh.as_ref().to_vec())
+        let game_state: PlutusData = GameState::new(self.admin_pkh.into())
+            .add_player(player.into())
             .into();
         let mut datum: Vec<u8> = Vec::new();
         encode(&game_state, &mut datum)?;
 
         let tx_builder = StagingTransaction::new()
             .input(input_utxo.clone().into())
+            // GameState Datum
             .output(Output::new(script_address, 0).set_inline_datum(datum.clone()))
-            // This is so the player has collateral, we can't clean this up unfortunately
-            .output(Output::new(collateral_addr, 0))
+            // Player Output
+            .output(Output::new(player_address, 0))
+            // Maintain Initial UTxO
             .output(Output::new(
                 input_utxo.address.clone(),
                 input_utxo.value.get("lovelace").unwrap().to_owned(),
             ))
-            .change_address(input_utxo.clone().address)
             .fee(0);
 
-        /* Skipping cleanup for now
-        if expired_utxos.len() > 0 {
-            tx_builder = tx_builder
-                .reference_input(
-                    self.script_ref
-                        .as_ref()
-                        .expect("must have script ref by this point")
-                        .clone()
-                        .into(),
-                )
-                .collateral_input(input_utxo.clone().into());
-        }
-        for utxo in expired_utxos {
-            tx_builder = tx_builder.input(utxo.clone().into());
-            tx_builder = tx_builder.add_spend_redeemer(
-                utxo.into(),
-                TxBuilder::build_redeemer(),
-                Some(ExUnits {
-                    mem: 7000000,
-                    steps: 3000000000,
-                }),
-            );
-        }
-        */
         let tx = tx_builder.build_conway_raw()?;
         let signed_tx = tx
             .sign(self.admin_key.clone().into())
             .context("failed to sign tx")?;
-        Ok((signed_tx, datum))
+        Ok(signed_tx)
     }
 
     fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {
