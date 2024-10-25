@@ -1,13 +1,15 @@
 use anyhow::{anyhow, bail, Context};
-use pallas::ledger::primitives::{
-    alonzo,
-    conway::{Constr, PlutusData},
+use pallas::ledger::{
+    addresses::PaymentKeyHash,
+    primitives::{
+        alonzo,
+        conway::{Constr, PlutusData},
+    },
 };
 
 pub struct PaymentCredential([u8; 28]);
 
 pub enum State {
-    LOBBY,
     RUNNING,
     CHEATED,
     FINISHED,
@@ -20,15 +22,50 @@ pub struct GameState {
     cheater: Option<PaymentCredential>,
 }
 
+impl GameState {
+    pub fn new(referee: PaymentCredential) -> Self {
+        Self {
+            referee,
+            players: Vec::new(),
+            state: State::RUNNING,
+            winner: None,
+            cheater: None,
+        }
+    }
+
+    pub fn add_player(mut self, player: PaymentCredential) -> Self {
+        self.players.push(player);
+
+        self
+    }
+
+    pub fn set_winner(mut self, winner: PaymentCredential) -> Self {
+        self.winner = Some(winner);
+
+        self
+    }
+
+    pub fn set_cheater(mut self, cheater: PaymentCredential) -> Self {
+        self.cheater = Some(cheater);
+
+        self
+    }
+
+    pub fn set_state(mut self, state: State) -> Self {
+        self.state = state;
+
+        self
+    }
+}
+
 impl From<GameState> for PlutusData {
     fn from(value: GameState) -> Self {
-        let players: PlutusData = PlutusData::Array(alonzo::MaybeIndefArray::Indef(
-            value
-                .players
-                .into_iter()
-                .map(|x| x.into())
-                .collect::<Vec<_>>(),
-        ));
+        let x = value
+            .players
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<_>>();
+        let players: PlutusData = PlutusData::Array(alonzo::MaybeIndefArray::Indef(x));
 
         let winner: PlutusData = match value.winner {
             Some(winner) => PlutusData::Constr(Constr {
@@ -146,6 +183,14 @@ impl TryFrom<PlutusData> for GameState {
     }
 }
 
+impl From<PaymentKeyHash> for PaymentCredential {
+    fn from(value: PaymentKeyHash) -> Self {
+        // We can do this unsafe, because we we know PaymentKeyHash is 28 bytes long
+        let ptr = value.as_ref().as_ptr() as *const [u8; 28];
+        unsafe { PaymentCredential(*ptr) }
+    }
+}
+
 impl From<PaymentCredential> for PlutusData {
     fn from(value: PaymentCredential) -> Self {
         let bytes: alonzo::BoundedBytes = value.0.to_vec().into();
@@ -193,24 +238,19 @@ impl TryFrom<PlutusData> for PaymentCredential {
 impl From<State> for PlutusData {
     fn from(value: State) -> Self {
         PlutusData::Constr(match value {
-            State::LOBBY => Constr {
+            State::RUNNING => Constr {
                 tag: 121,
                 any_constructor: Some(0),
                 fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
-            State::RUNNING => Constr {
+            State::CHEATED => Constr {
                 tag: 121,
                 any_constructor: Some(1),
                 fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
-            State::CHEATED => Constr {
-                tag: 121,
-                any_constructor: Some(2),
-                fields: alonzo::MaybeIndefArray::Indef(vec![]),
-            },
             State::FINISHED => Constr {
                 tag: 121,
-                any_constructor: Some(4),
+                any_constructor: Some(2),
                 fields: alonzo::MaybeIndefArray::Indef(vec![]),
             },
         })
@@ -223,10 +263,9 @@ impl TryFrom<PlutusData> for State {
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
             PlutusData::Constr(constr) => match constr.tag {
-                121 => Ok(State::LOBBY),
-                122 => Ok(State::RUNNING),
-                123 => Ok(State::CHEATED),
-                124 => Ok(State::FINISHED),
+                121 => Ok(State::RUNNING),
+                122 => Ok(State::CHEATED),
+                123 => Ok(State::FINISHED),
                 _ => bail!("Invalid constructor tag for State."),
             },
             _ => bail!("Invalid data type for State."),
