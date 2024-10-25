@@ -5,6 +5,7 @@ pub mod head_is_aborted;
 pub mod head_is_initializing;
 pub mod head_is_open;
 pub mod init;
+pub mod invalid_input;
 pub mod new_tx;
 pub mod peer_connected;
 pub mod peer_disconnected;

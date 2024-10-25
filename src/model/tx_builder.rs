@@ -19,7 +19,7 @@ use super::{
     game::contract::game_state::GameState, game::contract::validator::Validator, hydra::utxo::UTxO,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TxBuilder {
     admin_key: SecretKey,
     pub admin_pkh: Hash<28>,

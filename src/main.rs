@@ -49,7 +49,6 @@ struct HostConfig {
     #[serde(default = "localhost")]
     local_url: String,
     remote_url: Option<String>,
-    stats_file_prefix: Option<String>,
     region: String,
     #[serde(default = "default_start_port")]
     start_port: u32,
@@ -84,7 +83,9 @@ async fn main() -> Result<()> {
         mpsc::unbounded_channel();
 
     let mut nodes = vec![];
+    println!("NODES LENGTH: {}", config.nodes.len());
     for node in &config.nodes {
+        println!("NODE");
         let node = Node::try_new(node, &tx)
             .await
             .context("failed to construct new node")?;
@@ -97,10 +98,6 @@ async fn main() -> Result<()> {
                 remote_url: host.remote_url.clone(),
                 region: host.region.clone(),
                 port,
-                stats_file: host
-                    .stats_file_prefix
-                    .as_ref()
-                    .map(|prefix| format!("{prefix}-{port}")),
                 admin_key_file: host.admin_key_file.clone(),
                 max_players: host.max_players,
                 persisted: host.persisted,
@@ -185,6 +182,9 @@ async fn update(state: HydraNodesState, mut rx: UnboundedReceiver<HydraData>) {
                             node.local_connection.to_authority()
                         );
                         node.occupied = true;
+                    }
+                    HydraEventMessage::InvalidInput(invalid_input) => {
+                        println!("Received InvalidInput: {:?}", invalid_input);
                     }
                     _ => {}
                 }

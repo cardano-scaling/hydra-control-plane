@@ -45,7 +45,7 @@ impl Serialize for Transaction {
         S: Serializer,
     {
         let mut s = serializer.serialize_struct("transaction", 4)?;
-        s.serialize_field("type", "Witnessed Tx BabbageEra")?;
+        s.serialize_field("type", "Witnessed Tx ConwayEra")?;
         s.serialize_field("description", "")?;
         s.serialize_field("cborHex", &self.cbor_hex)?;
         s.serialize_field("txId", &self.tx_id)?;

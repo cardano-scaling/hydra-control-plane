@@ -7,8 +7,8 @@ use serde_json::Value;
 use super::messages::{
     command_failed::CommandFailed, committed::Committed, greetings::Greetings,
     head_is_initializing::HeadIsInitializing, head_is_open::HeadIsOpen,
-    peer_connected::PeerConnected, peer_disconnected::PeerDisconnected,
-    snapshot_confirmed::SnapshotConfirmed, tx_valid::TxValid,
+    invalid_input::InvalidInput, peer_connected::PeerConnected,
+    peer_disconnected::PeerDisconnected, snapshot_confirmed::SnapshotConfirmed, tx_valid::TxValid,
 };
 
 pub enum HydraMessage {
@@ -37,6 +37,7 @@ pub enum HydraEventMessage {
     Committed(Committed),
     Greetings(Greetings),
     CommandFailed(CommandFailed),
+    InvalidInput(InvalidInput),
     Unimplemented(Value),
 }
 
@@ -61,6 +62,7 @@ impl TryFrom<Value> for HydraEventMessage {
             "Committed" => Committed::try_from(value).map(HydraEventMessage::Committed),
             "Greetings" => Greetings::try_from(value).map(HydraEventMessage::Greetings),
             "CommandFailed" => CommandFailed::try_from(value).map(HydraEventMessage::CommandFailed),
+            "InvalidInput" => InvalidInput::try_from(value).map(HydraEventMessage::InvalidInput),
             _ => Ok(HydraEventMessage::Unimplemented(value)),
         }
     }

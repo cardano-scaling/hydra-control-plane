@@ -25,7 +25,7 @@ use crate::{
     NodeConfig,
 };
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Debug)]
 pub struct Node {
     #[serde(rename = "id")]
     pub head_id: Option<String>,
@@ -46,7 +46,7 @@ pub struct Node {
     pub tx_builder: TxBuilder,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Debug)]
 pub struct ConnectionInfo {
     pub host: String,
     pub port: u32,
@@ -153,6 +153,7 @@ impl Node {
     }
 
     pub async fn send(&self, message: String) -> Result<()> {
+        println!("Sending message: {}", message);
         self.socket.send(message).await
     }
 
