@@ -45,7 +45,7 @@ pub struct UTxO {
     pub value: HashMap<String, u64>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Datum {
     Hash(Vec<u8>),
     Inline(PlutusData),
@@ -199,7 +199,13 @@ fn value_to_plutus_data(value: &Value) -> Result<PlutusData> {
         let bytes = hex::decode(bytes)?;
         Ok(PlutusData::BoundedBytes(bytes.into()))
     } else if value.contains_key("list") {
-        Err(anyhow!("plutus list decoding not yet implemented"))
+        let list: Vec<PlutusData> = value["list"]
+            .as_array()
+            .context("Invalid list")?
+            .iter()
+            .filter_map(|v| value_to_plutus_data(v).ok())
+            .collect();
+        Ok(PlutusData::Array(MaybeIndefArray::Indef(list)))
     } else {
         Err(anyhow!("Invalid PlutusData json encoding"))
     }

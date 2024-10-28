@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use pallas::ledger::addresses::Address;
 use rocket::{get, http::Status, serde::json::Json, State};
 use serde::Serialize;
@@ -6,16 +5,17 @@ use serde::Serialize;
 use crate::{model::node::Node, MyState};
 
 #[derive(Serialize)]
-pub struct NewGameResponse {
+pub struct AddPlayerResponse {
     ip: String,
     player_state: String,
 }
 
-#[get("/new_game?<address>")]
-pub async fn new_game(
+#[get("/add_player?<address>&<id>")]
+pub async fn add_player(
     address: &str,
+    id: &str,
     state: &State<MyState>,
-) -> Result<Json<NewGameResponse>, Status> {
+) -> Result<Json<AddPlayerResponse>, Status> {
     let state_guard = state.state.state.write().await;
     // we're just gonna grab the first node for now.
     // In the future, we will be querying K8s
@@ -30,12 +30,12 @@ pub async fn new_game(
     }?;
 
     let tx_hash = node
-        .new_game(pkh)
+        .add_player(pkh)
         .await
         .map_err(|_| Status::InternalServerError)?;
     let ip = node.remote_connection.to_authority();
 
-    Ok(Json(NewGameResponse {
+    Ok(Json(AddPlayerResponse {
         ip,
         player_state: format!("{}#1", hex::encode(tx_hash)),
     }))
