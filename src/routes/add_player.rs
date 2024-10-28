@@ -33,7 +33,7 @@ pub async fn add_player(
         .add_player(pkh)
         .await
         .map_err(|_| Status::InternalServerError)?;
-    let ip = node.remote_connection.to_authority();
+    let ip = node.remote_connection.to_http_url();
 
     Ok(Json(AddPlayerResponse {
         ip,
