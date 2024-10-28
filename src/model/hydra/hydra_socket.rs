@@ -140,7 +140,6 @@ impl HydraSender {
     pub async fn send(&mut self, message: HydraData) -> Result<()> {
         match message {
             HydraData::Send(data) => {
-                println!("SENDING DATA");
                 self.sender.send(Message::Text(data)).await?;
                 Ok(())
             }

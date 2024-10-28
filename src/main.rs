@@ -11,7 +11,7 @@ use model::{
 };
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use routes::{head::head, heads::heads, new_game::new_game};
+use routes::{add_player::add_player, head::head, heads::heads, new_game::new_game};
 use serde::Deserialize;
 use tokio::{
     spawn,
@@ -129,7 +129,7 @@ async fn main() -> Result<()> {
 
     let _rocket = rocket::build()
         .manage(MyState { state: hydra_state })
-        .mount("/", routes![new_game, heads, head])
+        .mount("/", routes![new_game, heads, head, add_player])
         .attach(cors.to_cors().unwrap())
         .launch()
         .await?;

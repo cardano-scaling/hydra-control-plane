@@ -27,7 +27,7 @@ impl From<Redeemer> for PlutusData {
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
-            fields: MaybeIndefArray::Indef(vec![
+            fields: MaybeIndefArray::Def(vec![
                 PlutusData::BigInt(BigInt::Int((value.new_state_index as i64).into())),
                 value.spend_action.into(),
             ]),
@@ -44,7 +44,7 @@ impl From<SpendAction> for PlutusData {
                 SpendAction::EndGame => Some(1),
                 SpendAction::Collect => Some(2),
             },
-            fields: MaybeIndefArray::Indef(vec![]),
+            fields: MaybeIndefArray::Def(vec![]),
         })
     }
 }

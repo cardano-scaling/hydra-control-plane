@@ -21,7 +21,10 @@ use super::{
 };
 
 use crate::{
-    model::{game::contract::validator::Validator, hydra::utxo::UTxO},
+    model::{
+        game::contract::validator::Validator,
+        hydra::utxo::{Datum, UTxO},
+    },
     NodeConfig,
 };
 
@@ -131,13 +134,9 @@ impl Node {
     //TODO: don't hardcode network
     pub async fn add_player(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
-        let game_state_utxo = utxos
-            .iter()
-            .find(|utxo| utxo.address == Validator::address(Network::Testnet))
-            .ok_or_else(|| anyhow!("game state UTxO not found"))?;
-        let add_player_tx =
-            self.tx_builder
-                .add_player(player_key, game_state_utxo.clone(), Network::Testnet)?;
+        let add_player_tx = self
+            .tx_builder
+            .add_player(player_key, utxos, Network::Testnet)?;
 
         let tx_hash = add_player_tx.tx_hash.0.to_vec();
 
@@ -153,7 +152,6 @@ impl Node {
     }
 
     pub async fn send(&self, message: String) -> Result<()> {
-        println!("Sending message: {}", message);
         self.socket.send(message).await
     }
 

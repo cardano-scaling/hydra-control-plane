@@ -65,6 +65,7 @@ impl From<GameState> for PlutusData {
             .into_iter()
             .map(|x| x.into())
             .collect::<Vec<_>>();
+
         let players: PlutusData = PlutusData::Array(alonzo::MaybeIndefArray::Indef(x));
 
         let winner: PlutusData = match value.winner {
@@ -140,12 +141,12 @@ impl TryFrom<PlutusData> for GameState {
 
                 let winner: Option<PaymentCredential> = match constr.fields[3].clone() {
                     PlutusData::Constr(constr) => {
-                        if constr.tag == 121 {
+                        if Some(0) == constr.any_constructor {
                             Some(
                                 PaymentCredential::try_from(PlutusData::Constr(constr))
                                     .context("winner")?,
                             )
-                        } else if constr.tag == 122 {
+                        } else if Some(1) == constr.any_constructor {
                             None
                         } else {
                             bail!("Invalid constructor tag for winner");
@@ -156,12 +157,12 @@ impl TryFrom<PlutusData> for GameState {
 
                 let cheater: Option<PaymentCredential> = match constr.fields[4].clone() {
                     PlutusData::Constr(constr) => {
-                        if constr.tag == 121 {
+                        if Some(0) == constr.any_constructor {
                             Some(
                                 PaymentCredential::try_from(PlutusData::Constr(constr))
                                     .context("cheater")?,
                             )
-                        } else if constr.tag == 122 {
+                        } else if Some(1) == constr.any_constructor {
                             None
                         } else {
                             bail!("Invalid constructor tag for cheater");
@@ -240,17 +241,17 @@ impl From<State> for PlutusData {
         PlutusData::Constr(match value {
             State::RUNNING => Constr {
                 tag: 121,
-                any_constructor: Some(0),
+                any_constructor: None,
                 fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
             State::CHEATED => Constr {
-                tag: 121,
-                any_constructor: Some(1),
+                tag: 122,
+                any_constructor: None,
                 fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
             State::FINISHED => Constr {
-                tag: 121,
-                any_constructor: Some(2),
+                tag: 123,
+                any_constructor: None,
                 fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
         })
