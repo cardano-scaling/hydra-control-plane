@@ -64,8 +64,8 @@ impl CommitTx {
                     self.initial_input.0.clone().into(),
                     self.build_redeemer()?,
                     Some(ExUnits {
-                        mem: 14000000,
-                        steps: 10000000000,
+                        mem: 1750000,
+                        steps: 350000000,
                     }),
                 )
                 .disclosed_signer(self.initial_input.2)
