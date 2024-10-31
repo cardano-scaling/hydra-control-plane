@@ -9,7 +9,7 @@ pub struct TxValid {
     pub timestamp: String,
     pub cbor: Vec<u8>,
     pub descrption: String,
-    pub tx_id: Vec<u8>,
+    pub tx_id: String,
     pub tx_type: String,
 }
 
@@ -34,7 +34,10 @@ impl TryFrom<Value> for TxValid {
             .context("Invalid descrption")?
             .to_owned();
 
-        let tx_id = hex::decode(transaction["txId"].as_str().context("Invalid txId")?)?;
+        let tx_id = transaction["txId"]
+            .as_str()
+            .context("Invalid txId")?
+            .to_owned();
 
         let tx_type = transaction["type"]
             .as_str()

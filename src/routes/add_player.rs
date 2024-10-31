@@ -2,7 +2,7 @@ use pallas::ledger::addresses::Address;
 use rocket::{get, http::Status, serde::json::Json, State};
 use serde::Serialize;
 
-use crate::{model::node::Node, MyState};
+use crate::model::cluster::ClusterState;
 
 #[derive(Serialize)]
 pub struct AddPlayerResponse {
@@ -14,15 +14,15 @@ pub struct AddPlayerResponse {
 pub async fn add_player(
     address: &str,
     id: &str,
-    state: &State<MyState>,
+    state: &State<ClusterState>,
 ) -> Result<Json<AddPlayerResponse>, Status> {
-    let state_guard = state.state.state.write().await;
-    // we're just gonna grab the first node for now.
-    // In the future, we will be querying K8s
-    let node: &Node = state_guard
-        .nodes
-        .get(0)
-        .ok_or(Status::InternalServerError)?;
+    let node = state
+        .get_node_by_id(id)
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+
+    // if we don't find the node for the given game id, return a 404
+    let node = node.ok_or(Status::NotFound)?;
 
     let pkh = match Address::from_bech32(address).map_err(|_| Status::BadRequest)? {
         Address::Shelley(shelley) => Ok(shelley.payment().as_hash().clone()),

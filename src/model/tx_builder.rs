@@ -206,7 +206,7 @@ impl TxBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::node::KeyEnvelope;
+    use crate::model::cluster::KeyEnvelope;
     use std::{collections::HashMap, fs::File};
 
     // TODO write an actual test with an assertion

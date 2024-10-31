@@ -2,12 +2,12 @@ use anyhow::{bail, Result};
 use pallas::txbuilder::BuiltTransaction;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 pub struct NewTx {
-    transaction: Transaction,
+    pub transaction: Transaction,
 }
 
-struct Transaction {
-    cbor_hex: String,
-    tx_id: String,
+pub struct Transaction {
+    pub cbor_hex: String,
+    pub tx_id: String,
 }
 
 impl NewTx {

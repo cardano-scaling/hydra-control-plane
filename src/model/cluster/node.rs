@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fs::File,
     sync::{atomic::AtomicBool, Arc},
+    time::Duration,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -15,8 +16,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::{
-    hydra::{hydra_message::HydraData, hydra_socket::HydraSocket, messages::new_tx::NewTx},
+use crate::model::{
+    hydra::{
+        hydra_message::HydraData,
+        hydra_socket::{self, HydraSocket},
+        messages::new_tx::NewTx,
+    },
     tx_builder::TxBuilder,
 };
 
@@ -43,8 +48,7 @@ pub struct Node {
     pub local_connection: ConnectionInfo,
     #[serde(skip)]
     pub remote_connection: ConnectionInfo,
-    #[serde(skip)]
-    pub socket: HydraSocket,
+
     #[serde(skip)]
     pub tx_builder: TxBuilder,
 }
@@ -94,11 +98,6 @@ impl Node {
         )
         .context("unable to parse key file")?;
 
-        let socket = HydraSocket::new(
-            local_connection.to_websocket_url().as_str(),
-            local_connection.to_authority(),
-            writer,
-        );
         let node = Node {
             head_id: None,
             local_connection,
@@ -107,14 +106,12 @@ impl Node {
             max_players: config.max_players,
             persisted: config.persisted,
             reserved: config.reserved,
-            online: socket.online.clone(),
+            online: Arc::new(AtomicBool::new(false)),
             occupied: false,
 
-            socket,
             tx_builder: TxBuilder::new(admin_key.try_into()?),
         };
 
-        node.start_listen();
         Ok(node)
     }
 
@@ -125,8 +122,15 @@ impl Node {
             .build_new_game(player_key, utxos, Network::Testnet)?; // TODO: pass in network
         let tx_hash = new_game_tx.tx_hash.0.to_vec();
 
-        let message = NewTx::new(new_game_tx)?.into();
-        self.send(message).await?;
+        let newtx = NewTx::new(new_game_tx)?;
+
+        hydra_socket::submit_tx_roundtrip(
+            self.remote_connection.to_websocket_url().as_str(),
+            newtx,
+            // TODO: make this configurable
+            Duration::from_secs(10),
+        )
+        .await?;
 
         Ok(tx_hash)
     }
@@ -140,19 +144,17 @@ impl Node {
 
         let tx_hash = add_player_tx.tx_hash.0.to_vec();
 
-        let message = NewTx::new(add_player_tx)?.into();
-        self.send(message).await?;
+        let newtx = NewTx::new(add_player_tx)?;
+
+        hydra_socket::submit_tx_roundtrip(
+            self.remote_connection.to_websocket_url().as_str(),
+            newtx,
+            // TODO: make this configurable
+            Duration::from_secs(10),
+        )
+        .await?;
 
         Ok(tx_hash)
-    }
-
-    pub fn start_listen(&self) {
-        let socket = self.socket.clone();
-        tokio::spawn(async move { socket.listen() });
-    }
-
-    pub async fn send(&self, message: String) -> Result<()> {
-        self.socket.send(message).await
     }
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {

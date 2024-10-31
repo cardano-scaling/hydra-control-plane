@@ -1,6 +1,9 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Duration,
 };
 
 use anyhow::{anyhow, Result};
@@ -20,9 +23,14 @@ use tokio::{
     task::yield_now,
 };
 use tokio_native_tls::TlsStream;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
-use super::hydra_message::{HydraData, HydraMessage};
+use crate::model::hydra::hydra_message::HydraEventMessage;
+
+use super::{
+    hydra_message::{HydraData, HydraMessage},
+    messages::new_tx::NewTx,
+};
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
@@ -49,10 +57,10 @@ pub struct HydraSender {
 }
 
 impl HydraSocket {
-    pub fn new(url: &str, identifier: String, writer: &UnboundedSender<HydraData>) -> Self {
+    pub fn new(url: &str, identifier: &str, writer: &UnboundedSender<HydraData>) -> Self {
         HydraSocket {
             url: url.to_string(),
-            identifier,
+            identifier: identifier.to_string(),
             online: Arc::new(AtomicBool::new(false)),
             writer: writer.clone(),
             sender: Arc::new(Mutex::new(None)),
@@ -144,6 +152,48 @@ impl HydraSender {
                 Ok(())
             }
             _ => Err(anyhow!("Can only send data of variant Send")),
+        }
+    }
+}
+
+pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Result<()> {
+    let (ws_stream, _) = connect_async(url).await?;
+    info!("connected to {}", &url);
+
+    let (mut sender, mut receiver) = ws_stream.split();
+
+    let tx_id = tx.transaction.tx_id.clone();
+    let confirmation = tokio::spawn(async move {
+        loop {
+            let next = receiver.next().await.ok_or(anyhow!("Disconnected"))?;
+            let msg = HydraMessage::try_from(next?)?;
+
+            match msg {
+                HydraMessage::HydraEvent(x) => match x {
+                    HydraEventMessage::TxValid(x) => {
+                        if x.tx_id == tx_id {
+                            info!("Tx confirmed: {:?}", x);
+                            break anyhow::Result::Ok(());
+                        }
+                    }
+                    _ => (),
+                },
+                _ => {}
+            }
+        }
+    });
+
+    sender.send(Message::Text(tx.into())).await?;
+
+    tokio::select! {
+        join = confirmation => {
+            match join {
+                Ok(result) => result,
+                Err(e) => Err(e.into()),
+            }
+        }
+        _ = tokio::time::sleep(timeout) => {
+             Err(anyhow!("Tx not confirmed"))
         }
     }
 }

@@ -1,13 +1,12 @@
 use rocket::{get, serde::json::Json, State};
 
-use crate::{model::node::NodeSummary, MyState};
+use crate::model::cluster::{ClusterState, NodeSummary};
 
 #[get("/heads")]
-pub async fn heads(state: &State<MyState>) -> Json<Vec<NodeSummary>> {
-    let state_guard = state.state.state.read().await;
-    let nodes = state_guard
-        .nodes
-        .clone()
+pub async fn heads(state: &State<ClusterState>) -> Json<Vec<NodeSummary>> {
+    let nodes = state
+        .get_all_nodes()
+        .await
         .iter()
         .map(|s| NodeSummary(s.clone()))
         .collect::<Vec<NodeSummary>>();
