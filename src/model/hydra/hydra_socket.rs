@@ -124,6 +124,7 @@ impl HydraSocket {
         while let Some(msg) = receiver.next().await {
             let msg = msg?;
             let hydra_message = HydraMessage::try_from(msg)?;
+            debug!("Received message: {:?}", hydra_message);
             match hydra_message {
                 HydraMessage::Ping(payload) => {
                     debug!("Received ping: {:?}", payload);

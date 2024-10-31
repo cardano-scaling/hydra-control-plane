@@ -31,6 +31,10 @@ async fn main() -> Result<()> {
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
 
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let args = Args::parse();
     let connection_info = ConnectionInfo {
         host: args.host,
@@ -44,10 +48,11 @@ async fn main() -> Result<()> {
     ));
     let metrics = Arc::new(Metrics::try_new().expect("Failed to register metrics."));
 
+    // Initialize websocket.
+    socket.listen();
+
     // Check online status.
     tokio::spawn(update_connection_state(metrics.clone(), socket.clone()));
-    // Initialize websocket.
-    tokio::spawn(async move { socket.listen() });
     // Listen and update metrics.
     tokio::spawn(update(metrics.clone(), rx));
 
@@ -60,7 +65,7 @@ async fn main() -> Result<()> {
 }
 
 #[get("/metrics")]
-fn metrics_endpoint(metrics: &State<Metrics>) -> String {
+fn metrics_endpoint(metrics: &State<Arc<Metrics>>) -> String {
     metrics.gather()
 }
 
@@ -99,6 +104,13 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
                     }
                     HydraEventMessage::InvalidInput(invalid_input) => {
                         println!("Received InvalidInput: {:?}", invalid_input);
+                    }
+                    HydraEventMessage::Greetings(greetings) => {
+                        match greetings.head_status.as_ref() {
+                            "Initializing" => metrics.set_state(NodeState::HeadIsInitializing),
+                            "Open" => metrics.set_state(NodeState::HeadIsOpen),
+                            _ => metrics.set_state(NodeState::Online),
+                        };
                     }
                     _ => {}
                 }
