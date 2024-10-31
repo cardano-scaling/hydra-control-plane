@@ -1,15 +1,14 @@
 use rocket::{get, serde::json::Json, State};
 
-use crate::model::cluster::{ClusterState, NodeSummary};
+use crate::model::cluster::{ClusterState, HydraDoomNodeSpec};
 
 #[get("/heads")]
-pub async fn heads(state: &State<ClusterState>) -> Json<Vec<NodeSummary>> {
+pub async fn heads(state: &State<ClusterState>) -> Json<Vec<HydraDoomNodeSpec>> {
     let nodes = state
         .get_all_nodes()
-        .await
         .iter()
-        .map(|s| NodeSummary(s.clone()))
-        .collect::<Vec<NodeSummary>>();
+        .map(|x| x.spec.clone())
+        .collect();
 
     Json(nodes)
 }

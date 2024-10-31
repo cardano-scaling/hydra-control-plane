@@ -1,10 +1,7 @@
 use anyhow::Result;
 use clap::{arg, Parser};
 use hydra_control_plane::model::{
-    cluster::{
-        metrics::{Metrics, NodeState},
-        ConnectionInfo,
-    },
+    cluster::ConnectionInfo,
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
         hydra_socket::HydraSocket,
@@ -14,6 +11,10 @@ use rocket::{get, routes, State};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{info, warn};
+
+mod metrics;
+
+use metrics::{Metrics, NodeState};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -61,6 +62,7 @@ async fn main() -> Result<()> {
         .mount("/", routes![metrics_endpoint])
         .launch()
         .await?;
+
     Ok(())
 }
 
@@ -90,7 +92,7 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
                 match message {
                     HydraEventMessage::HeadIsOpen(head_is_open) => {
                         info!("head_id {:?}", head_is_open.head_id);
-                        metrics.set_state(NodeState::HeadIsOpen);
+                        metrics.set_state(metrics::NodeState::HeadIsOpen);
                     }
                     HydraEventMessage::SnapshotConfirmed(_) => {
                         // Calculate kills, amount of transactions, etc.

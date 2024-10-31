@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use ::serde::Deserialize;
+use pallas::crypto::key::ed25519::SecretKey;
 
 pub mod model;
 pub mod providers;
@@ -27,3 +28,13 @@ fn default_region() -> String {
 fn localhost() -> String {
     "ws://127.0.0.1".to_string()
 }
+
+pub static TEMP_ADMIN_KEY: std::sync::LazyLock<SecretKey> = std::sync::LazyLock::new(|| {
+    let bytes: [u8; 32] =
+        hex::decode("8484848484848484848484848484848484848484848484848484848484848484")
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+    SecretKey::from(bytes)
+});

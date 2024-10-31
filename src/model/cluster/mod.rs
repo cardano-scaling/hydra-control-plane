@@ -1,35 +1,69 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{future::ready, path::PathBuf, sync::Arc};
 
+use crd::HydraDoomNode;
+use futures_util::StreamExt as _;
+use kube::runtime::{reflector::ObjectRef, WatchStreamExt as _};
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
-pub mod metrics;
+mod crd;
 mod node;
 
+pub use crd::*;
 pub use node::*;
 
+const DEFAULT_NAMESPACE: &str = "hydra-doom";
+
 #[derive(Clone)]
-pub struct ClusterState {}
+pub struct ClusterState {
+    store: kube::runtime::reflector::Store<HydraDoomNode>,
+    watcher_handle: Arc<tokio::task::JoinHandle<()>>,
+}
 
 impl ClusterState {
-    pub async fn in_cluster() -> anyhow::Result<Self> {
-        Ok(Self {})
+    pub async fn try_default() -> anyhow::Result<Self> {
+        let client = kube::Client::try_default().await?;
+        let nodes: kube::Api<crd::HydraDoomNode> = kube::Api::all(client);
+
+        let (store, writer) = kube::runtime::reflector::store();
+
+        // Create the infinite reflector stream
+        let rf = kube::runtime::reflector(
+            writer,
+            kube::runtime::watcher(nodes, kube::runtime::watcher::Config::default()),
+        );
+
+        let watcher_handle = tokio::spawn(async move {
+            let infinite_watch = rf.applied_objects().for_each(|o| ready(()));
+            infinite_watch.await;
+        });
+
+        Ok(Self {
+            store,
+            watcher_handle: Arc::new(watcher_handle),
+        })
     }
 
     pub async fn remote(k8s_api_url: String) -> anyhow::Result<Self> {
         todo!()
     }
 
-    pub async fn get_warm_node(&self) -> anyhow::Result<Node> {
+    pub fn get_warm_node(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
+        self.store
+            .state()
+            // TODO: use status to select only nodes that are warm
+            .first()
+            .cloned()
+            .ok_or(anyhow::anyhow!("no nodes found"))
+    }
+
+    pub fn get_all_nodes(&self) -> Vec<Arc<HydraDoomNode>> {
         todo!()
     }
 
-    pub async fn get_all_nodes(&self) -> Vec<Node> {
-        todo!()
-    }
-
-    pub async fn get_node_by_id(&self, id: &str) -> anyhow::Result<Option<Node>> {
-        todo!()
+    pub fn get_node_by_id(&self, id: &str) -> Option<Arc<HydraDoomNode>> {
+        self.store
+            .get(&ObjectRef::<HydraDoomNode>::new(id).within(DEFAULT_NAMESPACE))
     }
 }
 
@@ -37,28 +71,4 @@ impl ClusterState {
 #[derive(Debug, Deserialize)]
 struct Config {
     ttl_minutes: u64,
-}
-
-#[derive(Debug, Deserialize)]
-struct HostConfig {
-    #[serde(default = "localhost")]
-    local_url: String,
-    remote_url: Option<String>,
-
-    max_players: usize,
-    admin_key_file: PathBuf,
-    persisted: bool,
-    reserved: bool,
-}
-
-fn default_start_port() -> u32 {
-    4001
-}
-
-fn default_region() -> String {
-    "us-east-2".to_string()
-}
-
-fn localhost() -> String {
-    "ws://127.0.0.1".to_string()
 }

@@ -33,16 +33,11 @@ use crate::{
     NodeConfig,
 };
 
+use super::crd::HydraDoomNode;
+
 #[derive(Clone, Serialize, Debug)]
-pub struct Node {
-    #[serde(rename = "id")]
-    pub head_id: Option<String>,
-    pub region: String,
-    pub max_players: usize,
-    pub persisted: bool,
-    pub reserved: bool,
-    pub online: Arc<AtomicBool>,
-    pub occupied: bool,
+pub struct NodeClient {
+    pub resource: Arc<HydraDoomNode>,
 
     #[serde(skip)]
     pub local_connection: ConnectionInfo,
@@ -61,7 +56,7 @@ pub struct ConnectionInfo {
 }
 
 #[derive(Serialize)]
-pub struct NodeSummary(pub Node);
+pub struct NodeSummary(pub NodeClient);
 
 #[derive(Clone, Debug)]
 pub struct StateUpdate {
@@ -89,27 +84,17 @@ impl TryInto<SecretKey> for KeyEnvelope {
     }
 }
 
-impl Node {
-    pub async fn try_new(config: &NodeConfig, writer: &UnboundedSender<HydraData>) -> Result<Self> {
-        let (local_connection, remote_connection) = ConnectionInfo::from_config(config)?;
+impl NodeClient {
+    pub fn new(resource: Arc<HydraDoomNode>, admin_key: SecretKey) -> Result<Self> {
+        let status = resource.status.as_ref().ok_or(anyhow!("no status found"))?;
 
-        let admin_key: KeyEnvelope = serde_json::from_reader(
-            File::open(&config.admin_key_file).context("unable to open key file")?,
-        )
-        .context("unable to parse key file")?;
+        let (local_connection, remote_connection) = ConnectionInfo::from_resource(status)?;
 
-        let node = Node {
-            head_id: None,
+        let node = Self {
+            resource,
             local_connection,
             remote_connection,
-            region: config.region.clone(),
-            max_players: config.max_players,
-            persisted: config.persisted,
-            reserved: config.reserved,
-            online: Arc::new(AtomicBool::new(false)),
-            occupied: false,
-
-            tx_builder: TxBuilder::new(admin_key.try_into()?),
+            tx_builder: TxBuilder::new(admin_key),
         };
 
         Ok(node)
@@ -176,23 +161,20 @@ impl Node {
 }
 
 impl ConnectionInfo {
-    fn from_config(value: &NodeConfig) -> Result<(Self, Self)> {
+    fn from_resource(resource: &super::crd::HydraDoomNodeStatus) -> Result<(Self, Self)> {
         Ok((
-            ConnectionInfo::from_url(&value.local_url, value.port)?,
-            ConnectionInfo::from_url(
-                value.remote_url.as_ref().unwrap_or(&value.local_url),
-                value.port,
-            )?,
+            ConnectionInfo::from_url(&resource.local_url)?,
+            ConnectionInfo::from_url(&resource.external_url)?,
         ))
     }
 
-    fn from_url(value: &str, port: u32) -> Result<Self> {
+    fn from_url(value: &str) -> Result<Self> {
         // default to secure connection if no schema provided
         let url = Url::parse(value)?;
 
         Ok(ConnectionInfo {
             host: url.host_str().context("expected a host")?.to_string(),
-            port,
+            port: url.port().unwrap_or(80) as u32,
             secure: url.scheme() == "https" || url.scheme() == "wss",
         })
     }

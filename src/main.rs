@@ -2,10 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use hydra_control_plane::NodeConfig;
-use model::{
-    cluster::{ClusterState, Node},
-    hydra::hydra_message::{HydraData, HydraEventMessage},
-};
+use model::cluster::ClusterState;
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::{add_player::add_player, head::head, heads::heads, new_game::new_game};
@@ -29,10 +26,11 @@ async fn main() -> Result<()> {
     let figment = rocket.figment();
     let config = figment.extract::<Config>().context("invalid config")?;
 
-    // This will start a reflector (aka: local cache) of the cluster state. The in_cluster
-    // initializer assumes that this process is running within the cluster. If you wanted to
-    // connect to a remote cluster, you can use the `ClusterState::remote` initializer.
-    let cluster = ClusterState::in_cluster().await?;
+    // This will start a reflector (aka: local cache) of the cluster state. The `try_default`
+    // initializer assumes that this process is running within the cluster or that the local kubeconfig
+    // context is set to the cluster. If you wanted to connect to a remote cluster, you can use the
+    // `ClusterState::remote` initializer.
+    let cluster = ClusterState::try_default().await?;
 
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())

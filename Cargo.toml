@@ -9,7 +9,7 @@ path = "src/bin/open_head.rs"
 
 [[bin]]
 name = "metrics-exporter"
-path = "src/bin/metric_exporter.rs"
+path = "src/bin/metric_exporter/main.rs"
 
 [[bin]]
 name = "hydra-control-plane"
@@ -37,6 +37,11 @@ tokio-native-tls = "0.3.1"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 uplc = "1.1.4"
+
+# k8s stuff
+k8s-openapi = { version = "0.23.0", features = ["latest"] }
+kube = { version = "0.96.0", features = ["client", "derive", "runtime"] }
+schemars = "0.8.21"
 
 [profile.release]
 debug = true
