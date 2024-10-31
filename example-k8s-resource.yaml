@@ -1,0 +1,13 @@
+apiVersion: hydra.doom/v1alpha1
+kind: HydraDoomNode
+metadata:
+  name: 4udi43
+  namespace: hydra-doom
+spec:
+  networkId: 1
+  paused: true
+  seedInput: "8484848484848484848484848484848484848484848484848484848484848484#0"
+  participant: foo
+  party: foo
+  commitInputs:
+  - "8484848484848484848484848484848484848484848484848484848484848484#0"

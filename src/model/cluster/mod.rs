@@ -1,6 +1,5 @@
 use std::{future::ready, path::PathBuf, sync::Arc};
 
-use crd::HydraDoomNode;
 use futures_util::StreamExt as _;
 use kube::runtime::{reflector::ObjectRef, WatchStreamExt as _};
 use serde::Deserialize;
@@ -57,8 +56,8 @@ impl ClusterState {
             .ok_or(anyhow::anyhow!("no nodes found"))
     }
 
-    pub fn get_all_nodes(&self) -> Vec<Arc<HydraDoomNode>> {
-        todo!()
+    pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {
+        self.store.state().iter().cloned().collect()
     }
 
     pub fn get_node_by_id(&self, id: &str) -> Option<Arc<HydraDoomNode>> {
