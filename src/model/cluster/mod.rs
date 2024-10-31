@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
+pub mod metrics;
 mod node;
 
 pub use node::*;

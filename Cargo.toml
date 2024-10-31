@@ -22,6 +22,7 @@ futures-util = "0.3.30"
 hex = "0.4.3"
 itertools = "0.13.0"
 pallas = { git = "https://github.com/txpipe/pallas.git" }
+prometheus = "0.13.4"
 reqwest = { version = "0.12.5", features = ["json"] }
 rocket = { version = "0.5.1", features = ["json"] }
 rocket_cors = "0.6.0"

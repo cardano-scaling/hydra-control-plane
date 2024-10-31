@@ -1,37 +1,101 @@
-use hydra_control_plane::model::hydra::{
-    hydra_message::{HydraData, HydraEventMessage},
-    hydra_socket::HydraSocket,
+use anyhow::Result;
+use clap::{arg, Parser};
+use hydra_control_plane::model::{
+    cluster::{
+        metrics::{Metrics, NodeState},
+        ConnectionInfo,
+    },
+    hydra::{
+        hydra_message::{HydraData, HydraEventMessage},
+        hydra_socket::HydraSocket,
+    },
 };
+use rocket::{get, routes, State};
+use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{info, warn};
 
-async fn update(metrics: Metrics, mut rx: UnboundedReceiver<HydraData>) {
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(long)]
+    host: String,
+    #[arg(long)]
+    port: u32,
+    #[arg(long, action)]
+    secure: bool,
+}
+
+#[rocket::main]
+async fn main() -> Result<()> {
+    let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
+        mpsc::unbounded_channel();
+
+    let args = Args::parse();
+    let connection_info = ConnectionInfo {
+        host: args.host,
+        port: args.port,
+        secure: args.secure,
+    };
+    let socket = Arc::new(HydraSocket::new(
+        connection_info.to_websocket_url().as_str(),
+        &connection_info.to_authority(),
+        &tx,
+    ));
+    let metrics = Arc::new(Metrics::try_new().expect("Failed to register metrics."));
+
+    // Check online status.
+    tokio::spawn(update_connection_state(metrics.clone(), socket.clone()));
+    // Initialize websocket.
+    tokio::spawn(async move { socket.listen() });
+    // Listen and update metrics.
+    tokio::spawn(update(metrics.clone(), rx));
+
+    let _ = rocket::build()
+        .manage(metrics)
+        .mount("/", routes![metrics_endpoint])
+        .launch()
+        .await?;
+    Ok(())
+}
+
+#[get("/metrics")]
+fn metrics_endpoint(metrics: &State<Metrics>) -> String {
+    metrics.gather()
+}
+
+async fn update_connection_state(node_metrics: Arc<Metrics>, socket: Arc<HydraSocket>) {
+    loop {
+        tokio::time::sleep(Duration::from_secs(10)).await;
+        let current_value = node_metrics.state.get();
+        let is_online = socket.online.load(std::sync::atomic::Ordering::SeqCst);
+
+        if !is_online {
+            node_metrics.set_state(NodeState::Offline);
+        } else if current_value == 0 {
+            node_metrics.set_state(NodeState::Online);
+        };
+    }
+}
+
+async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
     loop {
         match rx.recv().await {
             Some(HydraData::Received { message, .. }) => {
                 match message {
                     HydraEventMessage::HeadIsOpen(head_is_open) => {
                         info!("head_id {:?}", head_is_open.head_id);
+                        metrics.set_state(NodeState::HeadIsOpen);
                     }
-                    HydraEventMessage::SnapshotConfirmed(snapshot_confirmed) => {
-                        // node.stats.calculate_stats(
-                        //     snapshot_confirmed.confirmed_transactions,
-                        //     node.stats_file.clone(),
-                        // );
+                    HydraEventMessage::SnapshotConfirmed(_) => {
+                        // Calculate kills, amount of transactions, etc.
                     }
-
-                    // HydraEventMessage::TxValid(tx) => match node.add_transaction(tx) {
-                    //     Ok(_) => {}
-                    //     Err(e) => {
-                    //         warn!("failed to add transaction {:?}", e);
-                    //     }
-                    // },
                     HydraEventMessage::CommandFailed(command_failed) => {
                         println!("command failed {:?}", command_failed);
                     }
                     HydraEventMessage::HeadIsInitializing(_) => {
                         info!("node is initializing a head, marking as occupied");
-                        // TODO: mark as occupied
+                        metrics.set_state(NodeState::HeadIsInitializing);
                     }
                     HydraEventMessage::InvalidInput(invalid_input) => {
                         println!("Received InvalidInput: {:?}", invalid_input);
@@ -46,21 +110,4 @@ async fn update(metrics: Metrics, mut rx: UnboundedReceiver<HydraData>) {
             }
         }
     }
-}
-
-// TODO: replace with prometheus exporter crate registry
-pub struct Metrics;
-
-#[tokio::main]
-async fn main() {
-    let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
-        mpsc::unbounded_channel();
-
-    let socket = HydraSocket::new("ws://127.0.0.1:3000?history=no", "127.0.0.1:3000", &tx);
-
-    let metrics = Metrics;
-
-    tokio::spawn(async move {
-        update(metrics, rx).await;
-    });
 }
