@@ -64,16 +64,16 @@ fn metrics_endpoint(metrics: &State<Metrics>) -> String {
     metrics.gather()
 }
 
-async fn update_connection_state(node_metrics: Arc<Metrics>, socket: Arc<HydraSocket>) {
+async fn update_connection_state(metrics: Arc<Metrics>, socket: Arc<HydraSocket>) {
     loop {
         tokio::time::sleep(Duration::from_secs(10)).await;
-        let current_value = node_metrics.state.get();
+        let current_value = metrics.state.get();
         let is_online = socket.online.load(std::sync::atomic::Ordering::SeqCst);
 
         if !is_online {
-            node_metrics.set_state(NodeState::Offline);
+            metrics.set_state(NodeState::Offline);
         } else if current_value == 0 {
-            node_metrics.set_state(NodeState::Online);
+            metrics.set_state(NodeState::Online);
         };
     }
 }

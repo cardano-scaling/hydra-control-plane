@@ -59,8 +59,9 @@ impl Metrics {
         // Encode the metrics in a format that Prometheus can read
         let encoder = TextEncoder::new();
         let mut buffer = Vec::new();
-        let metric_families = self.registry.gather();
-        encoder.encode(&metric_families, &mut buffer).unwrap();
+        encoder
+            .encode(&self.registry.gather(), &mut buffer)
+            .unwrap();
 
         // Return the metrics as a UTF-8 string
         String::from_utf8(buffer).unwrap()
