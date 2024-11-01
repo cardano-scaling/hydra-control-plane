@@ -4,10 +4,20 @@ metadata:
   name: 4udi43
   namespace: hydra-doom
 spec:
+  offline: true
+  initialUtxoAddress: addr_test1vqg9ywrpx6e50uam03nlu0ewunh3yrscxmjayurmkp52lfskgkq5k
   networkId: 1
-  paused: true
+  blockfrostKey: "abc"
   seedInput: "8484848484848484848484848484848484848484848484848484848484848484#0"
   participant: foo
   party: foo
   commitInputs:
   - "8484848484848484848484848484848484848484848484848484848484848484#0"
+
+    
+    
+    
+    
+    
+    
+    

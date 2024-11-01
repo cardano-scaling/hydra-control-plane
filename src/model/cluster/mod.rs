@@ -50,10 +50,11 @@ impl ClusterState {
     pub fn get_warm_node(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
         self.store
             .state()
-            // TODO: use status to select only nodes that are warm
-            .first()
+            .iter()
+            .filter(|n| n.status.as_ref().is_some_and(|s| s.state == "HeadIsOpen"))
+            .next()
             .cloned()
-            .ok_or(anyhow::anyhow!("no nodes found"))
+            .ok_or(anyhow::anyhow!("no available warm nodes found"))
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {

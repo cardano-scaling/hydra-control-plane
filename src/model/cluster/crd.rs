@@ -14,14 +14,16 @@ use serde::{Deserialize, Serialize};
 )]
 #[kube(status = "HydraDoomNodeStatus")]
 #[kube(printcolumn = r#"
+        {"name": "State", "jsonPath":".status.state", "type": "string"}, 
+        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"}, 
         {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"}, 
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeSpec {
-    pub image: Option<String>,
-    pub open_head_image: Option<String>,
-    pub configmap: Option<String>,
+    pub offline: Option<bool>,
+    pub initial_utxo_address: Option<String>,
+    // Open head
     pub network_id: u8,
     pub seed_input: String,
     pub participant: String,
@@ -35,4 +37,6 @@ pub struct HydraDoomNodeSpec {
 pub struct HydraDoomNodeStatus {
     pub local_url: String,
     pub external_url: String,
+    pub state: String,
+    pub transactions: i64,
 }
