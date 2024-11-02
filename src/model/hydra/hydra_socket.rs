@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use async_tungstenite::{
     stream::Stream,
     tokio::{connect_async, TokioAdapter},
-    tungstenite::Message,
+    tungstenite::{client::IntoClientRequest as _, Message},
     WebSocketStream,
 };
 use futures_util::{
@@ -158,7 +158,9 @@ impl HydraSender {
 }
 
 pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Result<()> {
-    let (ws_stream, _) = connect_async(url).await?;
+    let request = url.into_client_request().unwrap();
+    let (ws_stream, _) = connect_async(request).await?;
+
     info!("connected to {}", &url);
 
     let (mut sender, mut receiver) = ws_stream.split();

@@ -30,7 +30,7 @@ pub async fn new_game(
 
     info!(id = &node.metadata.name, "select node for new game");
 
-    let client = NodeClient::new(node, TEMP_ADMIN_KEY.clone())
+    let client = NodeClient::new(node, TEMP_ADMIN_KEY.clone(), false)
         .inspect_err(|err| error!("error connecting to node: {}", err))
         .map_err(|_| Status::InternalServerError)?;
 
@@ -42,7 +42,12 @@ pub async fn new_game(
         .inspect_err(|err| error!("error creating new game: {}", err))
         .map_err(|_| Status::InternalServerError)?;
 
-    let ip = client.remote_connection.to_http_url();
+    let ip = client
+        .resource
+        .status
+        .as_ref()
+        .map(|status| status.external_url.clone())
+        .unwrap_or_default();
 
     Ok(Json(NewGameResponse {
         ip,

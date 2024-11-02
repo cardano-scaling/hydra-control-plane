@@ -1,15 +1,16 @@
 apiVersion: hydra.doom/v1alpha1
 kind: HydraDoomNode
 metadata:
-  name: 4udi43
+  name: a00000
   namespace: hydra-doom
 spec:
-  offline: true
+  blockfrostKey: abc
+  commitInputs:
+  - 8484848484848484848484848484848484848484848484848484848484848484#0
+  # initialUtxoAddress: addr_test1vru2drx33ev6dt8gfq245r5k0tmy7ngqe79va69de9dxkrg09c7d3
   initialUtxoAddress: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
   networkId: 1
-  blockfrostKey: "abc"
-  seedInput: "8484848484848484848484848484848484848484848484848484848484848484#0"
+  offline: true
   participant: foo
   party: foo
-  commitInputs:
-  - "8484848484848484848484848484848484848484848484848484848484848484#0"
+  seedInput: 8484848484848484848484848484848484848484848484848484848484848484#0

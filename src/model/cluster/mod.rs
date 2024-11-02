@@ -1,9 +1,8 @@
-use std::{future::ready, path::PathBuf, sync::Arc};
+use std::{future::ready, sync::Arc};
 
 use futures_util::StreamExt as _;
 use kube::runtime::{reflector::ObjectRef, WatchStreamExt as _};
 use serde::Deserialize;
-use tokio::sync::RwLock;
 
 mod crd;
 mod node;

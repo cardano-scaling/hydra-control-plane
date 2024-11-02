@@ -14,14 +14,10 @@ use pallas::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tokio::sync::mpsc::UnboundedSender;
+use tracing::info;
 
 use crate::model::{
-    hydra::{
-        hydra_message::HydraData,
-        hydra_socket::{self, HydraSocket},
-        messages::new_tx::NewTx,
-    },
+    hydra::{hydra_socket, messages::new_tx::NewTx},
     tx_builder::TxBuilder,
 };
 
@@ -40,9 +36,7 @@ pub struct NodeClient {
     pub resource: Arc<HydraDoomNode>,
 
     #[serde(skip)]
-    pub local_connection: ConnectionInfo,
-    #[serde(skip)]
-    pub remote_connection: ConnectionInfo,
+    pub connection: ConnectionInfo,
 
     #[serde(skip)]
     pub tx_builder: TxBuilder,
@@ -85,15 +79,18 @@ impl TryInto<SecretKey> for KeyEnvelope {
 }
 
 impl NodeClient {
-    pub fn new(resource: Arc<HydraDoomNode>, admin_key: SecretKey) -> Result<Self> {
+    pub fn new(resource: Arc<HydraDoomNode>, admin_key: SecretKey, remote: bool) -> Result<Self> {
         let status = resource.status.as_ref().ok_or(anyhow!("no status found"))?;
 
         let (local_connection, remote_connection) = ConnectionInfo::from_resource(status)?;
 
         let node = Self {
             resource,
-            local_connection,
-            remote_connection,
+            connection: if remote {
+                remote_connection
+            } else {
+                local_connection
+            },
             tx_builder: TxBuilder::new(admin_key),
         };
 
@@ -112,7 +109,7 @@ impl NodeClient {
         let newtx = NewTx::new(new_game_tx)?;
 
         hydra_socket::submit_tx_roundtrip(
-            self.remote_connection.to_websocket_url().as_str(),
+            &self.connection.to_websocket_url(),
             newtx,
             // TODO: make this configurable
             Duration::from_secs(10),
@@ -135,7 +132,7 @@ impl NodeClient {
         let newtx = NewTx::new(add_player_tx)?;
 
         hydra_socket::submit_tx_roundtrip(
-            self.remote_connection.to_websocket_url().as_str(),
+            &self.connection.to_websocket_url(),
             newtx,
             // TODO: make this configurable
             Duration::from_secs(10),
@@ -147,7 +144,7 @@ impl NodeClient {
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
         //let request_url = self.local_connection.to_http_url() + "/snapshot/utxo";
-        let request_url = self.remote_connection.to_http_url() + "/snapshot/utxo";
+        let request_url = self.connection.to_http_url() + "/snapshot/utxo";
         let response = reqwest::get(&request_url).await.context("http error")?;
 
         let body = response
