@@ -9,6 +9,7 @@ use pallas::{
     },
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
+use tracing::info;
 
 use crate::model::{
     game::contract::redeemer::{Redeemer, SpendAction},
@@ -189,7 +190,9 @@ impl TxBuilder {
     }
 
     fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {
-        let admin_kh = self.admin_key.public_key().compute_hash();
+        let admin_key = self.admin_key.public_key();
+        let admin_kh = admin_key.compute_hash();
+
         utxos
             .into_iter()
             .filter(|utxo| match &utxo.address {

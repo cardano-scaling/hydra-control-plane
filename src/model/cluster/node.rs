@@ -102,9 +102,11 @@ impl NodeClient {
 
     pub async fn new_game(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
         let new_game_tx = self
             .tx_builder
             .build_new_game(player_key, utxos, Network::Testnet)?; // TODO: pass in network
+
         let tx_hash = new_game_tx.tx_hash.0.to_vec();
 
         let newtx = NewTx::new(new_game_tx)?;
@@ -123,6 +125,7 @@ impl NodeClient {
     //TODO: don't hardcode network
     pub async fn add_player(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
         let add_player_tx = self
             .tx_builder
             .add_player(player_key, utxos, Network::Testnet)?;
@@ -143,7 +146,8 @@ impl NodeClient {
     }
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
-        let request_url = self.local_connection.to_http_url() + "/snapshot/utxo";
+        //let request_url = self.local_connection.to_http_url() + "/snapshot/utxo";
+        let request_url = self.remote_connection.to_http_url() + "/snapshot/utxo";
         let response = reqwest::get(&request_url).await.context("http error")?;
 
         let body = response

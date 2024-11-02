@@ -5,7 +5,7 @@ metadata:
   namespace: hydra-doom
 spec:
   offline: true
-  initialUtxoAddress: addr_test1vqg9ywrpx6e50uam03nlu0ewunh3yrscxmjayurmkp52lfskgkq5k
+  initialUtxoAddress: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
   networkId: 1
   blockfrostKey: "abc"
   seedInput: "8484848484848484848484848484848484848484848484848484848484848484#0"
@@ -13,11 +13,3 @@ spec:
   party: foo
   commitInputs:
   - "8484848484848484848484848484848484848484848484848484848484848484#0"
-
-    
-    
-    
-    
-    
-    
-    
