@@ -57,6 +57,7 @@ impl ClusterState {
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {
+        println!("{:?}", self.store.state().iter().cloned().collect::<Vec<_>>());
         self.store.state().iter().cloned().collect()
     }
 

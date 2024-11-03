@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_tungstenite::{
     stream::Stream,
     tokio::{connect_async, TokioAdapter},
@@ -159,7 +159,7 @@ impl HydraSender {
 
 pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Result<()> {
     let request = url.into_client_request().unwrap();
-    let (ws_stream, _) = connect_async(request).await?;
+    let (ws_stream, _) = connect_async(request).await.context("failed to connect")?;
 
     info!("connected to {}", &url);
 
@@ -168,8 +168,8 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
     let tx_id = tx.transaction.tx_id.clone();
     let confirmation = tokio::spawn(async move {
         loop {
-            let next = receiver.next().await.ok_or(anyhow!("Disconnected"))?;
-            let msg = HydraMessage::try_from(next?)?;
+            let next = receiver.next().await.context("failed to receive")?;
+            let msg = HydraMessage::try_from(next?).context("failed to parse hydra message")?;
 
             match msg {
                 HydraMessage::HydraEvent(x) => match x {
@@ -186,9 +186,10 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
         }
     });
 
-    sender.send(Message::Text(tx.into())).await?;
+    sender.send(Message::Text(tx.into())).await.context("failed to send transaction")?;
 
     tokio::select! {
+        // TODO: result.flatten https://github.com/rust-lang/rust/issues/70142
         join = confirmation => {
             match join {
                 Ok(result) => result,
@@ -196,7 +197,7 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
             }
         }
         _ = tokio::time::sleep(timeout) => {
-             Err(anyhow!("Tx not confirmed"))
+             Err(anyhow!("Tx not confirmed within timeout"))
         }
     }
 }

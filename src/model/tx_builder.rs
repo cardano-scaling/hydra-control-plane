@@ -30,6 +30,7 @@ pub struct TxBuilder {
 impl TxBuilder {
     pub fn new(admin_key: SecretKey) -> Self {
         let admin_pkh = admin_key.public_key().compute_hash();
+        println!("Admin PKH: {:?}", admin_pkh);
         TxBuilder {
             admin_key,
             admin_pkh,

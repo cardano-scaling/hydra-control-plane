@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    fs::File,
-    sync::{atomic::AtomicBool, Arc},
+    sync::Arc,
     time::Duration,
 };
 
@@ -14,20 +13,14 @@ use pallas::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::info;
+use tracing::{info, debug};
 
 use crate::model::{
     hydra::{hydra_socket, messages::new_tx::NewTx},
     tx_builder::TxBuilder,
 };
 
-use crate::{
-    model::{
-        game::contract::validator::Validator,
-        hydra::utxo::{Datum, UTxO},
-    },
-    NodeConfig,
-};
+use crate::model::hydra::utxo::UTxO;
 
 use super::crd::HydraDoomNode;
 
@@ -102,11 +95,12 @@ impl NodeClient {
 
         let new_game_tx = self
             .tx_builder
-            .build_new_game(player_key, utxos, Network::Testnet)?; // TODO: pass in network
+            .build_new_game(player_key, utxos, Network::Testnet)
+            .context("failed to build transaction")?; // TODO: pass in network
+        debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
         let tx_hash = new_game_tx.tx_hash.0.to_vec();
-
-        let newtx = NewTx::new(new_game_tx)?;
+        let newtx = NewTx::new(new_game_tx).context("failed to build new tx message")?;
 
         hydra_socket::submit_tx_roundtrip(
             &self.connection.to_websocket_url(),
@@ -125,11 +119,13 @@ impl NodeClient {
 
         let add_player_tx = self
             .tx_builder
-            .add_player(player_key, utxos, Network::Testnet)?;
+            .add_player(player_key, utxos, Network::Testnet)
+            .context("failed to build transaction")?;
+        debug!("add player tx: {}", hex::encode(&add_player_tx.tx_bytes));
 
         let tx_hash = add_player_tx.tx_hash.0.to_vec();
 
-        let newtx = NewTx::new(add_player_tx)?;
+        let newtx = NewTx::new(add_player_tx).context("failed to construct newtx message")?;
 
         hydra_socket::submit_tx_roundtrip(
             &self.connection.to_websocket_url(),
