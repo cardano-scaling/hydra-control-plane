@@ -6,7 +6,7 @@ use crate::model::hydra::utxo::UTxO;
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Greetings {
-    head_status: String,
+    pub head_status: String,
     hydra_node_version: String,
     me: Vec<u8>,
     seq: u64,

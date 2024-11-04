@@ -11,6 +11,7 @@ use super::messages::{
     peer_disconnected::PeerDisconnected, snapshot_confirmed::SnapshotConfirmed, tx_valid::TxValid,
 };
 
+#[derive(Debug)]
 pub enum HydraMessage {
     HydraEvent(HydraEventMessage),
     Ping(Vec<u8>),

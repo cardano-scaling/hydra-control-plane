@@ -4,11 +4,11 @@ use clap::{arg, Parser};
 use futures_util::future::join_all;
 use hydra_control_plane::{
     model::{
+        cluster::KeyEnvelope,
         hydra::tx::{
             commit::CommitTx, head_parameters::HeadParameters, init::InitTx, input::InputWrapper,
             output::OutputWrapper, script_registry::NetworkScriptRegistry,
         },
-        node::KeyEnvelope,
     },
     providers::blockfrost::Blockfrost,
 };

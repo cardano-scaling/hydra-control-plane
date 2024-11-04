@@ -1,22 +1,16 @@
-use rocket::{get, serde::json::Json, State};
+use rocket::{get, http::Status, serde::json::Json, State};
 
-use crate::{model::node::Node, MyState};
+use crate::model::cluster::{ClusterState, HydraDoomNodeSpec};
 
 #[get("/heads/<head_id>")]
-pub async fn head(state: &State<MyState>, head_id: &str) -> Json<Vec<Node>> {
-    let state_guard = state.state.state.read().await;
-    let nodes = state_guard
-        .nodes
-        .clone()
-        .iter()
-        .filter_map(|n| {
-            if n.head_id == Some(head_id.to_string()) {
-                Some(n.clone())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<Node>>();
+pub async fn head(
+    state: &State<ClusterState>,
+    head_id: &str,
+) -> Result<Json<Vec<HydraDoomNodeSpec>>, Status> {
+    let node = state
+        .get_node_by_id(head_id)
+        .map(|x| x.spec.clone())
+        .ok_or(Status::NotFound)?;
 
-    Json(nodes)
+    Ok(Json(vec![node]))
 }

@@ -1,9 +1,12 @@
-use itertools::Itertools;
+use ::anyhow::{Context, anyhow};
+use hydra_control_plane::TEMP_ADMIN_KEY;
 use pallas::ledger::addresses::Address;
-use rocket::{get, http::Status, serde::json::Json, State};
+use rocket::{get, serde::json::Json, State};
 use serde::Serialize;
+use tracing::info;
+use rocket_errors::anyhow::{self, Result, AnyhowError};
 
-use crate::{model::node::Node, MyState};
+use crate::model::cluster::{ClusterState, NodeClient};
 
 #[derive(Serialize)]
 pub struct NewGameResponse {
@@ -14,26 +17,37 @@ pub struct NewGameResponse {
 #[get("/new_game?<address>")]
 pub async fn new_game(
     address: &str,
-    state: &State<MyState>,
-) -> Result<Json<NewGameResponse>, Status> {
-    let state_guard = state.state.state.write().await;
-    // we're just gonna grab the first node for now.
-    // In the future, we will be querying K8s
-    let node: &Node = state_guard
-        .nodes
-        .get(0)
-        .ok_or(Status::InternalServerError)?;
+    state: &State<ClusterState>,
+) -> Result<Json<NewGameResponse>> {
+    info!("Creating a new game for {}", address);
 
-    let pkh = match Address::from_bech32(address).map_err(|_| Status::BadRequest)? {
-        Address::Shelley(shelley) => Ok(shelley.payment().as_hash().clone()),
-        _ => Err(Status::BadRequest),
-    }?;
+    let pkh = match Address::from_bech32(address).context("invalid address")? {
+        Address::Shelley(shelley) => shelley.payment().as_hash().clone(),
+        _ => return Result::Err(anyhow!("unsupported address type").into()),
+    };
 
-    let tx_hash = node
+    let node = state
+        .get_warm_node()
+        .context("error getting warm node")?;
+
+    info!(id = &node.metadata.name, "select node for new game");
+
+    let client = NodeClient::new(node, TEMP_ADMIN_KEY.clone(), false)
+        .context("error connecting to node")?;
+
+    info!(id = &client.resource.metadata.name, "connected to node");
+
+    let tx_hash = client
         .new_game(pkh)
         .await
-        .map_err(|_| Status::InternalServerError)?;
-    let ip = node.remote_connection.to_http_url();
+        .context("error creating new game")?;
+
+    let ip = client
+        .resource
+        .status
+        .as_ref()
+        .map(|status| status.external_url.clone())
+        .unwrap_or_default();
 
     Ok(Json(NewGameResponse {
         ip,

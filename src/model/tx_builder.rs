@@ -9,6 +9,7 @@ use pallas::{
     },
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
+use tracing::info;
 
 use crate::model::{
     game::contract::redeemer::{Redeemer, SpendAction},
@@ -29,6 +30,7 @@ pub struct TxBuilder {
 impl TxBuilder {
     pub fn new(admin_key: SecretKey) -> Self {
         let admin_pkh = admin_key.public_key().compute_hash();
+        println!("Admin PKH: {:?}", admin_pkh);
         TxBuilder {
             admin_key,
             admin_pkh,
@@ -189,7 +191,9 @@ impl TxBuilder {
     }
 
     fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {
-        let admin_kh = self.admin_key.public_key().compute_hash();
+        let admin_key = self.admin_key.public_key();
+        let admin_kh = admin_key.compute_hash();
+
         utxos
             .into_iter()
             .filter(|utxo| match &utxo.address {
@@ -206,7 +210,7 @@ impl TxBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::node::KeyEnvelope;
+    use crate::model::cluster::KeyEnvelope;
     use std::{collections::HashMap, fs::File};
 
     // TODO write an actual test with an assertion

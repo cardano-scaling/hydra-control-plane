@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
-    fs::File,
-    sync::{atomic::AtomicBool, Arc},
+    sync::Arc,
+    time::Duration,
 };
 
 use anyhow::{anyhow, Context, Result};
@@ -13,38 +13,24 @@ use pallas::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tokio::sync::mpsc::UnboundedSender;
+use tracing::{info, debug};
 
-use super::{
-    hydra::{hydra_message::HydraData, hydra_socket::HydraSocket, messages::new_tx::NewTx},
+use crate::model::{
+    hydra::{hydra_socket, messages::new_tx::NewTx},
     tx_builder::TxBuilder,
 };
 
-use crate::{
-    model::{
-        game::contract::validator::Validator,
-        hydra::utxo::{Datum, UTxO},
-    },
-    NodeConfig,
-};
+use crate::model::hydra::utxo::UTxO;
+
+use super::crd::HydraDoomNode;
 
 #[derive(Clone, Serialize, Debug)]
-pub struct Node {
-    #[serde(rename = "id")]
-    pub head_id: Option<String>,
-    pub region: String,
-    pub max_players: usize,
-    pub persisted: bool,
-    pub reserved: bool,
-    pub online: Arc<AtomicBool>,
-    pub occupied: bool,
+pub struct NodeClient {
+    pub resource: Arc<HydraDoomNode>,
 
     #[serde(skip)]
-    pub local_connection: ConnectionInfo,
-    #[serde(skip)]
-    pub remote_connection: ConnectionInfo,
-    #[serde(skip)]
-    pub socket: HydraSocket,
+    pub connection: ConnectionInfo,
+
     #[serde(skip)]
     pub tx_builder: TxBuilder,
 }
@@ -57,7 +43,7 @@ pub struct ConnectionInfo {
 }
 
 #[derive(Serialize)]
-pub struct NodeSummary(pub Node);
+pub struct NodeSummary(pub NodeClient);
 
 #[derive(Clone, Debug)]
 pub struct StateUpdate {
@@ -85,48 +71,44 @@ impl TryInto<SecretKey> for KeyEnvelope {
     }
 }
 
-impl Node {
-    pub async fn try_new(config: &NodeConfig, writer: &UnboundedSender<HydraData>) -> Result<Self> {
-        let (local_connection, remote_connection) = ConnectionInfo::from_config(config)?;
+impl NodeClient {
+    pub fn new(resource: Arc<HydraDoomNode>, admin_key: SecretKey, remote: bool) -> Result<Self> {
+        let status = resource.status.as_ref().ok_or(anyhow!("no status found"))?;
 
-        let admin_key: KeyEnvelope = serde_json::from_reader(
-            File::open(&config.admin_key_file).context("unable to open key file")?,
-        )
-        .context("unable to parse key file")?;
+        let (local_connection, remote_connection) = ConnectionInfo::from_resource(status)?;
 
-        let socket = HydraSocket::new(
-            local_connection.to_websocket_url().as_str(),
-            local_connection.to_authority(),
-            writer,
-        );
-        let node = Node {
-            head_id: None,
-            local_connection,
-            remote_connection,
-            region: config.region.clone(),
-            max_players: config.max_players,
-            persisted: config.persisted,
-            reserved: config.reserved,
-            online: socket.online.clone(),
-            occupied: false,
-
-            socket,
-            tx_builder: TxBuilder::new(admin_key.try_into()?),
+        let node = Self {
+            resource,
+            connection: if remote {
+                remote_connection
+            } else {
+                local_connection
+            },
+            tx_builder: TxBuilder::new(admin_key),
         };
 
-        node.start_listen();
         Ok(node)
     }
 
     pub async fn new_game(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
         let new_game_tx = self
             .tx_builder
-            .build_new_game(player_key, utxos, Network::Testnet)?; // TODO: pass in network
-        let tx_hash = new_game_tx.tx_hash.0.to_vec();
+            .build_new_game(player_key, utxos, Network::Testnet)
+            .context("failed to build transaction")?; // TODO: pass in network
+        debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
-        let message = NewTx::new(new_game_tx)?.into();
-        self.send(message).await?;
+        let tx_hash = new_game_tx.tx_hash.0.to_vec();
+        let newtx = NewTx::new(new_game_tx).context("failed to build new tx message")?;
+
+        hydra_socket::submit_tx_roundtrip(
+            &self.connection.to_websocket_url(),
+            newtx,
+            // TODO: make this configurable
+            Duration::from_secs(10),
+        )
+        .await?;
 
         Ok(tx_hash)
     }
@@ -134,29 +116,31 @@ impl Node {
     //TODO: don't hardcode network
     pub async fn add_player(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
         let add_player_tx = self
             .tx_builder
-            .add_player(player_key, utxos, Network::Testnet)?;
+            .add_player(player_key, utxos, Network::Testnet)
+            .context("failed to build transaction")?;
+        debug!("add player tx: {}", hex::encode(&add_player_tx.tx_bytes));
 
         let tx_hash = add_player_tx.tx_hash.0.to_vec();
 
-        let message = NewTx::new(add_player_tx)?.into();
-        self.send(message).await?;
+        let newtx = NewTx::new(add_player_tx).context("failed to construct newtx message")?;
+
+        hydra_socket::submit_tx_roundtrip(
+            &self.connection.to_websocket_url(),
+            newtx,
+            // TODO: make this configurable
+            Duration::from_secs(10),
+        )
+        .await?;
 
         Ok(tx_hash)
     }
 
-    pub fn start_listen(&self) {
-        let socket = self.socket.clone();
-        tokio::spawn(async move { socket.listen() });
-    }
-
-    pub async fn send(&self, message: String) -> Result<()> {
-        self.socket.send(message).await
-    }
-
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
-        let request_url = self.local_connection.to_http_url() + "/snapshot/utxo";
+        //let request_url = self.local_connection.to_http_url() + "/snapshot/utxo";
+        let request_url = self.connection.to_http_url() + "/snapshot/utxo";
         let response = reqwest::get(&request_url).await.context("http error")?;
 
         let body = response
@@ -174,23 +158,20 @@ impl Node {
 }
 
 impl ConnectionInfo {
-    fn from_config(value: &NodeConfig) -> Result<(Self, Self)> {
+    fn from_resource(resource: &super::crd::HydraDoomNodeStatus) -> Result<(Self, Self)> {
         Ok((
-            ConnectionInfo::from_url(&value.local_url, value.port)?,
-            ConnectionInfo::from_url(
-                value.remote_url.as_ref().unwrap_or(&value.local_url),
-                value.port,
-            )?,
+            ConnectionInfo::from_url(&resource.local_url)?,
+            ConnectionInfo::from_url(&resource.external_url)?,
         ))
     }
 
-    fn from_url(value: &str, port: u32) -> Result<Self> {
+    fn from_url(value: &str) -> Result<Self> {
         // default to secure connection if no schema provided
         let url = Url::parse(value)?;
 
         Ok(ConnectionInfo {
             host: url.host_str().context("expected a host")?.to_string(),
-            port,
+            port: url.port().unwrap_or(80) as u32,
             secure: url.scheme() == "https" || url.scheme() == "wss",
         })
     }

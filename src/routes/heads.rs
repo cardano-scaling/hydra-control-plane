@@ -1,16 +1,15 @@
+use kube::api::ObjectMeta;
 use rocket::{get, serde::json::Json, State};
 
-use crate::{model::node::NodeSummary, MyState};
+use crate::model::cluster::ClusterState;
 
 #[get("/heads")]
-pub async fn heads(state: &State<MyState>) -> Json<Vec<NodeSummary>> {
-    let state_guard = state.state.state.read().await;
-    let nodes = state_guard
-        .nodes
-        .clone()
+pub async fn heads(state: &State<ClusterState>) -> Json<Vec<ObjectMeta>> {
+    let nodes = state
+        .get_all_nodes()
         .iter()
-        .map(|s| NodeSummary(s.clone()))
-        .collect::<Vec<NodeSummary>>();
+        .map(|x| x.metadata.clone())
+        .collect();
 
     Json(nodes)
 }
