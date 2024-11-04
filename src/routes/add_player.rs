@@ -25,7 +25,7 @@ pub async fn add_player(
 
     let node = state.get_node_by_id(id).ok_or(Status::NotFound)?;
 
-    let client = NodeClient::new(node, TEMP_ADMIN_KEY.clone(), false)
+    let client = NodeClient::new(node, TEMP_ADMIN_KEY.clone(), true)
         .inspect_err(|err| error!("error connecting to node: {}", err))
         .map_err(|_| Status::InternalServerError)?;
 

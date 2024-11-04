@@ -1,10 +1,10 @@
-use ::anyhow::{Context, anyhow};
+use ::anyhow::{anyhow, Context};
 use hydra_control_plane::TEMP_ADMIN_KEY;
 use pallas::ledger::addresses::Address;
 use rocket::{get, serde::json::Json, State};
+use rocket_errors::anyhow::{self, AnyhowError, Result};
 use serde::Serialize;
 use tracing::info;
-use rocket_errors::anyhow::{self, Result, AnyhowError};
 
 use crate::model::cluster::{ClusterState, NodeClient};
 
@@ -15,10 +15,7 @@ pub struct NewGameResponse {
 }
 
 #[get("/new_game?<address>")]
-pub async fn new_game(
-    address: &str,
-    state: &State<ClusterState>,
-) -> Result<Json<NewGameResponse>> {
+pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json<NewGameResponse>> {
     info!("Creating a new game for {}", address);
 
     let pkh = match Address::from_bech32(address).context("invalid address")? {
@@ -26,14 +23,12 @@ pub async fn new_game(
         _ => return Result::Err(anyhow!("unsupported address type").into()),
     };
 
-    let node = state
-        .get_warm_node()
-        .context("error getting warm node")?;
+    let node = state.get_warm_node().context("error getting warm node")?;
 
     info!(id = &node.metadata.name, "select node for new game");
 
-    let client = NodeClient::new(node, TEMP_ADMIN_KEY.clone(), false)
-        .context("error connecting to node")?;
+    let client =
+        NodeClient::new(node, TEMP_ADMIN_KEY.clone(), true).context("error connecting to node")?;
 
     info!(id = &client.resource.metadata.name, "connected to node");
 

@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use hex::FromHex;
@@ -13,7 +9,7 @@ use pallas::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 use crate::model::{
     hydra::{hydra_socket, messages::new_tx::NewTx},
@@ -178,7 +174,7 @@ impl ConnectionInfo {
 
     pub fn to_websocket_url(&self) -> String {
         let schema = if self.secure { "wss" } else { "ws" };
-        format!("{}://{}:{}?history=no", schema, self.host, self.port)
+        format!("{}://{}:{}", schema, self.host, self.port)
     }
 
     pub fn to_http_url(&self) -> String {
