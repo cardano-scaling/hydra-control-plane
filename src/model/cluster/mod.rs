@@ -1,7 +1,10 @@
+use std::fs::File;
 use std::{future::ready, sync::Arc};
 
+use anyhow::Context;
 use futures_util::StreamExt as _;
 use kube::runtime::{reflector::ObjectRef, WatchStreamExt as _};
+use pallas::crypto::key::ed25519::SecretKey;
 use serde::Deserialize;
 
 mod crd;
@@ -16,10 +19,18 @@ const DEFAULT_NAMESPACE: &str = "hydra-doom";
 pub struct ClusterState {
     store: kube::runtime::reflector::Store<HydraDoomNode>,
     watcher_handle: Arc<tokio::task::JoinHandle<()>>,
+    pub admin_sk: SecretKey,
 }
 
 impl ClusterState {
-    pub async fn try_default() -> anyhow::Result<Self> {
+    pub async fn try_new(admin_key_file: &str) -> anyhow::Result<Self> {
+        let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
+            File::open(admin_key_file).context("unable to open key file")?,
+        )?;
+        let admin_sk: SecretKey = admin_key_envelope
+            .try_into()
+            .context("Failed to get secret key from file")?;
+
         let client = kube::Client::try_default().await?;
         let nodes: kube::Api<crd::HydraDoomNode> = kube::Api::all(client);
 
@@ -39,6 +50,7 @@ impl ClusterState {
         Ok(Self {
             store,
             watcher_handle: Arc::new(watcher_handle),
+            admin_sk,
         })
     }
 
@@ -57,7 +69,10 @@ impl ClusterState {
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {
-        println!("{:?}", self.store.state().iter().cloned().collect::<Vec<_>>());
+        println!(
+            "{:?}",
+            self.store.state().iter().cloned().collect::<Vec<_>>()
+        );
         self.store.state().iter().cloned().collect()
     }
 

@@ -1,5 +1,4 @@
 use ::anyhow::{anyhow, Context};
-use hydra_control_plane::TEMP_ADMIN_KEY;
 use pallas::ledger::addresses::Address;
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::{self, AnyhowError, Result};
@@ -28,7 +27,7 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
     info!(id = &node.metadata.name, "select node for new game");
 
     let client =
-        NodeClient::new(node, TEMP_ADMIN_KEY.clone(), true).context("error connecting to node")?;
+        NodeClient::new(node, state.admin_sk.clone(), true).context("error connecting to node")?;
 
     info!(id = &client.resource.metadata.name, "connected to node");
 
