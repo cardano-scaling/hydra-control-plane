@@ -58,6 +58,10 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let args = Args::parse();
     let blockfrost = Blockfrost::new(args.blockfrost_key.as_str());
     let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
@@ -74,7 +78,8 @@ async fn main() {
             seed_input.txo_index as i32,
         )
         .await
-        .expect("Failed to fetch seed input");
+        .map_err(|e| tracing::error!(err = e.to_string(), "Failed to fetch seed input"))
+        .unwrap();
 
     let party_key_envelope: KeyEnvelope = serde_json::from_reader(
         File::open(args.party_verification_file).expect("unable to open party key file"),
