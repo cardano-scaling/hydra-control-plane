@@ -22,14 +22,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeSpec {
     pub offline: Option<bool>,
-    pub initial_utxo_address: Option<String>,
-    // Open head
-    pub network_id: u8,
+    pub network_id: Option<u8>,
     pub seed_input: String,
-    pub participant: String,
-    pub party: String,
     pub commit_inputs: Vec<String>,
-    pub blockfrost_key: Option<String>,
+    pub start_chain_from: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
