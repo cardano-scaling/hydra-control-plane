@@ -18,7 +18,9 @@ mod providers;
 mod routes;
 
 #[derive(Deserialize)]
-pub struct Config {}
+pub struct Config {
+    pub admin_key_file: String,
+}
 
 #[rocket::main]
 async fn main() -> Result<()> {
@@ -30,7 +32,7 @@ async fn main() -> Result<()> {
     // initializer assumes that this process is running within the cluster or that the local kubeconfig
     // context is set to the cluster. If you wanted to connect to a remote cluster, you can use the
     // `ClusterState::remote` initializer.
-    let cluster = ClusterState::try_default().await?;
+    let cluster = ClusterState::try_new(&config.admin_key_file).await?;
 
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())

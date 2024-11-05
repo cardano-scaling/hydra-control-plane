@@ -28,13 +28,3 @@ fn default_region() -> String {
 fn localhost() -> String {
     "ws://127.0.0.1".to_string()
 }
-
-pub static TEMP_ADMIN_KEY: std::sync::LazyLock<SecretKey> = std::sync::LazyLock::new(|| {
-    let bytes: [u8; 32] =
-        hex::decode("AEA9DC3E07D9926AFC62F537636DF700D216B98E7217B83B2C1098E31DAF0D6F")
-            .unwrap()
-            .try_into()
-            .unwrap();
-
-    SecretKey::from(bytes)
-});
