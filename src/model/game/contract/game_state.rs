@@ -1,4 +1,5 @@
 use anyhow::{anyhow, bail, Context};
+use pallas::crypto::hash::Hash;
 use pallas::ledger::{
     addresses::PaymentKeyHash,
     primitives::{
@@ -16,7 +17,7 @@ pub enum State {
 }
 pub struct GameState {
     referee: PaymentCredential,
-    players: Vec<PaymentCredential>,
+    pub players: Vec<PaymentCredential>,
     state: State,
     winner: Option<PaymentCredential>,
     cheater: Option<PaymentCredential>,
@@ -189,6 +190,12 @@ impl From<PaymentKeyHash> for PaymentCredential {
         // We can do this unsafe, because we we know PaymentKeyHash is 28 bytes long
         let ptr = value.as_ref().as_ptr() as *const [u8; 28];
         unsafe { PaymentCredential(*ptr) }
+    }
+}
+
+impl Into<Hash<28>> for PaymentCredential {
+    fn into(self) -> Hash<28> {
+        self.0.into()
     }
 }
 

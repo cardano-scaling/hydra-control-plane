@@ -12,6 +12,7 @@ use serde_json::Value;
 use tracing::debug;
 
 use crate::model::{
+    game::player::Player,
     hydra::{hydra_socket, messages::new_tx::NewTx},
     tx_builder::TxBuilder,
 };
@@ -83,12 +84,12 @@ impl NodeClient {
         Ok(node)
     }
 
-    pub async fn new_game(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
+    pub async fn new_game(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
         let new_game_tx = self
             .tx_builder
-            .build_new_game(player_key, utxos, Network::Testnet)
+            .build_new_game(player, utxos, Network::Testnet)
             .context("failed to build transaction")?; // TODO: pass in network
         debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
@@ -107,12 +108,12 @@ impl NodeClient {
     }
 
     //TODO: don't hardcode network
-    pub async fn add_player(&self, player_key: PaymentKeyHash) -> Result<Vec<u8>> {
+    pub async fn add_player(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
         let add_player_tx = self
             .tx_builder
-            .add_player(player_key, utxos, Network::Testnet)
+            .add_player(player, utxos, Network::Testnet)
             .context("failed to build transaction")?;
 
         debug!("add player tx: {}", hex::encode(&add_player_tx.tx_bytes));
@@ -132,8 +133,13 @@ impl NodeClient {
         Ok(tx_hash)
     }
 
+    pub async fn cleanup_game(&self) -> Result<Vec<u8>> {
+        let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
+        todo!()
+    }
+
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
-        //let request_url = self.local_connection.to_http_url() + "/snapshot/utxo";
         let request_url = self.connection.to_http_url() + "/snapshot/utxo";
         let response = reqwest::get(&request_url).await.context("http error")?;
 
