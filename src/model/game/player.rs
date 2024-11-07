@@ -12,24 +12,21 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(signing_key: Hash<28>) -> Self {
-        Self { signing_key }
-    }
-    pub fn inbound_script(&self) -> NativeScript {
+    pub fn inbound_script(&self, admin: Hash<28>) -> NativeScript {
         NativeScript::ScriptAny(vec![
-            NativeScript::ScriptPubkey(Validator::compute_hash().as_slice().into()),
+            NativeScript::ScriptPubkey(admin),
             NativeScript::ScriptPubkey(self.signing_key),
         ])
     }
-    pub fn outbound_script(&self) -> NativeScript {
+    pub fn outbound_script(&self, admin: Hash<28>) -> NativeScript {
         NativeScript::ScriptAny(vec![
             NativeScript::ScriptPubkey(self.signing_key),
-            NativeScript::ScriptPubkey(Validator::compute_hash().as_slice().into()),
+            NativeScript::ScriptPubkey(admin),
         ])
     }
 
-    pub fn outbound_address(&self, network: Network) -> Result<Address> {
-        let native_script: NativeScript = self.outbound_script();
+    pub fn outbound_address(&self, admin: Hash<28>, network: Network) -> Result<Address> {
+        let native_script: NativeScript = self.outbound_script(admin);
         let mut bytes = native_script.compute_hash().to_vec();
         bytes.insert(
             0,
@@ -44,8 +41,8 @@ impl Player {
         Address::from_bytes(bytes.as_slice()).map_err(anyhow::Error::msg)
     }
 
-    pub fn inbound_address(&self, network: Network) -> Result<Address> {
-        let native_script: NativeScript = self.inbound_script();
+    pub fn inbound_address(&self, admin: Hash<28>, network: Network) -> Result<Address> {
+        let native_script: NativeScript = self.inbound_script(admin);
         let mut bytes = native_script.compute_hash().to_vec();
         bytes.insert(
             0,

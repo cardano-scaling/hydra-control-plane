@@ -4,7 +4,7 @@ use anyhow::{anyhow, Context, Result};
 use hex::FromHex;
 use pallas::{
     crypto::key::ed25519::SecretKey,
-    ledger::addresses::{Network, PaymentKeyHash},
+    ledger::addresses::{Address, Network, PaymentKeyHash},
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -136,7 +136,59 @@ impl NodeClient {
     pub async fn cleanup_game(&self) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
-        todo!()
+        let cleanup_tx = self
+            .tx_builder
+            .cleanup_game(utxos, Network::Testnet)
+            .context("failed to build transaction")?;
+
+        debug!("cleanup tx: {}", hex::encode(&cleanup_tx.tx_bytes));
+
+        let tx_hash = cleanup_tx.tx_hash.0.to_vec();
+
+        let newtx = NewTx::new(cleanup_tx).context("failed to construct newtx message")?;
+        hydra_socket::submit_tx_roundtrip(
+            &self.connection.to_websocket_url(),
+            newtx,
+            // TODO: make this configurable
+            Duration::from_secs(10),
+        )
+        .await?;
+
+        Ok(tx_hash)
+    }
+
+    // Just using this for testing now, hardcoding some values
+    pub async fn end_game(&self) -> Result<Vec<u8>> {
+        let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
+        let player = match Address::from_bech32(
+            "addr_test1qpq0htjtaygzwtj3h4akj2mvzaxgpru4yje4ca9a507jtdw5pcy8kzccynfps4ayhmtc38j6tyjrkyfccdytnxwnd6psfelznq",
+        )
+        .expect("Failed to decode player address")
+        {
+            Address::Shelley(shelley) => shelley.payment().as_hash().clone(),
+            _ => panic!("Expected Shelley address"),
+        };
+
+        let end_game_tx = self
+            .tx_builder
+            .end_game(player.into(), false, utxos, Network::Testnet)
+            .context("failed to build transaction")?;
+
+        debug!("end_game_tx tx: {}", hex::encode(&end_game_tx.tx_bytes));
+
+        let tx_hash = end_game_tx.tx_hash.0.to_vec();
+
+        let newtx = NewTx::new(end_game_tx).context("failed to construct newtx message")?;
+        hydra_socket::submit_tx_roundtrip(
+            &self.connection.to_websocket_url(),
+            newtx,
+            // TODO: make this configurable
+            Duration::from_secs(10),
+        )
+        .await?;
+
+        Ok(tx_hash)
     }
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {

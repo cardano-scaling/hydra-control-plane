@@ -7,7 +7,7 @@ admin_key_file = "keys/admin.sk"
 [[local.nodes]]
 local_url = "ws://127.0.0.1"
 port = 4001
-admin_key_file = "admin.sk"
+admin_key_file = "keys/local.admin.sk"
 max_players = 5
 region = "local"
 persisted = false
