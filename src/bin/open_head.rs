@@ -41,7 +41,7 @@ struct Args {
 
     // Party, hydra verification key hash
     #[arg(short = 'u', long)]
-    party: String,
+    party_verification_file: String,
 
     // Commit Inputs
     #[arg(short='i', long, num_args=1..)]
@@ -58,6 +58,10 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let args = Args::parse();
     let blockfrost = Blockfrost::new(args.blockfrost_key.as_str());
     let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
@@ -74,11 +78,19 @@ async fn main() {
             seed_input.txo_index as i32,
         )
         .await
-        .expect("Failed to fetch seed input");
+        .map_err(|e| tracing::error!(err = e.to_string(), "Failed to fetch seed input"))
+        .unwrap();
+
+    let party_key_envelope: KeyEnvelope = serde_json::from_reader(
+        File::open(args.party_verification_file).expect("unable to open party key file"),
+    )
+    .expect("unable to parse party key file");
+    let party: Vec<u8> = party_key_envelope
+        .try_into()
+        .expect("Failed to get party verification key from file");
 
     println!("Building init transaction...");
 
-    let party = hex::decode(args.party).expect("Failed to decode party");
     let participant_hash = match Address::from_bech32(args.participant.as_str())
         .expect("Failed to parse bech32 participant address")
     {

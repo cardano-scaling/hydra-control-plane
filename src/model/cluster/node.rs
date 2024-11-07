@@ -67,6 +67,13 @@ impl TryInto<SecretKey> for KeyEnvelope {
     }
 }
 
+impl TryInto<Vec<u8>> for KeyEnvelope {
+    type Error = anyhow::Error;
+    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+        Ok(<[u8; 32]>::from_hex(&self.cbor_hex[4..])?.into())
+    }
+}
+
 impl NodeClient {
     pub fn new(resource: Arc<HydraDoomNode>, admin_key: SecretKey, remote: bool) -> Result<Self> {
         let status = resource.status.as_ref().ok_or(anyhow!("no status found"))?;
