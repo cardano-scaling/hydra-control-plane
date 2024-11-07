@@ -26,6 +26,10 @@ impl Validator {
         Address::from_bytes(hash.as_slice()).expect("Failed to create address for a script")
     }
 
+    pub fn compute_hash() -> Vec<u8> {
+        Self::to_plutus().compute_hash().to_vec()
+    }
+
     pub fn to_plutus() -> PlutusScript<3> {
         PlutusScript(
             hex::decode(Self::cbor())

@@ -29,7 +29,7 @@ pub async fn add_player(
         .map_err(|_| Status::InternalServerError)?;
 
     let tx_hash = client
-        .add_player(pkh)
+        .add_player(pkh.into())
         .await
         .inspect_err(|err| error!("error adding player: {}", err))
         .map_err(|_| Status::InternalServerError)?;

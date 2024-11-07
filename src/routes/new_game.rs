@@ -33,7 +33,7 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
     info!(id = node_id, "connected to node");
 
     let tx_hash = client
-        .new_game(pkh)
+        .new_game(pkh.into())
         .await
         .context("error creating new game")?;
 
