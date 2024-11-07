@@ -8,6 +8,8 @@ use pallas::ledger::{
     },
 };
 
+use crate::model::game::player::Player;
+
 pub struct PaymentCredential([u8; 28]);
 
 pub enum State {
@@ -196,6 +198,12 @@ impl From<PaymentKeyHash> for PaymentCredential {
 impl Into<Hash<28>> for PaymentCredential {
     fn into(self) -> Hash<28> {
         self.0.into()
+    }
+}
+
+impl From<Player> for PaymentCredential {
+    fn from(value: Player) -> Self {
+        value.signing_key.into()
     }
 }
 
