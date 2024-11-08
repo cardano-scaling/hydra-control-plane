@@ -94,9 +94,6 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
                         info!("head_id {:?}", head_is_open.head_id);
                         metrics.set_state(metrics::NodeState::HeadIsOpen);
                     }
-                    HydraEventMessage::SnapshotConfirmed(_) => {
-                        // Calculate kills, amount of transactions, etc.
-                    }
                     HydraEventMessage::CommandFailed(command_failed) => {
                         println!("command failed {:?}", command_failed);
                     }
@@ -113,6 +110,10 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
                             "Open" => metrics.set_state(NodeState::HeadIsOpen),
                             _ => metrics.set_state(NodeState::Online),
                         };
+                    }
+                    HydraEventMessage::TxValid(valid) => {
+                        metrics.inc_transactions();
+                        metrics.inc_bytes(valid.cbor.len() as u64);
                     }
                     _ => {}
                 }
