@@ -12,8 +12,13 @@ mod node;
 
 pub use crd::*;
 pub use node::*;
+use tracing::info;
 
 const DEFAULT_NAMESPACE: &str = "hydra-doom";
+
+fn define_namespace() -> String {
+    std::env::var("KUBERNETES_NAMESPACE").unwrap_or_else(|_| DEFAULT_NAMESPACE.to_string())
+}
 
 #[derive(Clone)]
 pub struct ClusterState {
@@ -27,12 +32,16 @@ impl ClusterState {
         let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
             File::open(admin_key_file).context("unable to open key file")?,
         )?;
+
         let admin_sk: SecretKey = admin_key_envelope
             .try_into()
             .context("Failed to get secret key from file")?;
 
+        let namespace = define_namespace();
+        info!(namespace, "running inside namespace");
+
         let client = kube::Client::try_default().await?;
-        let nodes: kube::Api<crd::HydraDoomNode> = kube::Api::all(client);
+        let nodes: kube::Api<crd::HydraDoomNode> = kube::Api::namespaced(client, &namespace);
 
         let (store, writer) = kube::runtime::reflector::store();
 
@@ -54,10 +63,6 @@ impl ClusterState {
         })
     }
 
-    pub async fn remote(k8s_api_url: String) -> anyhow::Result<Self> {
-        todo!()
-    }
-
     pub fn get_warm_node(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
         self.store
             .state()
@@ -69,16 +74,13 @@ impl ClusterState {
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {
-        println!(
-            "{:?}",
-            self.store.state().iter().cloned().collect::<Vec<_>>()
-        );
         self.store.state().iter().cloned().collect()
     }
 
     pub fn get_node_by_id(&self, id: &str) -> Option<Arc<HydraDoomNode>> {
+        let ns = define_namespace();
         self.store
-            .get(&ObjectRef::<HydraDoomNode>::new(id).within(DEFAULT_NAMESPACE))
+            .get(&ObjectRef::<HydraDoomNode>::new(id).within(&ns))
     }
 }
 

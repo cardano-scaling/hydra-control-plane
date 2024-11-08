@@ -124,6 +124,7 @@ impl NodeClient {
             .tx_builder
             .add_player(player_key, utxos, Network::Testnet)
             .context("failed to build transaction")?;
+
         debug!("add player tx: {}", hex::encode(&add_player_tx.tx_bytes));
 
         let tx_hash = add_player_tx.tx_hash.0.to_vec();
@@ -134,7 +135,7 @@ impl NodeClient {
             &self.connection.to_websocket_url(),
             newtx,
             // TODO: make this configurable
-            Duration::from_secs(10),
+            Duration::from_secs(30),
         )
         .await?;
 
