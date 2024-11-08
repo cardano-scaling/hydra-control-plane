@@ -9,6 +9,7 @@ use crate::model::cluster::{ClusterState, NodeClient};
 
 #[derive(Serialize)]
 pub struct NewGameResponse {
+    game_id: String,
     ip: String,
     player_state: String,
 }
@@ -44,6 +45,7 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
         .unwrap_or_default();
 
     Ok(Json(NewGameResponse {
+        node.metadata.name,
         ip,
         player_state: format!("{}#1", hex::encode(tx_hash)),
     }))
