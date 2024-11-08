@@ -12,6 +12,7 @@ pub struct Metrics {
     pub registry: Registry,
     pub state: IntGauge,
     pub transactions: IntCounter,
+    pub bytes: IntCounter,
     // pub kills: IntCounterVec,
     // pub items: IntCounterVec,
     // pub secrets: IntCounterVec,
@@ -31,6 +32,12 @@ impl Metrics {
         )
         .unwrap();
 
+        let bytes = IntCounter::new(
+            "hydra_doom_node_bytes",
+            "Number of bytes in executed transactions."
+        )
+        .unwrap();
+
         let registry = Registry::default();
         registry.register(Box::new(state.clone()))?;
         registry.register(Box::new(transactions.clone()))?;
@@ -39,6 +46,7 @@ impl Metrics {
             registry,
             state,
             transactions,
+            bytes,
         })
     }
 
@@ -53,6 +61,10 @@ impl Metrics {
 
     pub fn inc_transactions(&self) {
         self.transactions.inc()
+    }
+
+    pub fn inc_bytes(&self, bytes: u64) {
+        self.bytes.inc_by(bytes as i64)
     }
 
     pub fn gather(&self) -> String {
