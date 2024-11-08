@@ -38,12 +38,12 @@ impl From<Redeemer> for PlutusData {
 impl From<SpendAction> for PlutusData {
     fn from(value: SpendAction) -> Self {
         PlutusData::Constr(Constr {
-            tag: 121,
-            any_constructor: match value {
-                SpendAction::AddPlayer => Some(0),
-                SpendAction::EndGame => Some(1),
-                SpendAction::Collect => Some(2),
+            tag: match value {
+                SpendAction::AddPlayer => 121,
+                SpendAction::EndGame => 122,
+                SpendAction::Collect => 123,
             },
+            any_constructor: None,
             fields: MaybeIndefArray::Def(vec![]),
         })
     }

@@ -10,13 +10,16 @@ use pallas::ledger::{
 
 use crate::model::game::player::Player;
 
+#[derive(Debug)]
 pub struct PaymentCredential([u8; 28]);
 
+#[derive(Debug)]
 pub enum State {
     RUNNING,
     CHEATED,
     FINISHED,
 }
+#[derive(Debug)]
 pub struct GameState {
     referee: PaymentCredential,
     pub players: Vec<PaymentCredential>,
@@ -145,14 +148,21 @@ impl TryFrom<PlutusData> for GameState {
                 let winner: Option<PaymentCredential> = match constr.fields[3].clone() {
                     PlutusData::Constr(constr) => {
                         if Some(0) == constr.any_constructor {
-                            Some(
-                                PaymentCredential::try_from(PlutusData::Constr(constr))
-                                    .context("winner")?,
-                            )
+                            if constr.fields.len() != 1 {
+                                bail!("invalid length for Just type");
+                            }
+
+                            match constr.fields[0].clone() {
+                                PlutusData::Constr(constr) => Some(
+                                    PaymentCredential::try_from(PlutusData::Constr(constr))
+                                        .context("failed to get PaymentCredential for winner")?,
+                                ),
+                                _ => bail!("invalid inner type for Just<PaymentCredential>"),
+                            }
                         } else if Some(1) == constr.any_constructor {
                             None
                         } else {
-                            bail!("Invalid constructor tag for winner");
+                            bail!("Invalid constructor for winner");
                         }
                     }
                     _ => bail!("Invalid data type for winner"),
@@ -161,10 +171,17 @@ impl TryFrom<PlutusData> for GameState {
                 let cheater: Option<PaymentCredential> = match constr.fields[4].clone() {
                     PlutusData::Constr(constr) => {
                         if Some(0) == constr.any_constructor {
-                            Some(
-                                PaymentCredential::try_from(PlutusData::Constr(constr))
-                                    .context("cheater")?,
-                            )
+                            if constr.fields.len() != 1 {
+                                bail!("invalid length for Just type");
+                            }
+
+                            match constr.fields[0].clone() {
+                                PlutusData::Constr(constr) => Some(
+                                    PaymentCredential::try_from(PlutusData::Constr(constr))
+                                        .context("failed to get PaymentCredential for cheater")?,
+                                ),
+                                _ => bail!("invalid inner type for Just<PaymentCredential>"),
+                            }
                         } else if Some(1) == constr.any_constructor {
                             None
                         } else {

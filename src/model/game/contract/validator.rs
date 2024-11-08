@@ -12,7 +12,7 @@ impl Validator {
     }
 
     pub fn address(network: Network) -> Address {
-        let mut hash = Self::to_plutus().compute_hash().to_vec();
+        let mut hash = Self::compute_hash();
         hash.insert(
             0,
             0b01110000
@@ -31,7 +31,7 @@ impl Validator {
     }
 
     pub fn to_plutus() -> PlutusScript<3> {
-        PlutusScript(
+        PlutusScript::<3>(
             hex::decode(Self::cbor())
                 .expect("invalid script cbor hex string")
                 .into(),

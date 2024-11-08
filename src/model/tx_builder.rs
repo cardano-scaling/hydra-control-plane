@@ -56,6 +56,7 @@ impl TxBuilder {
         let input_utxo = admin_utxos.first().unwrap();
 
         let script_address = Validator::address(network);
+        println!("Script Address: {:?}", script_address.to_bech32());
         let player_inbound_address = player
             .inbound_address(self.admin_pkh, network)
             .context("failed to build player multisig inbound address")?;
@@ -104,7 +105,9 @@ impl TxBuilder {
 
         let game_state: PlutusData = match game_state_utxo.datum.clone() {
             Datum::Hash(_) => bail!("Unexpected datum hash in game utxo"),
-            Datum::Inline(data) => GameState::try_from(data)?,
+            Datum::Inline(data) => {
+                GameState::try_from(data).context("failed to decode plutus data for game state")?
+            }
             Datum::None => bail!("No datum in game utxo"),
         }
         .add_player(player.signing_key.into())
@@ -260,6 +263,7 @@ impl TxBuilder {
                     4, 1293828, 28716, 63, 0, 1, 1006041, 43623, 251, 0, 1,
                 ],
             )
+            .disclosed_signer(self.admin_pkh)
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
@@ -280,24 +284,33 @@ impl TxBuilder {
 
         let game_state: GameState = match game_state_utxo.datum.clone() {
             Datum::Hash(_) => bail!("Unexpected datum hash in game utxo"),
-            Datum::Inline(data) => data.try_into()?,
+            Datum::Inline(data) => data
+                .try_into()
+                .context("failed to convert data to GameState")?,
             Datum::None => bail!("No datum in game utxo"),
         };
 
         let collateral_utxos = self.find_admin_utxos(utxos.clone());
+
         let collateral_utxo = collateral_utxos
             .get(0)
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
-        let redeemer: PlutusData = Redeemer::new(0, SpendAction::AddPlayer).into();
+        let redeemer: PlutusData = Redeemer::new(0, SpendAction::Collect).into();
         let mut redeemer_bytes = Vec::new();
         encode(&redeemer, &mut redeemer_bytes)?;
 
         let mut tx_builder = Some(
             StagingTransaction::new()
                 .input(game_state_utxo.clone().into())
+                .input(collateral_utxo.clone().into())
                 .collateral_input(collateral_utxo.clone().into())
-                .output(Output::new(collateral_utxo.address.clone(), 0))
+                .output(
+                    collateral_utxo
+                        .clone()
+                        .try_into()
+                        .context("failed to build target output from utxo object")?,
+                )
                 .add_spend_redeemer(
                     game_state_utxo.into(),
                     redeemer_bytes,
@@ -337,14 +350,20 @@ impl TxBuilder {
 
         for player in game_state.players {
             let player: Player = player.into();
-            let inbound_address = player.inbound_address(self.admin_pkh, network)?;
-            let outbound_address = player.outbound_address(self.admin_pkh, network)?;
+            let inbound_address = player
+                .inbound_address(self.admin_pkh, network)
+                .context("failed to get player inbound address")?;
+            let outbound_address = player
+                .outbound_address(self.admin_pkh, network)
+                .context("failed to get player outbound address")?;
             let inbound_script = player.inbound_script(self.admin_pkh);
             let mut inbound_bytes = Vec::new();
-            encode(&inbound_script, &mut inbound_bytes)?;
+            encode(&inbound_script, &mut inbound_bytes)
+                .context("Failed to cbor encode outbound script")?;
             let outbound_script = player.outbound_script(self.admin_pkh);
             let mut outbound_bytes = Vec::new();
-            encode(&outbound_script, &mut outbound_bytes)?;
+            encode(&outbound_script, &mut outbound_bytes)
+                .context("Failed to cbor encode outbound script")?;
             let player_utxos: Vec<_> = utxos
                 .clone()
                 .into_iter()
@@ -366,7 +385,12 @@ impl TxBuilder {
 
         let tx = tx_builder
             .ok_or(anyhow!("fatal error: no tx builder"))
-            .and_then(|builder| builder.build_conway_raw().map_err(|e| anyhow!("{}", e)))
+            .and_then(|builder| {
+                builder
+                    .disclosed_signer(self.admin_pkh)
+                    .build_conway_raw()
+                    .map_err(|e| anyhow!("{}", e))
+            })
             .map_err(|e| anyhow!("Failed to build tx: {}", e))?;
 
         let signed_tx = tx
@@ -395,6 +419,8 @@ impl TxBuilder {
 
 #[cfg(test)]
 mod tests {
+    use tracing::debug;
+
     use super::*;
     use crate::model::cluster::KeyEnvelope;
     use std::{collections::HashMap, fs::File};
@@ -437,6 +463,6 @@ mod tests {
             .build_new_game(player.into(), utxos, Network::Testnet)
             .expect("Failed to build tx");
 
-        println!("{}", hex::encode(tx.tx_bytes));
+        debug!("{}", hex::encode(tx.tx_bytes));
     }
 }
