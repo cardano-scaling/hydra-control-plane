@@ -1,6 +1,29 @@
+use std::collections::BTreeMap;
+
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct ResourcesInner {
+    pub cpu: String,
+    pub memory: String,
+}
+impl From<&ResourcesInner> for BTreeMap<String, Quantity> {
+    fn from(value: &ResourcesInner) -> Self {
+        BTreeMap::from([
+            ("cpu".to_string(), Quantity(value.cpu.clone())),
+            ("memory".to_string(), Quantity(value.memory.clone())),
+        ])
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct Resources {
+    pub requests: ResourcesInner,
+    pub limits: ResourcesInner,
+}
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
@@ -26,6 +49,8 @@ pub struct HydraDoomNodeSpec {
     pub seed_input: String,
     pub commit_inputs: Vec<String>,
     pub start_chain_from: Option<String>,
+    pub asleep: Option<bool>,
+    pub resources: Option<Resources>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
