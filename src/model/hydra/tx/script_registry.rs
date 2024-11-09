@@ -2,6 +2,7 @@ use pallas::{crypto::hash::Hash, txbuilder::Input};
 
 use super::input::InputWrapper;
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct ScriptRegistry {
     pub initial_reference: InputWrapper,
@@ -9,6 +10,7 @@ pub struct ScriptRegistry {
     pub head_reference: InputWrapper,
 }
 
+#[allow(dead_code)]
 pub enum NetworkScriptRegistry {
     Mainnet,
     Preview,

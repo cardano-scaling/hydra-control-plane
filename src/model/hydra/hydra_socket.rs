@@ -56,6 +56,7 @@ pub struct HydraSender {
     sender: HydraSink,
 }
 
+#[allow(dead_code)]
 impl HydraSocket {
     pub fn new(url: &str, identifier: &str, writer: &UnboundedSender<HydraData>) -> Self {
         HydraSocket {
@@ -145,6 +146,7 @@ impl HydraSocket {
     }
 }
 
+#[allow(dead_code)]
 impl HydraSender {
     pub async fn send(&mut self, message: HydraData) -> Result<()> {
         match message {

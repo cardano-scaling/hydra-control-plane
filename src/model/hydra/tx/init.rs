@@ -17,6 +17,7 @@ use crate::model::hydra::{
 
 use super::{cost_models::COST_MODEL_PLUTUS_V2, input::InputWrapper, void_redeemer};
 
+#[allow(dead_code)]
 pub struct InitTx {
     pub network_id: u8,
     pub seed_input: InputWrapper,
@@ -24,6 +25,7 @@ pub struct InitTx {
     pub parameters: HeadParameters,
 }
 
+#[allow(dead_code)]
 impl InitTx {
     pub fn get_head_id(&self) -> Result<Vec<u8>> {
         Ok(self.get_minting_validator()?.1.to_vec())

@@ -2,6 +2,7 @@ use pallas::ledger::{addresses::Address, primitives::PlutusScript, traverse::Com
 
 // Named after the scripts here: https://github.com/cardano-scaling/hydra/tree/master/hydra-plutus/scripts
 // For more info on what each script does, read the protocol spec: https://hydra.family/head-protocol/assets/files/hydra-spec-74c85a9e8c75aeca7735137947b39453.pdf
+#[allow(dead_code)]
 pub enum HydraValidator {
     MHead,
     VCommit,

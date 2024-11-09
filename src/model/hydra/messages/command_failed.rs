@@ -1,6 +1,7 @@
 use anyhow::Context;
 use serde_json::Value;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct CommandFailed {
     client_input: Value,

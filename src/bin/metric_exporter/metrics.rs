@@ -64,7 +64,7 @@ impl Metrics {
     }
 
     pub fn inc_bytes(&self, bytes: u64) {
-        self.bytes.inc_by(bytes as i64)
+        self.bytes.inc_by(bytes)
     }
 
     pub fn gather(&self) -> String {

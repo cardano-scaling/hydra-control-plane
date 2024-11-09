@@ -1,17 +1,10 @@
-use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use hydra_control_plane::NodeConfig;
 use model::cluster::ClusterState;
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::{add_player::add_player, head::head, heads::heads, new_game::new_game};
 use serde::Deserialize;
-use tokio::{
-    spawn,
-    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
-};
-use tracing::{info, warn};
 
 mod model;
 mod providers;

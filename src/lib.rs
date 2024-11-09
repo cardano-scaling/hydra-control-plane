@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use ::serde::Deserialize;
-use pallas::crypto::key::ed25519::SecretKey;
 
 pub mod model;
 pub mod providers;

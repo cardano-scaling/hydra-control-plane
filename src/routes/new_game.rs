@@ -1,7 +1,7 @@
 use ::anyhow::{anyhow, Context};
 use pallas::ledger::addresses::Address;
 use rocket::{get, serde::json::Json, State};
-use rocket_errors::anyhow::{self, AnyhowError, Result};
+use rocket_errors::anyhow::Result;
 use serde::Serialize;
 use tracing::info;
 

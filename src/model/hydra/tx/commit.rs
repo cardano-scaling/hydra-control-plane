@@ -16,6 +16,7 @@ use super::{
     script_registry::ScriptRegistry,
 };
 
+#[allow(dead_code)]
 pub struct CommitTx {
     pub network_id: u8,
     pub script_registry: ScriptRegistry,
@@ -27,6 +28,7 @@ pub struct CommitTx {
     pub commit_inputs: Vec<(InputWrapper, OutputWrapper)>,
 }
 
+#[allow(dead_code)]
 impl CommitTx {
     pub fn build_tx(&self) -> Result<BuiltTransaction> {
         let commit_output = build_base_commit_output(
@@ -145,6 +147,7 @@ impl CommitTx {
     }
 }
 
+#[allow(dead_code)]
 fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Output> {
     // let address = Address::from_bytes(
     //     hex::decode("702043A9F1A685BCF491413A5F139EE42E335157C8C6BC8D9E4018669D")

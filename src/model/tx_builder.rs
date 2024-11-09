@@ -9,7 +9,6 @@ use pallas::{
     },
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
-use tracing::info;
 
 use crate::model::{
     game::contract::redeemer::{Redeemer, SpendAction},
@@ -18,7 +17,7 @@ use crate::model::{
 
 use super::{
     game::contract::{game_state::GameState, validator::Validator},
-    hydra::{tx::cost_models::COST_MODEL_PLUTUS_V2, utxo::UTxO},
+    hydra::utxo::UTxO,
 };
 
 #[derive(Clone, Debug)]

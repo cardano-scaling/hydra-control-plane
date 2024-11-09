@@ -20,6 +20,7 @@ fn define_namespace() -> String {
     std::env::var("KUBERNETES_NAMESPACE").unwrap_or_else(|_| DEFAULT_NAMESPACE.to_string())
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct ClusterState {
     store: kube::runtime::reflector::Store<HydraDoomNode>,
@@ -52,7 +53,7 @@ impl ClusterState {
         );
 
         let watcher_handle = tokio::spawn(async move {
-            let infinite_watch = rf.applied_objects().for_each(|o| ready(()));
+            let infinite_watch = rf.applied_objects().for_each(|_| ready(()));
             infinite_watch.await;
         });
 

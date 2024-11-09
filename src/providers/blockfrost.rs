@@ -6,10 +6,12 @@ use pallas::{
     txbuilder::{BuiltTransaction, Output},
 };
 
+#[allow(dead_code)]
 pub struct Blockfrost {
     api: BlockfrostAPI,
 }
 
+#[allow(dead_code)]
 impl Blockfrost {
     pub fn new(project_id: &str) -> Self {
         Self {

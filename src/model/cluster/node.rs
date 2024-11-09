@@ -9,7 +9,7 @@ use pallas::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::model::{
     hydra::{hydra_socket, messages::new_tx::NewTx},
@@ -41,6 +41,7 @@ pub struct ConnectionInfo {
 #[derive(Serialize)]
 pub struct NodeSummary(pub NodeClient);
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct StateUpdate {
     pub player: String,
@@ -190,6 +191,7 @@ impl ConnectionInfo {
         format!("{}://{}:{}", schema, self.host, self.port)
     }
 
+    #[allow(dead_code)]
     pub fn to_authority(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
