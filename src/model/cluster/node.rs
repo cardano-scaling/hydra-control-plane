@@ -41,17 +41,6 @@ pub struct ConnectionInfo {
 #[derive(Serialize)]
 pub struct NodeSummary(pub NodeClient);
 
-#[allow(dead_code)]
-#[derive(Clone, Debug)]
-pub struct StateUpdate {
-    pub player: String,
-    pub bytes: u64,
-    pub kills: u64,
-    pub items: u64,
-    pub secrets: u64,
-    pub time: Vec<u128>,
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct KeyEnvelope {
     #[serde(rename = "type")]
