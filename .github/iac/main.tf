@@ -108,4 +108,5 @@ module "stage2" {
   dmtr_api_key        = var.dmtr_api_key
   dmtr_port_name      = var.dmtr_port_name
   hydra_scripts_tx_id = var.hydra_scripts_tx_id
+  frontend_image      = "" # TODO: Missing image
 }

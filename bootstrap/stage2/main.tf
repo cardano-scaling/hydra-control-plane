@@ -4,6 +4,8 @@ locals {
   secret                  = "hydra-pod-admin-key"
   secret_mount_path       = "/var/secret"
   control_plane_component = "control-plane"
+  frontend_component      = "frontend"
+  frontend_port           = 3000
 }
 
 variable "namespace" {
@@ -43,6 +45,20 @@ variable "external_domain" {
 variable "control_plane_prefix" {
   type    = string
   default = "api"
+}
+
+variable "frontend_prefix" {
+  type    = string
+  default = "frontend"
+}
+
+variable "frontend_image" {
+  type = string
+}
+
+variable "frontend_replicas" {
+  type    = number
+  default = 2
 }
 
 variable "external_port" {
