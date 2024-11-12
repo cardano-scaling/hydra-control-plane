@@ -1,10 +1,10 @@
-
 use anyhow::{Context, Result};
 use model::cluster::ClusterState;
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::{
     add_player::add_player, cleanup::cleanup, head::head, heads::heads, new_game::new_game,
+    sample_transactions::sample_transactions,
 };
 use serde::Deserialize;
 
@@ -41,7 +41,17 @@ async fn main() -> Result<()> {
 
     let _rocket = rocket::build()
         .manage(cluster)
-        .mount("/", routes![new_game, heads, head, add_player, cleanup])
+        .mount(
+            "/",
+            routes![
+                new_game,
+                heads,
+                head,
+                add_player,
+                cleanup,
+                sample_transactions
+            ],
+        )
         .attach(cors.to_cors().unwrap())
         .launch()
         .await?;
