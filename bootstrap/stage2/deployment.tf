@@ -32,8 +32,9 @@ resource "kubernetes_deployment_v1" "operator" {
 
       spec {
         container {
-          image = var.operator_image
-          name  = "main"
+          image   = var.operator_image
+          name    = "main"
+          command = ["operator"]
 
           env {
             name  = "K8S_IN_CLUSTER"

@@ -36,7 +36,7 @@ resource "kubernetes_deployment_v1" "control_plane" {
           image = var.control_plane_image
           name  = "main"
 
-          args = ["control-plane"]
+          command = ["rpc"]
 
           env {
             name  = "K8S_IN_CLUSTER"

@@ -270,8 +270,8 @@ impl HydraDoomNode {
             Container {
                 name: "sidecar".to_string(),
                 image: Some(config.sidecar_image.clone()),
+                command: Some(vec!["metrics-exporter".to_string()]),
                 args: Some(vec![
-                    "metrics-exporter".to_string(),
                     "--host".to_string(),
                     "localhost".to_string(),
                     "--port".to_string(),
@@ -312,6 +312,7 @@ impl HydraDoomNode {
             containers.push(Container {
                 name: "open-head".to_string(),
                 image: Some(config.open_head_image.clone()),
+                command: Some(vec!["open-head".to_string()]),
                 args: Some(open_head_args),
                 volume_mounts: Some(vec![
                     VolumeMount {
