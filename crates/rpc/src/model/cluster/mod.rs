@@ -68,14 +68,13 @@ impl ClusterState {
         self.store
             .state()
             .iter()
-            .filter(|n| n.status.as_ref().is_some_and(|s| s.state == "HeadIsOpen"))
-            .next()
+            .find(|n| n.status.as_ref().is_some_and(|s| s.state == "HeadIsOpen"))
             .cloned()
             .ok_or(anyhow::anyhow!("no available warm nodes found"))
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {
-        self.store.state().iter().cloned().collect()
+        self.store.state().to_vec()
     }
 
     pub fn get_node_by_id(&self, id: &str) -> Option<Arc<HydraDoomNode>> {

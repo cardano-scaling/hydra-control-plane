@@ -166,9 +166,7 @@ async fn main() {
                 1,
             )
             .into(),
-            init_tx
-                .make_initial_output(Hash::from(head_id.as_slice()), participant_hash.clone())
-                .into(),
+            init_tx.make_initial_output(Hash::from(head_id.as_slice()), participant_hash.clone()),
             Hash::from(participant_hash.as_slice()),
         ),
         blueprint_tx: vec![(

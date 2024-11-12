@@ -258,13 +258,7 @@ impl HydraDoomNode {
                         ..Default::default()
                     },
                 ]),
-                resources: Some(
-                    self.spec
-                        .resources
-                        .clone()
-                        .unwrap_or(Default::default())
-                        .into(),
-                ),
+                resources: Some(self.spec.resources.clone().unwrap_or_default().into()),
                 ..Default::default()
             },
             Container {

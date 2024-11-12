@@ -173,22 +173,19 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
             let next = receiver.next().await.context("failed to receive")?;
             let msg = HydraMessage::try_from(next?).context("failed to parse hydra message")?;
 
-            match msg {
-                HydraMessage::HydraEvent(x) => match x {
-                    HydraEventMessage::TxValid(x) => {
-                        if x.tx_id == tx_id {
-                            info!("Tx confirmed: {:?}", x);
-                            break anyhow::Result::Ok(());
-                        }
-                    }
-                    _ => (),
-                },
-                _ => {}
+            if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(x)) = msg {
+                if x.tx_id == tx_id {
+                    info!("Tx confirmed: {:?}", x);
+                    break anyhow::Result::Ok(());
+                }
             }
         }
     });
 
-    sender.send(Message::Text(tx.into())).await.context("failed to send transaction")?;
+    sender
+        .send(Message::Text(tx.into()))
+        .await
+        .context("failed to send transaction")?;
 
     tokio::select! {
         // TODO: result.flatten https://github.com/rust-lang/rust/issues/70142

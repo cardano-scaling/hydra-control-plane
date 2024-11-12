@@ -36,16 +36,16 @@ impl Blockfrost {
             .ok_or_else(|| anyhow!("Could not find output"))?;
         // Doing this conversion here because it seems there is no exported type for the utxo from blockfrost...?
         let mut output = Output::new(
-            Address::from_bech32(&utxo.address.as_str())?,
+            Address::from_bech32(utxo.address.as_str())?,
             utxo.amount
                 .iter()
-                .find(|amount| amount.unit == "lovelace".to_string())
+                .find(|amount| amount.unit == *"lovelace")
                 .map(|amount| amount.quantity.parse::<u64>().map_err(|e| anyhow!(e)))
                 .ok_or_else(|| anyhow!("failed to find lovelace"))??,
         );
 
         for asset in utxo.amount.iter() {
-            if asset.unit != "lovelace".to_string() {
+            if asset.unit != *"lovelace" {
                 let (policy, asset_name) = asset.unit.as_bytes().split_at(28);
                 output = output.add_asset(
                     Hash::from(policy),

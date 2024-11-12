@@ -18,7 +18,7 @@ pub async fn add_player(
     state: &State<ClusterState>,
 ) -> Result<Json<AddPlayerResponse>, Status> {
     let pkh = match Address::from_bech32(address).map_err(|_| Status::BadRequest)? {
-        Address::Shelley(shelley) => Ok(shelley.payment().as_hash().clone()),
+        Address::Shelley(shelley) => Ok(*shelley.payment().as_hash()),
         _ => Err(Status::BadRequest),
     }?;
 

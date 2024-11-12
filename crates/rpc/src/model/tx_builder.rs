@@ -118,7 +118,7 @@ impl TxBuilder {
 
         let collateral_utxos = self.find_admin_utxos(utxos);
         let collateral_utxo = collateral_utxos
-            .get(0)
+            .first()
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
         let script_address = Validator::address(network);
@@ -204,11 +204,11 @@ impl TxBuilder {
         };
         if is_cheater {
             game_state = game_state
-                .set_state(State::CHEATED)
+                .set_state(State::Cheated)
                 .set_cheater(player.into());
         } else {
             game_state = game_state
-                .set_state(State::FINISHED)
+                .set_state(State::Finished)
                 .set_winner(player.into());
         };
 
@@ -222,7 +222,7 @@ impl TxBuilder {
 
         let collateral_utxos = self.find_admin_utxos(utxos);
         let collateral_utxo = collateral_utxos
-            .get(0)
+            .first()
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
         let tx_builder = StagingTransaction::new()
@@ -293,7 +293,7 @@ impl TxBuilder {
         let collateral_utxos = self.find_admin_utxos(utxos.clone());
 
         let collateral_utxo = collateral_utxos
-            .get(0)
+            .first()
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
         let redeemer: PlutusData = Redeemer::new(0, SpendAction::Collect).into();
