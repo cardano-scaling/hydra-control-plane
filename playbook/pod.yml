@@ -1,0 +1,9 @@
+apiVersion: hydra.doom/v1alpha1
+kind: HydraDoomNode
+metadata:
+  name: a00000
+  namespace: hydra-doom
+spec:
+  offline: true
+  seedInput: _unused
+  commitInputs: []

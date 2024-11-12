@@ -1,0 +1,25 @@
+[package]
+name = "hydra-control-plane-operator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+futures = "0.3.30"
+k8s-openapi = { version = "0.23.0", features = ["latest"] }
+kube = { version = "0.96.0", features = ["client", "runtime", "derive"] }
+schemars = "0.8.21"
+serde = { version = "1.0.203", features = ["rc"] }
+serde_yaml = "0.9.34"
+serde_json = "1.0.117"
+thiserror = "1.0.65"
+tokio = { version = "1.38.0", features = ["full"] }
+tokio-native-tls = "0.3.1"
+tracing = "0.1.40"
+lazy_static = "1.5.0"
+tracing-subscriber = "0.3.18"
+reqwest = "0.12.9"
+prometheus-parse = "0.2.5"
+
+[profile.release]
+debug = true

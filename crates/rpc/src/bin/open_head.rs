@@ -2,7 +2,7 @@ use std::fs::File;
 
 use clap::{arg, Parser};
 use futures_util::future::join_all;
-use hydra_control_plane::{
+use hydra_control_plane_rpc::{
     model::{
         cluster::KeyEnvelope,
         hydra::tx::{
