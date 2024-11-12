@@ -7,7 +7,7 @@ use hydra_control_plane::model::{
         hydra_socket::HydraSocket,
     },
 };
-use rocket::{get, routes, State};
+use rocket::{get, post, routes, State};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{info, warn};
@@ -71,6 +71,36 @@ fn metrics_endpoint(metrics: &State<Arc<Metrics>>) -> String {
     metrics.gather()
 }
 
+#[post("/start_game")]
+fn start_game(metrics: &State<Arc<Metrics>>) {
+    metrics.start_game();
+}
+
+#[post("/end_game")]
+fn end_game(metrics: &State<Arc<Metrics>>) {
+    metrics.end_game();
+}
+
+#[post("/player_joined")]
+fn player_joined(metrics: &State<Arc<Metrics>>) {
+    metrics.player_joined();
+}
+
+#[post("/player_left")]
+fn player_left(metrics: &State<Arc<Metrics>>) {
+    metrics.player_left();
+}
+
+#[post("/player_killed")]
+fn player_killed(metrics: &State<Arc<Metrics>>) {
+    metrics.player_killed();
+}
+
+#[post("/player_suicided")]
+fn player_suicided(metrics: &State<Arc<Metrics>>) {
+    metrics.player_suicided();
+}
+
 async fn update_connection_state(metrics: Arc<Metrics>, socket: Arc<HydraSocket>) {
     loop {
         tokio::time::sleep(Duration::from_secs(10)).await;
@@ -112,8 +142,7 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
                         };
                     }
                     HydraEventMessage::TxValid(valid) => {
-                        metrics.inc_transactions();
-                        metrics.inc_bytes(valid.cbor.len() as u64);
+                        metrics.new_transaction(valid.cbor.len() as u64);
                     }
                     _ => {}
                 }
