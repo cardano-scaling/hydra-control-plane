@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  webui:
+    runs-on: ubuntu-latest
+    env:
+      # Secrets
+      TF_VAR_blockfrost_key: ${{ secrets.BLOCKFROST_KEY }}
+      TF_VAR_dmtr_project_id: ${{ secrets.DMTR_PROJECT_ID }}
+      TF_VAR_dmtr_api_key: ${{ secrets.DMTR_API_KEY }}
+      TF_VAR_dmtr_port_name: ${{ secrets.DMTR_PORT_NAME }}
+      TF_VAR_admin_key: ${{ secrets.ADMIN_KEY }}
+
+      # Vars
+      TF_VAR_external_domain: ${{ vars.EXTERNAL_DOMAIN }}
+      TF_VAR_hydra_node_image: ${{ vars.HYDRA_NODE_IMAGE }}
+      TF_VAR_eks_cluster_arn: ${{ vars.EKS_CLUSTER_ARN }}
+      TF_VAR_hydra_scripts_tx_id: ${{ vars.HYDRA_SCRIPTS_TX_ID }}
+      TF_VAR_admin_addr: ${{ vars.ADMIN_ADDR }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Get short commit sh
+        id: image_tag
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: setup kubeconfig
+        run: aws eks update-kubeconfig --name ${{ vars.AWS_CLUSTER_NAME }}
+
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: init terraform
+        working-directory: .github/iac
+        run: terraform init
+        env:
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
+
+      - name: validate terraform
+        working-directory: .github/iac
+        run: terraform validate
+        env:
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
+
+      - name: apply terraform
+        working-directory: .github/iac
+        run: terraform apply -auto-approve -input=false
+        env:
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
