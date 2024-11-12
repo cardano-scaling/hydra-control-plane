@@ -12,6 +12,7 @@ pub struct NewGameResponse {
     game_id: String,
     ip: String,
     player_state: String,
+    admin_pkh: String,
 }
 
 #[get("/new_game?<address>")]
@@ -48,5 +49,6 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
         game_id: node_id,
         ip,
         player_state: format!("{}#1", hex::encode(tx_hash)),
+        admin_pkh: hex::encode(client.tx_builder.admin_pkh),
     }))
 }

@@ -1,5 +1,3 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
-
 use anyhow::{anyhow, Context, Result};
 use hex::FromHex;
 use pallas::{
@@ -9,6 +7,7 @@ use pallas::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tracing::debug;
 
 use crate::model::{

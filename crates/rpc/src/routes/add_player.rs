@@ -9,6 +9,7 @@ use crate::model::cluster::{ClusterState, NodeClient};
 pub struct AddPlayerResponse {
     ip: String,
     player_state: String,
+    admin_pkh: String,
 }
 
 #[get("/add_player?<address>&<id>")]
@@ -44,5 +45,6 @@ pub async fn add_player(
     Ok(Json(AddPlayerResponse {
         ip,
         player_state: format!("{}#1", hex::encode(tx_hash)),
+        admin_pkh: hex::encode(client.tx_builder.admin_pkh),
     }))
 }
