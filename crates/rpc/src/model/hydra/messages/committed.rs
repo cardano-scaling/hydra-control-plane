@@ -5,7 +5,6 @@ use serde_json::Value;
 use crate::model::hydra::utxo::UTxO;
 
 #[allow(dead_code)]
-#[allow(clippy::needless_lifetimes)]
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct Committed {

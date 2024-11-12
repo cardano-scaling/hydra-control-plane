@@ -35,7 +35,6 @@ pub enum ScriptType {
 
 #[derive(Derivative, Clone)]
 #[derivative(Debug)]
-#[allow(clippy::needless_lifetimes)]
 pub struct UTxO {
     #[derivative(Debug(format_with = "crate::model::format_hex"))]
     pub hash: Vec<u8>,
