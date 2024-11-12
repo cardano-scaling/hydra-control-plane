@@ -58,7 +58,7 @@ jobs:
             rpc-${{ matrix.release_for }}
             metrics-exporter-${{ matrix.release_for }}
             open-head-${{ matrix.release_for }}
-            
+
   docker:
     runs-on: ubuntu-latest
     needs: [build]
@@ -98,17 +98,17 @@ jobs:
         with:
           pattern: binaries-*
           merge-multiple: true
-          path: .github/image/bin
+          path: .github/images/hcp/bin
 
       # we need to rename the artifact so that the name matches
       # the value that Docker uses for TARGET_ARCH to keep the
       # Dockerfile simple
       - name: Rename artifacts
         run: |+
-          mv .github/image/bin/operator-Linux-x86_64 .github/image/bin/operator-Linux-amd64
-          mv .github/image/bin/rpc-Linux-x86_64 .github/image/bin/rpc-Linux-amd64
-          mv .github/image/bin/metrics-exporter-Linux-x86_64 .github/image/bin/metrics-exporter-Linux-amd64
-          mv .github/image/bin/open-head-Linux-x86_64 .github/image/bin/open-head-Linux-amd64
+          mv .github/images/hcp/bin/operator-Linux-x86_64 .github/images/hcp/bin/operator-Linux-amd64
+          mv .github/images/hcp/bin/rpc-Linux-x86_64 .github/images/hcp/bin/rpc-Linux-amd64
+          mv .github/images/hcp/bin/metrics-exporter-Linux-x86_64 .github/images/hcp/bin/metrics-exporter-Linux-amd64
+          mv .github/images/hcp/bin/open-head-Linux-x86_64 .github/images/hcp/bin/open-head-Linux-amd64
 
       - name: Build and push
         uses: docker/build-push-action@v5
