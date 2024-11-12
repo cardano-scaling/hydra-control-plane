@@ -1,4 +1,6 @@
-use prometheus::{Encoder, IntCounter, IntGauge, Registry, TextEncoder};
+use std::sync::Mutex;
+
+use prometheus::{histogram_opts, linear_buckets, Encoder, Histogram, HistogramTimer, IntCounter, IntGauge, Registry, TextEncoder};
 
 pub enum NodeState {
     Offline,
@@ -7,15 +9,20 @@ pub enum NodeState {
     HeadIsOpen,
 }
 
-#[derive(Clone)]
 pub struct Metrics {
     pub registry: Registry,
     pub state: IntGauge,
     pub transactions: IntCounter,
     pub bytes: IntCounter,
-    // pub kills: IntCounterVec,
-    // pub items: IntCounterVec,
-    // pub secrets: IntCounterVec,
+
+    pub games_current: IntGauge,
+    pub games_seconds: Histogram,
+    pub players_total: IntCounter,
+    pub players_current: IntGauge,
+    pub kills: IntCounter,
+    pub suicides: IntCounter,
+
+    game_timer: Mutex<Option<HistogramTimer>>,
 }
 
 impl Metrics {
@@ -38,15 +45,69 @@ impl Metrics {
         )
         .unwrap();
 
+        let games_current = IntGauge::new(
+            "hydra_doom_games_current",
+            "Number of games currently running.",
+        )
+        .unwrap();
+
+        let games_seconds = Histogram::with_opts(
+            histogram_opts!(
+                "hydra_doom_games_seconds",
+                "Duration of games in seconds.",
+                linear_buckets(0.0, 60.0, 20)?,
+            )
+        )
+        .unwrap();
+
+        let players_total = IntCounter::new(
+            "hydra_doom_players_total",
+            "Total number of players that have joined the game.",
+        )
+        .unwrap();
+
+        let players_current = IntGauge::new(
+            "hydra_doom_players_current",
+            "Number of players currently in the game.",
+        )
+        .unwrap();
+
+        let kills = IntCounter::new(
+            "hydra_doom_kills",
+            "Number of kills in the game.",
+        )
+        .unwrap();
+
+        let suicides = IntCounter::new(
+            "hydra_doom_suicides",
+            "Number of suicides in the game.",
+        )
+        .unwrap();
+
         let registry = Registry::default();
         registry.register(Box::new(state.clone()))?;
         registry.register(Box::new(transactions.clone()))?;
+        registry.register(Box::new(bytes.clone()))?;
+        registry.register(Box::new(games_current.clone()))?;
+        registry.register(Box::new(games_seconds.clone()))?;
+        registry.register(Box::new(players_total.clone()))?;
+        registry.register(Box::new(players_current.clone()))?;
+        registry.register(Box::new(kills.clone()))?;
+        registry.register(Box::new(suicides.clone()))?;
 
         Ok(Self {
             registry,
             state,
             transactions,
             bytes,
+            games_current,
+            games_seconds,
+            players_total,
+            players_current,
+            kills,
+            suicides,
+
+            game_timer: Mutex::new(None),
         })
     }
 
@@ -59,12 +120,40 @@ impl Metrics {
         })
     }
 
-    pub fn inc_transactions(&self) {
-        self.transactions.inc()
+    pub fn new_transaction(&self, bytes: u64) {
+        self.transactions.inc();
+        self.bytes.inc_by(bytes);
     }
 
-    pub fn inc_bytes(&self, bytes: u64) {
-        self.bytes.inc_by(bytes)
+    pub fn start_game(&self) {
+        self.games_current.inc();
+        let mut guard = self.game_timer.lock().unwrap();
+        *guard = Some(self.games_seconds.start_timer());
+    }
+
+    pub fn end_game(&self) {
+        self.games_current.dec();
+        let mut guard = self.game_timer.lock().unwrap();
+        if let Some(timer) = guard.take() {
+            timer.observe_duration();
+        }
+    }
+
+    pub fn player_joined(&self) {
+        self.players_total.inc();
+        self.players_current.inc();
+    }
+
+    pub fn player_left(&self) {
+        self.players_current.dec();
+    }
+
+    pub fn player_killed(&self) {
+        self.kills.inc();
+    }
+
+    pub fn player_suicided(&self) {
+        self.suicides.inc();
     }
 
     pub fn gather(&self) -> String {
