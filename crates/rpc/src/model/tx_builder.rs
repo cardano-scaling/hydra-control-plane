@@ -429,9 +429,10 @@ mod tests {
     // I did this just to confirm the transaction is built as I expected manually
     #[test]
     fn test_build_new_game() {
-        let admin_key: KeyEnvelope =
-            serde_json::from_reader(File::open("preprod.sk").expect("Failed to open key file"))
-                .expect("unable to parse key file");
+        let admin_key: KeyEnvelope = serde_json::from_reader(
+            File::open("keys/preprod.sk").expect("Failed to open key file"),
+        )
+        .expect("unable to parse key file");
         let tx_builder = TxBuilder::new(admin_key.try_into().expect("Failed to create SecretKey"));
 
         let player = match Address::from_bech32(
