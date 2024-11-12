@@ -214,7 +214,7 @@ impl NodeClient {
     pub async fn sample_txs(&self, count: usize) -> Result<Vec<TxValid>> {
         //TODO: make duration configurable
         hydra_socket::sample_txs(
-            &self.connection.to_websocket_url(),
+            &format!("{}/?history=no", &self.connection.to_websocket_url()),
             count,
             Duration::from_secs(10),
         )

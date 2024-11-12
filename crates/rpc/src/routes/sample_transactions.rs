@@ -1,7 +1,10 @@
+use rand::seq::SliceRandom;
+
 use crate::model::{
     cluster::{ClusterState, NodeClient},
     hydra::messages::tx_valid::TxValid,
 };
+use rand::thread_rng;
 use rocket::{get, http::Status, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
 use serde::Serialize;
@@ -16,10 +19,17 @@ pub struct SampleTransaction {
 #[get("/sample_transactions?<count>&<id>")]
 pub async fn sample_transactions(
     count: usize,
-    id: &str,
+    id: Option<&str>,
     state: &State<ClusterState>,
 ) -> Result<Json<Vec<SampleTransaction>>, Status> {
-    let node = state.get_node_by_id(id).ok_or(Status::NotFound)?;
+    let node = match id {
+        Some(id) => state.get_node_by_id(id).ok_or(Status::NotFound)?,
+        None => state
+            .get_all_nodes()
+            .choose(&mut thread_rng())
+            .ok_or(Status::NotFound)?
+            .to_owned(),
+    };
     let client = NodeClient::new(node, state.admin_sk.clone(), true)
         .inspect_err(|err| error!("error connecting to node: {}", err))
         .map_err(|_| Status::InternalServerError)?;

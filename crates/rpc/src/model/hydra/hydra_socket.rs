@@ -161,6 +161,7 @@ impl HydraSender {
 
 pub async fn sample_txs(url: &str, count: usize, timeout: Duration) -> Result<Vec<TxValid>> {
     let request = url.into_client_request().unwrap();
+    info!("attempting to connect to {}", &url);
     let (ws_stream, _) = connect_async(request).await.context("failed to connect")?;
     info!("connected to {}", &url);
 
