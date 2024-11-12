@@ -13,7 +13,10 @@ use tracing::debug;
 
 use crate::model::{
     game::player::Player,
-    hydra::{hydra_socket, messages::new_tx::NewTx},
+    hydra::{
+        hydra_socket,
+        messages::{new_tx::NewTx, tx_valid::TxValid},
+    },
     tx_builder::TxBuilder,
 };
 
@@ -206,6 +209,16 @@ impl NodeClient {
             .collect::<Result<Vec<UTxO>>>()?;
 
         Ok(utxos)
+    }
+
+    pub async fn sample_txs(&self, count: usize) -> Result<Vec<TxValid>> {
+        //TODO: make duration configurable
+        hydra_socket::sample_txs(
+            &format!("{}/?history=no", &self.connection.to_websocket_url()),
+            count,
+            Duration::from_secs(10),
+        )
+        .await
     }
 }
 
