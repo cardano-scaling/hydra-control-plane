@@ -12,4 +12,4 @@ utxo.json
 .pre-commit-config.yaml
 admin.sk
 run.sh
-/keys
+crates/rpc/keys
