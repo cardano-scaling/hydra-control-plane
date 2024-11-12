@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{arg, Parser};
-use hydra_control_plane::model::{
+use hydra_control_plane_rpc::model::{
     cluster::ConnectionInfo,
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
@@ -118,35 +118,33 @@ async fn update_connection_state(metrics: Arc<Metrics>, socket: Arc<HydraSocket>
 async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
     loop {
         match rx.recv().await {
-            Some(HydraData::Received { message, .. }) => {
-                match message {
-                    HydraEventMessage::HeadIsOpen(head_is_open) => {
-                        info!("head_id {:?}", head_is_open.head_id);
-                        metrics.set_state(metrics::NodeState::HeadIsOpen);
-                    }
-                    HydraEventMessage::CommandFailed(command_failed) => {
-                        println!("command failed {:?}", command_failed);
-                    }
-                    HydraEventMessage::HeadIsInitializing(_) => {
-                        info!("node is initializing a head, marking as occupied");
-                        metrics.set_state(NodeState::HeadIsInitializing);
-                    }
-                    HydraEventMessage::InvalidInput(invalid_input) => {
-                        println!("Received InvalidInput: {:?}", invalid_input);
-                    }
-                    HydraEventMessage::Greetings(greetings) => {
-                        match greetings.head_status.as_ref() {
-                            "Initializing" => metrics.set_state(NodeState::HeadIsInitializing),
-                            "Open" => metrics.set_state(NodeState::HeadIsOpen),
-                            _ => metrics.set_state(NodeState::Online),
-                        };
-                    }
-                    HydraEventMessage::TxValid(valid) => {
-                        metrics.new_transaction(valid.cbor.len() as u64);
-                    }
-                    _ => {}
+            Some(HydraData::Received { message, .. }) => match message {
+                HydraEventMessage::HeadIsOpen(head_is_open) => {
+                    info!("head_id {:?}", head_is_open.head_id);
+                    metrics.set_state(metrics::NodeState::HeadIsOpen);
                 }
-            }
+                HydraEventMessage::CommandFailed(command_failed) => {
+                    println!("command failed {:?}", command_failed);
+                }
+                HydraEventMessage::HeadIsInitializing(_) => {
+                    info!("node is initializing a head, marking as occupied");
+                    metrics.set_state(NodeState::HeadIsInitializing);
+                }
+                HydraEventMessage::InvalidInput(invalid_input) => {
+                    println!("Received InvalidInput: {:?}", invalid_input);
+                }
+                HydraEventMessage::Greetings(greetings) => {
+                    match greetings.head_status.as_ref() {
+                        "Initializing" => metrics.set_state(NodeState::HeadIsInitializing),
+                        "Open" => metrics.set_state(NodeState::HeadIsOpen),
+                        _ => metrics.set_state(NodeState::Online),
+                    };
+                }
+                HydraEventMessage::TxValid(valid) => {
+                    metrics.new_transaction(valid.cbor.len() as u64);
+                }
+                _ => {}
+            },
             Some(HydraData::Send(_)) => {}
             None => {
                 warn!("mpsc disconnected");

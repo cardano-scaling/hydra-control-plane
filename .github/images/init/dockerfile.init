@@ -1,0 +1,4 @@
+FROM amazon/aws-cli
+RUN yum update -y  && yum install -y tar gzip
+COPY docker/entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["sh", "/entrypoint.sh"]

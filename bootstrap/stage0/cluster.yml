@@ -1,0 +1,43 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: hydra-doom-dev-cluster
+  region: us-east-1
+  tags: 
+    sundae-labs:cost-allocation:Service: hydra-doom
+
+managedNodeGroups:
+  # Consistent
+  - name: be-adm-x86-az1
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    labels:
+      hydra.doom/availability-sla: best-effort
+      hydra.doom/compute-profile: admin
+      hydra.doom/compute-arch: x86
+      hydra.doom/availability-zone: az1
+    instanceTypes: [ t3a.medium, t3.medium ]
+    minSize: 0
+    maxSize: 2
+    desiredCapacity: 2
+    spot: true
+    availabilityZones:
+      - us-east-1b
+
+fargateProfiles:
+  - name: fp-default
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    selectors:
+      - namespace: hydra-doom
+        labels:
+          run-on: fargate
+  - name: fp-dev
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    selectors:
+      - namespace: hydra-doom-dev
+        labels:
+          run-on: fargate
