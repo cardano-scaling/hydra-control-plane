@@ -5,7 +5,6 @@ use pallas::ledger::primitives::conway::NativeScript;
 use pallas::ledger::traverse::ComputeHash;
 
 use super::contract::game_state::PaymentCredential;
-use super::contract::validator::Validator;
 
 pub struct Player {
     pub signing_key: Hash<28>,

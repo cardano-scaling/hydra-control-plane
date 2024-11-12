@@ -9,9 +9,39 @@ pub enum NodeState {
     HeadIsOpen,
 }
 
+impl Into<i64> for NodeState {
+    fn into(self) -> i64 {
+        match self {
+            NodeState::Offline => 0,
+            NodeState::Online => 1,
+            NodeState::HeadIsInitializing => 2,
+            NodeState::HeadIsOpen => 3,
+        }
+    }
+}
+
+pub enum GameState {
+    Waiting,
+    Lobby,
+    Running,
+    Done,
+}
+
+impl Into<i64> for GameState {
+    fn into(self) -> i64 {
+        match self {
+            GameState::Waiting => 0,
+            GameState::Lobby => 1,
+            GameState::Running => 2,
+            GameState::Done => 3,
+        }
+    }
+}
+
 pub struct Metrics {
     pub registry: Registry,
     pub state: IntGauge,
+    pub game_state: IntGauge,
     pub transactions: IntCounter,
     pub bytes: IntCounter,
 
@@ -30,6 +60,12 @@ impl Metrics {
         let state = IntGauge::new(
             "hydra_doom_node_state",
             "0 for OFFLINE, 1 for ONLINE, 2 for HEAD_IS_INITIALIZING, 3 for HEAD_IS_OPEN",
+        )
+        .unwrap();
+
+        let game_state = IntGauge::new(
+            "hydra_doom_game_state",
+            "0 for WAITING, 1 for LOBBY, 2 for RUNNING, 3 for DONE",
         )
         .unwrap();
 
@@ -86,6 +122,7 @@ impl Metrics {
 
         let registry = Registry::default();
         registry.register(Box::new(state.clone()))?;
+        registry.register(Box::new(game_state.clone()))?;
         registry.register(Box::new(transactions.clone()))?;
         registry.register(Box::new(bytes.clone()))?;
         registry.register(Box::new(games_current.clone()))?;
@@ -98,6 +135,7 @@ impl Metrics {
         Ok(Self {
             registry,
             state,
+            game_state,
             transactions,
             bytes,
             games_current,
@@ -112,12 +150,7 @@ impl Metrics {
     }
 
     pub fn set_state(&self, state: NodeState) {
-        self.state.set(match state {
-            NodeState::Offline => 0,
-            NodeState::Online => 1,
-            NodeState::HeadIsInitializing => 2,
-            NodeState::HeadIsOpen => 3,
-        })
+        self.state.set(state.into())
     }
 
     pub fn new_transaction(&self, bytes: u64) {
@@ -125,14 +158,20 @@ impl Metrics {
         self.bytes.inc_by(bytes);
     }
 
+    pub fn start_server(&self) {
+        self.game_state.set(GameState::Waiting.into());
+    }
+
     pub fn start_game(&self) {
         self.games_current.inc();
+        self.game_state.set(GameState::Running.into());
         let mut guard = self.game_timer.lock().unwrap();
         *guard = Some(self.games_seconds.start_timer());
     }
 
     pub fn end_game(&self) {
         self.games_current.dec();
+        self.game_state.set(GameState::Done.into());
         let mut guard = self.game_timer.lock().unwrap();
         if let Some(timer) = guard.take() {
             timer.observe_duration();
@@ -142,6 +181,7 @@ impl Metrics {
     pub fn player_joined(&self) {
         self.players_total.inc();
         self.players_current.inc();
+        self.game_state.set(GameState::Lobby.into());
     }
 
     pub fn player_left(&self) {

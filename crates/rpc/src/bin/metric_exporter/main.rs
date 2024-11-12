@@ -59,16 +59,31 @@ async fn main() -> Result<()> {
 
     let _ = rocket::build()
         .manage(metrics)
-        .mount("/", routes![metrics_endpoint])
+        .mount("/", routes![
+            metrics_endpoint,
+            start_server,
+            start_game,
+            end_game,
+            player_joined,
+            player_left,
+            player_killed,
+            player_suicided,
+        ])
         .launch()
         .await?;
 
     Ok(())
 }
 
+
 #[get("/metrics")]
 fn metrics_endpoint(metrics: &State<Arc<Metrics>>) -> String {
     metrics.gather()
+}
+
+#[get("/start_server")]
+fn start_server(metrics: &State<Arc<Metrics>>) {
+    metrics.start_server();
 }
 
 #[post("/start_game")]
