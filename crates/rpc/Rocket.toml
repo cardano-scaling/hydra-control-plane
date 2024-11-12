@@ -3,39 +3,3 @@ ttl_minutes = 1
 port = 8000
 address = "0.0.0.0"
 admin_key_file = "keys/admin.sk"
-
-[[local.nodes]]
-local_url = "ws://127.0.0.1"
-port = 4001
-admin_key_file = "keys/local.admin.sk"
-max_players = 5
-region = "local"
-persisted = false
-reserved = false
-
-[ec2]
-ttl_minutes = 1
-port = 8000
-address = "0.0.0.0"
-
-[[ec2.hosts]]
-local_url = "wss://host1.hydra-doom.sundae.fi"
-start_port = 4001
-end_port = 4001
-region = "us-east-2"
-admin_key_file = "admin.sk"
-stats_file_prefix = "stats/host1"
-max_players = 10
-persisted = false
-reserved = true
-
-[[ec2.hosts]]
-local_url = "wss://host1.hydra-doom.sundae.fi"
-start_port = 4002
-end_port = 4010
-region = "us-east-2"
-admin_key_file = "admin.sk"
-stats_file_prefix = "stats/host1"
-max_players = 10
-persisted = false
-reserved = false

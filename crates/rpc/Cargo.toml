@@ -12,7 +12,7 @@ name = "metrics-exporter"
 path = "src/bin/metric_exporter/main.rs"
 
 [[bin]]
-name = "control-plane"
+name = "rpc"
 path = "src/main.rs"
 
 [dependencies]
