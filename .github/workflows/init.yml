@@ -17,7 +17,7 @@ jobs:
         include:
           - context: .
             file: .github/images/init/dockerfile.init
-            endpoint: cardano-scaling/hydra-control-plane
+            endpoint: cardano-scaling/hydra-control-plane-init
 
     continue-on-error: true
     runs-on: ubuntu-latest
