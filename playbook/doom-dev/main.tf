@@ -83,6 +83,10 @@ variable "eks_cluster_arn" {
   description = "The ARN of the EKS cluster."
 }
 
+variable "admin_key" {
+  type = string
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -103,7 +107,7 @@ module "stage2" {
   source     = "../../bootstrap/stage2"
   depends_on = [module.stage1]
 
-  admin_key           = file("${path.module}/admin.sk")
+  admin_key           = var.admin_key
   protocol_parameters = file("${path.module}/protocol-parameters.json")
   external_port       = 80
 
