@@ -1,4 +1,6 @@
-resolver = "2"
-
 [workspace]
 members = ["crates/rpc", "crates/operator"]
+resolver = "2"
+
+[profile.release]
+debug = true

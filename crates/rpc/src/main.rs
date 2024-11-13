@@ -3,8 +3,8 @@ use model::cluster::ClusterState;
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::{
-    add_player::add_player, cleanup::cleanup, head::head, heads::heads, new_game::new_game,
-    sample_transactions::sample_transactions,
+    add_player::add_player, cleanup::cleanup, head::head, heads::heads, health::health,
+    new_game::new_game, sample_transactions::sample_transactions, stats::global_stats,
 };
 use serde::Deserialize;
 
@@ -49,7 +49,9 @@ async fn main() -> Result<()> {
                 head,
                 add_player,
                 cleanup,
-                sample_transactions
+                sample_transactions,
+                global_stats,
+                health
             ],
         )
         .attach(cors.to_cors().unwrap())

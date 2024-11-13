@@ -168,7 +168,7 @@ impl NodeClient {
         )
         .expect("Failed to decode player address")
         {
-            Address::Shelley(shelley) => shelley.payment().as_hash().clone(),
+            Address::Shelley(shelley) => *shelley.payment().as_hash(),
             _ => panic!("Expected Shelley address"),
         };
 

@@ -43,29 +43,13 @@ variable "external_domain" {
   description = "The domain prefix that will be used to access the hydra node."
 }
 
-variable "operator_image" {
+variable "image" {
   type        = string
-  description = "The image to use for the operator component."
 }
 
 variable "hydra_node_image" {
   type        = string
   description = "The Docker image to use for the Hydra node component."
-}
-
-variable "sidecar_image" {
-  type        = string
-  description = "The Docker image to use for the sidecar component of the Hydra node."
-}
-
-variable "open_head_image" {
-  type        = string
-  description = "The Docker image to use for the open head component of the Hydra node."
-}
-
-variable "control_plane_image" {
-  type        = string
-  description = "The Docker image to use for the control plane component of the Hydra node."
 }
 
 variable "hydra_scripts_tx_id" {
@@ -81,6 +65,10 @@ variable "admin_addr" {
 variable "eks_cluster_arn" {
   type        = string
   description = "The ARN of the EKS cluster."
+}
+
+variable "admin_key" {
+  type = string
 }
 
 provider "kubernetes" {
@@ -103,17 +91,17 @@ module "stage2" {
   source     = "../../bootstrap/stage2"
   depends_on = [module.stage1]
 
-  admin_key           = file("${path.module}/admin.sk")
+  admin_key           = var.admin_key
   protocol_parameters = file("${path.module}/protocol-parameters.json")
   external_port       = 80
 
   namespace           = local.namespace
   external_domain     = var.external_domain
-  operator_image      = var.operator_image
   hydra_node_image    = var.hydra_node_image
-  sidecar_image       = var.sidecar_image
-  open_head_image     = var.open_head_image
-  control_plane_image = var.control_plane_image
+  operator_image      = var.image
+  sidecar_image       = var.image
+  open_head_image     = var.image
+  control_plane_image = var.image
   blockfrost_key      = var.blockfrost_key
   admin_addr          = var.admin_addr
   dmtr_project_id     = var.dmtr_project_id

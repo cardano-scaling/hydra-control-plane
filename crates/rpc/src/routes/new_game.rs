@@ -1,4 +1,4 @@
-use ::anyhow::{anyhow, Context};
+use anyhow::{anyhow, Context};
 use pallas::ledger::addresses::Address;
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
@@ -20,7 +20,7 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
     info!("Creating a new game for {}", address);
 
     let pkh = match Address::from_bech32(address).context("invalid address")? {
-        Address::Shelley(shelley) => shelley.payment().as_hash().clone(),
+        Address::Shelley(shelley) => *shelley.payment().as_hash(),
         _ => return Result::Err(anyhow!("unsupported address type").into()),
     };
 

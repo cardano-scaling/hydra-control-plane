@@ -172,17 +172,11 @@ pub async fn sample_txs(url: &str, count: usize, timeout: Duration) -> Result<Ve
             let next = receiver.next().await.context("failed to receive")??;
             let msg = HydraMessage::try_from(next).context("failed to parse hydra message")?;
 
-            match msg {
-                HydraMessage::HydraEvent(x) => match x {
-                    HydraEventMessage::TxValid(tx) => {
-                        transactions.push(tx);
-                        if transactions.len() == count {
-                            break;
-                        }
-                    }
-                    _ => {}
-                },
-                _ => {}
+            if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(tx)) = msg {
+                transactions.push(tx);
+                if transactions.len() == count {
+                    break;
+                }
             }
         }
 
@@ -216,17 +210,11 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
             let next = receiver.next().await.context("failed to receive")?;
             let msg = HydraMessage::try_from(next?).context("failed to parse hydra message")?;
 
-            match msg {
-                HydraMessage::HydraEvent(x) => match x {
-                    HydraEventMessage::TxValid(x) => {
-                        if x.tx_id == tx_id {
-                            info!("Tx confirmed: {:?}", x);
-                            break anyhow::Result::Ok(());
-                        }
-                    }
-                    _ => (),
-                },
-                _ => {}
+            if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(x)) = msg {
+                if x.tx_id == tx_id {
+                    info!("Tx confirmed: {:?}", x);
+                    break anyhow::Result::Ok(());
+                }
             }
         }
     });
