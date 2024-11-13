@@ -8,7 +8,7 @@ on:
         required: true
 
 jobs:
-  webui:
+  terraform:
     runs-on: ubuntu-latest
     env:
       # Secrets
