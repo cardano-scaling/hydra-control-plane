@@ -1,7 +1,11 @@
 name: Deploy
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: 
+    inputs:
+      mode:
+      description: supported values are 'apply' and 'plan'
+      required: true
 
 jobs:
   webui:
@@ -51,8 +55,16 @@ jobs:
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
 
+      - name: plan terraform
+        working-directory: .github/iac
+        if: inputs.mode == 'plan'
+        run: terraform plan -input=false
+        env:
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
+
       - name: apply terraform
         working-directory: .github/iac
+        if: inputs.mode == 'apply'
         run: terraform apply -auto-approve -input=false
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
