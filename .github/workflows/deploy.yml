@@ -44,26 +44,26 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: init terraform
-        working-directory: .github/iac
+        working-directory: playbook/doom-dev
         run: terraform init
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
 
       - name: validate terraform
-        working-directory: .github/iac
+        working-directory: playbook/doom-dev
         run: terraform validate
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
 
       - name: plan terraform
-        working-directory: .github/iac
+        working-directory: playbook/doom-dev
         if: inputs.mode == 'plan'
         run: terraform plan -input=false
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
 
       - name: apply terraform
-        working-directory: .github/iac
+        working-directory: playbook/doom-dev
         if: inputs.mode == 'apply'
         run: terraform apply -auto-approve -input=false
         env:
