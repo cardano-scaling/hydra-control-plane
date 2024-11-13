@@ -36,6 +36,9 @@ jobs:
           aws-region: us-east-1
           aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::509399595051:role/ClusterAdminRole
+          role-session-name: Github-Actions
+          role-duration-seconds: 1200
 
       - name: Get short commit sh
         id: image_tag
