@@ -39,18 +39,18 @@ impl HydraValidator {
 }
 
 // I feel OK with an expect here, as if we have invalid script cbor encoding, it's because we have a bug in the codebase
-impl Into<PlutusScript<2>> for HydraValidator {
-    fn into(self) -> PlutusScript<2> {
+impl From<HydraValidator> for PlutusScript<2> {
+    fn from(value: HydraValidator) -> PlutusScript<2> {
         PlutusScript(
-            hex::decode(self.cbor())
+            hex::decode(value.cbor())
                 .expect("invalid script cbor hex string")
                 .into(),
         )
     }
 }
 
-impl Into<Vec<u8>> for HydraValidator {
-    fn into(self) -> Vec<u8> {
-        hex::decode(self.cbor()).expect("invalid script cbor hex string")
+impl From<HydraValidator> for Vec<u8> {
+    fn from(value: HydraValidator) -> Vec<u8> {
+        hex::decode(value.cbor()).expect("invalid script cbor hex string")
     }
 }

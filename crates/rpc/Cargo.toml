@@ -44,6 +44,3 @@ kube = { version = "0.96.0", features = ["client", "derive", "runtime"] }
 schemars = "0.8.21"
 rocket-errors = "0.1.0"
 rand = "0.8.5"
-
-[profile.release]
-debug = true

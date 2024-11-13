@@ -52,7 +52,7 @@ impl CommitTx {
                 .reference_input(self.script_registry.initial_reference.clone().into())
                 .collateral_input(
                     self.blueprint_tx
-                        .get(0)
+                        .first()
                         .ok_or(anyhow!(
                             "need at least one blueprint tx input for collateral"
                         ))?
@@ -163,7 +163,7 @@ fn build_base_commit_output(outputs: Vec<Output>, network_id: u8) -> Result<Outp
             for (policy, assets) in output_assets.iter() {
                 for (name, amount) in assets {
                     commit_output = commit_output
-                        .add_asset(policy.0.into(), name.0.clone(), amount.clone())
+                        .add_asset(policy.0.into(), name.0.clone(), *amount)
                         .context("Failed to add asset to commit output")?;
                 }
             }

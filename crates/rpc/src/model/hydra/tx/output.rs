@@ -63,13 +63,11 @@ impl OutputWrapper {
                             (
                                 PlutusData::BoundedBytes(k.0.to_vec().into()),
                                 PlutusData::Map(
-                                    v.into_iter()
+                                    v.iter()
                                         .map(|(k, v)| {
                                             (
                                                 PlutusData::BoundedBytes(k.0.to_vec().into()),
-                                                PlutusData::BigInt(BigInt::Int(
-                                                    (v.clone() as i64).into(),
-                                                )),
+                                                PlutusData::BigInt(BigInt::Int((*v as i64).into())),
                                             )
                                         })
                                         .collect::<Vec<(_, _)>>()
@@ -93,9 +91,9 @@ impl From<Output> for OutputWrapper {
     }
 }
 
-impl Into<PlutusData> for OutputWrapper {
-    fn into(self) -> PlutusData {
-        // Output Object
+impl From<OutputWrapper> for PlutusData {
+    fn from(value: OutputWrapper) -> PlutusData {
+        // Output Objecvalue: OutputWrappert
         PlutusData::Constr(Constr {
             tag: 121,
             any_constructor: None,
@@ -110,11 +108,11 @@ impl Into<PlutusData> for OutputWrapper {
                             tag: 121,
                             any_constructor: None,
                             fields: MaybeIndefArray::Indef(vec![PlutusData::BoundedBytes(
-                                self.payment_key_hash().into(),
+                                value.payment_key_hash().into(),
                             )]),
                         }),
                         // Maybe<Delegation Part>
-                        PlutusData::Constr(match self.delegation_key_hash() {
+                        PlutusData::Constr(match value.delegation_key_hash() {
                             // NOTE: this case may not be correct. Might need another wrapper, but unclear.
                             Some(stake_key_hash) => Constr {
                                 tag: 121,
@@ -132,7 +130,7 @@ impl Into<PlutusData> for OutputWrapper {
                     ]),
                 }),
                 // Value
-                self.assets_to_plutus_data(),
+                value.assets_to_plutus_data(),
                 // Datum
                 // TODO: figure out expected encoding for datum variants besised None
                 PlutusData::Constr(Constr {
