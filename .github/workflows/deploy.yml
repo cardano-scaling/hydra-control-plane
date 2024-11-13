@@ -54,24 +54,24 @@ jobs:
         working-directory: playbook/doom-dev
         run: terraform init
         env:
-          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:sha-${{ steps.image_tag.outputs.sha_short }}
 
       - name: validate terraform
         working-directory: playbook/doom-dev
         run: terraform validate
         env:
-          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:sha-${{ steps.image_tag.outputs.sha_short }}
 
       - name: plan terraform
         working-directory: playbook/doom-dev
         if: inputs.dry-run == 'true'
         run: terraform plan -input=false
         env:
-          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:sha-${{ steps.image_tag.outputs.sha_short }}
 
       - name: apply terraform
         working-directory: playbook/doom-dev
         if: inputs.dry-run == 'false'
         run: terraform apply -auto-approve -input=false
         env:
-          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
+          TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:sha-${{ steps.image_tag.outputs.sha_short }}
