@@ -4,9 +4,12 @@ on:
   workflow_dispatch: 
     inputs:
       dry-run:
-        type: boolean
+        type: choice
         required: false
-        default: false
+        default: 'false'
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   terraform:
@@ -58,14 +61,14 @@ jobs:
 
       - name: plan terraform
         working-directory: playbook/doom-dev
-        if: ${{ inputs.dry-run == 'true' }}
+        if: inputs.dry-run == 'true'
         run: terraform plan -input=false
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
 
       - name: apply terraform
         working-directory: playbook/doom-dev
-        if: ${{ inputs.dry-run == 'false' }}
+        if: inputs.dry-run == 'false'
         run: terraform apply -auto-approve -input=false
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
