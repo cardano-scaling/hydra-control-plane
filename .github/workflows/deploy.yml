@@ -4,8 +4,8 @@ on:
   workflow_dispatch: 
     inputs:
       mode:
-      description: supported values are 'apply' and 'plan'
-      required: true
+        description: supported values are 'apply' and 'plan'
+        required: true
 
 jobs:
   webui:
