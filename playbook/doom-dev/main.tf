@@ -44,7 +44,7 @@ variable "external_domain" {
 }
 
 variable "image" {
-  type        = string
+  type = string
 }
 
 variable "hydra_node_image" {
@@ -68,6 +68,14 @@ variable "eks_cluster_arn" {
 }
 
 variable "admin_key" {
+  type = string
+}
+
+variable "snapshot_aws_access_key_id" {
+  type = string
+}
+
+variable "snapshot_aws_secret_access_key" {
   type = string
 }
 
@@ -95,17 +103,21 @@ module "stage2" {
   protocol_parameters = file("${path.module}/protocol-parameters.json")
   external_port       = 80
 
-  namespace           = local.namespace
-  external_domain     = var.external_domain
-  hydra_node_image    = var.hydra_node_image
-  operator_image      = var.image
-  sidecar_image       = var.image
-  open_head_image     = var.image
-  control_plane_image = var.image
-  blockfrost_key      = var.blockfrost_key
-  admin_addr          = var.admin_addr
-  dmtr_project_id     = var.dmtr_project_id
-  dmtr_api_key        = var.dmtr_api_key
-  dmtr_port_name      = var.dmtr_port_name
-  hydra_scripts_tx_id = var.hydra_scripts_tx_id
+  namespace                  = local.namespace
+  external_domain            = var.external_domain
+  hydra_node_image           = var.hydra_node_image
+  operator_image             = var.image
+  sidecar_image              = var.image
+  open_head_image            = var.image
+  control_plane_image        = var.image
+  blockfrost_key             = var.blockfrost_key
+  admin_addr                 = var.admin_addr
+  dmtr_project_id            = var.dmtr_project_id
+  dmtr_api_key               = var.dmtr_api_key
+  dmtr_port_name             = var.dmtr_port_name
+  hydra_scripts_tx_id        = var.hydra_scripts_tx_id
+  init_aws_access_key_id     = var.snapshot_aws_access_key_id
+  init_aws_secret_access_key = var.snapshot_aws_secret_access_key
+  init_image                 = "ghcr.io/demeter-run/doom-patrol-init:b7b4fc499b5274cd71b6b72f93ab4ba8199437fe"
+
 }
