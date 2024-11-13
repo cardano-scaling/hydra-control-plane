@@ -1,4 +1,4 @@
-use ::anyhow::{anyhow, Context};
+use anyhow::{anyhow, Context};
 use pallas::ledger::addresses::Address;
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
