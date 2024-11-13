@@ -4,6 +4,7 @@ locals {
   secret                  = "hydra-pod-admin-key"
   secret_mount_path       = "/var/secret"
   control_plane_component = "control-plane"
+  control_plane_url       = "${var.control_plane_prefix}.${var.external_domain}"
   frontend_component      = "frontend"
   frontend_port           = 3000
 }
@@ -96,6 +97,21 @@ variable "dmtr_port_name" {
   type = string
 }
 
+variable "frontend_region" {
+  type    = string
+  default = "us-east-1"
+}
+
+variable "frontend_cabinet_key" {
+  type    = string
+  default = ""
+}
+
+variable "frontend_persistent_session" {
+  type    = string
+  default = ""
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string
@@ -143,6 +159,29 @@ variable "control_plane_resources" {
   default = {
     requests = {
       cpu    = "500m"
+      memory = "512Mi"
+    }
+    limits = {
+      cpu    = "2"
+      memory = "512Mi"
+    }
+  }
+}
+
+variable "frontend_resources" {
+  type = object({
+    limits = object({
+      cpu    = optional(string)
+      memory = string
+    })
+    requests = object({
+      cpu    = string
+      memory = string
+    })
+  })
+  default = {
+    requests = {
+      cpu    = "100m"
       memory = "512Mi"
     }
     limits = {

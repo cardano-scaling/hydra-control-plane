@@ -1,5 +1,5 @@
 resource "kubernetes_deployment_v1" "frontend" {
-  wait_for_rollout = false
+  wait_for_rollout = true
 
   metadata {
     namespace = var.namespace
@@ -10,7 +10,6 @@ resource "kubernetes_deployment_v1" "frontend" {
   }
 
   spec {
-    // Avoid race conditions
     replicas = var.frontend_replicas
 
     selector {
@@ -30,6 +29,26 @@ resource "kubernetes_deployment_v1" "frontend" {
         container {
           image = var.frontend_image
           name  = "main"
+
+          env {
+            name  = "REGION"
+            value = var.frontend_region
+          }
+
+          env {
+            name  = "SERVER_URL"
+            value = "http://${local.control_plane_url}:80"
+          }
+
+          env {
+            name  = "CABINET_KEY"
+            value = var.frontend_cabinet_key
+          }
+
+          env {
+            name  = "PERSISTENT_SESSION"
+            value = var.frontend_persistent_session
+          }
 
           volume_mount {
             name       = "secret"
