@@ -43,29 +43,13 @@ variable "external_domain" {
   description = "The domain prefix that will be used to access the hydra node."
 }
 
-variable "operator_image" {
+variable "image" {
   type        = string
-  description = "The image to use for the operator component."
 }
 
 variable "hydra_node_image" {
   type        = string
   description = "The Docker image to use for the Hydra node component."
-}
-
-variable "sidecar_image" {
-  type        = string
-  description = "The Docker image to use for the sidecar component of the Hydra node."
-}
-
-variable "open_head_image" {
-  type        = string
-  description = "The Docker image to use for the open head component of the Hydra node."
-}
-
-variable "control_plane_image" {
-  type        = string
-  description = "The Docker image to use for the control plane component of the Hydra node."
 }
 
 variable "hydra_scripts_tx_id" {
@@ -113,11 +97,11 @@ module "stage2" {
 
   namespace           = local.namespace
   external_domain     = var.external_domain
-  operator_image      = var.operator_image
   hydra_node_image    = var.hydra_node_image
-  sidecar_image       = var.sidecar_image
-  open_head_image     = var.open_head_image
-  control_plane_image = var.control_plane_image
+  operator_image      = var.image
+  sidecar_image       = var.image
+  open_head_image     = var.image
+  control_plane_image = var.image
   blockfrost_key      = var.blockfrost_key
   admin_addr          = var.admin_addr
   dmtr_project_id     = var.dmtr_project_id
