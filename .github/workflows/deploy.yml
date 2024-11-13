@@ -38,7 +38,7 @@ jobs:
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: setup kubeconfig
-        run: aws eks update-kubeconfig --name ${{ vars.AWS_CLUSTER_NAME }}
+        run: aws eks update-kubeconfig --name hydra-doom-dev-cluster
 
       - name: setup terraform
         uses: hashicorp/setup-terraform@v3
