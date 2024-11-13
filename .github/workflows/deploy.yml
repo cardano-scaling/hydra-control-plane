@@ -3,9 +3,10 @@ name: Deploy
 on:
   workflow_dispatch: 
     inputs:
-      mode:
-        description: supported values are 'apply' and 'plan'
-        required: true
+      dry-run:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   terraform:
@@ -57,14 +58,14 @@ jobs:
 
       - name: plan terraform
         working-directory: playbook/doom-dev
-        if: inputs.mode == 'plan'
+        if: ${{ inputs.dry-run == 'true' }}
         run: terraform plan -input=false
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
 
       - name: apply terraform
         working-directory: playbook/doom-dev
-        if: inputs.mode == 'apply'
+        if: ${{ inputs.dry-run == 'false' }}
         run: terraform apply -auto-approve -input=false
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:${{ steps.image_tag.outputs.sha_short }}
