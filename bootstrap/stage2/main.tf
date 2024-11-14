@@ -4,7 +4,7 @@ locals {
   secret                  = "hydra-pod-admin-key"
   secret_mount_path       = "/var/secret"
   control_plane_component = "control-plane"
-  control_plane_url       = "${var.control_plane_prefix}.${var.external_domain}"
+  control_plane_host      = "${var.control_plane_prefix}.${var.external_domain}"
   frontend_component      = "frontend"
   frontend_port           = 3000
 }

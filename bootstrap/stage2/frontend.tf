@@ -32,12 +32,7 @@ resource "kubernetes_deployment_v1" "frontend" {
 
           env {
             name  = "VITE_SERVER_URL"
-            value = "https://${local.control_plane_url}/"
-          }
-
-          volume_mount {
-            name       = "secret"
-            mount_path = local.secret_mount_path
+            value = "https://${local.control_plane_host}/"
           }
 
           resources {
@@ -55,13 +50,6 @@ resource "kubernetes_deployment_v1" "frontend" {
             name           = "api"
             container_port = local.frontend_port
             protocol       = "TCP"
-          }
-        }
-
-        volume {
-          name = "secret"
-          secret {
-            secret_name = local.secret
           }
         }
 

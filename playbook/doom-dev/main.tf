@@ -71,6 +71,15 @@ variable "admin_key" {
   type = string
 }
 
+variable "frontend_image" {
+  type = string
+}
+
+variable "frontend_replicas" {
+  type = number
+  default = 1
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -108,6 +117,6 @@ module "stage2" {
   dmtr_api_key        = var.dmtr_api_key
   dmtr_port_name      = var.dmtr_port_name
   hydra_scripts_tx_id = var.hydra_scripts_tx_id
-  frontend_image      = "ghcr.io/demeter-run/hydra-doom-frontend:rc5"
-  frontend_replicas   = 1
+  frontend_image      = var.frontend_image
+  frontend_replicas   = var.frontend_replicas
 }
