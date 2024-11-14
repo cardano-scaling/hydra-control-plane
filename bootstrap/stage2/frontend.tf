@@ -31,23 +31,8 @@ resource "kubernetes_deployment_v1" "frontend" {
           name  = "main"
 
           env {
-            name  = "REGION"
-            value = var.frontend_region
-          }
-
-          env {
-            name  = "SERVER_URL"
-            value = "http://${local.control_plane_url}:80"
-          }
-
-          env {
-            name  = "CABINET_KEY"
-            value = var.frontend_cabinet_key
-          }
-
-          env {
-            name  = "PERSISTENT_SESSION"
-            value = var.frontend_persistent_session
+            name  = "VITE_SERVER_URL"
+            value = "http://${local.control_plane_url}/"
           }
 
           volume_mount {

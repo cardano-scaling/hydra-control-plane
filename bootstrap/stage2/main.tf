@@ -97,21 +97,6 @@ variable "dmtr_port_name" {
   type = string
 }
 
-variable "frontend_region" {
-  type    = string
-  default = "us-east-1"
-}
-
-variable "frontend_cabinet_key" {
-  type    = string
-  default = ""
-}
-
-variable "frontend_persistent_session" {
-  type    = string
-  default = ""
-}
-
 variable "tolerations" {
   type = list(object({
     effect   = string
@@ -181,7 +166,7 @@ variable "frontend_resources" {
   })
   default = {
     requests = {
-      cpu    = "100m"
+      cpu    = "500m"
       memory = "512Mi"
     }
     limits = {

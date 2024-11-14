@@ -95,20 +95,18 @@ module "stage2" {
   protocol_parameters = file("${path.module}/protocol-parameters.json")
   external_port       = 80
 
-  namespace                   = local.namespace
-  external_domain             = var.external_domain
-  hydra_node_image            = var.hydra_node_image
-  operator_image              = var.image
-  sidecar_image               = var.image
-  open_head_image             = var.image
-  control_plane_image         = var.image
-  blockfrost_key              = var.blockfrost_key
-  admin_addr                  = var.admin_addr
-  dmtr_project_id             = var.dmtr_project_id
-  dmtr_api_key                = var.dmtr_api_key
-  dmtr_port_name              = var.dmtr_port_name
-  hydra_scripts_tx_id         = var.hydra_scripts_tx_id
-  frontend_image              = "ghcr.io/demeter-run/hydra-doom-frontend:latest"
-  frontend_cabinet_key        = "cabinet_key"  # TODO. What should i put here
-  frontend_persistent_session = "persistent_session"
+  namespace           = local.namespace
+  external_domain     = var.external_domain
+  hydra_node_image    = var.hydra_node_image
+  operator_image      = var.image
+  sidecar_image       = var.image
+  open_head_image     = var.image
+  control_plane_image = var.image
+  blockfrost_key      = var.blockfrost_key
+  admin_addr          = var.admin_addr
+  dmtr_project_id     = var.dmtr_project_id
+  dmtr_api_key        = var.dmtr_api_key
+  dmtr_port_name      = var.dmtr_port_name
+  hydra_scripts_tx_id = var.hydra_scripts_tx_id
+  frontend_image      = "ghcr.io/demeter-run/hydra-doom-frontend:rc2"
 }
