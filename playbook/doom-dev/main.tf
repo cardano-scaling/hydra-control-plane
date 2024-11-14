@@ -44,7 +44,7 @@ variable "external_domain" {
 }
 
 variable "image" {
-  type        = string
+  type = string
 }
 
 variable "hydra_node_image" {
@@ -69,6 +69,15 @@ variable "eks_cluster_arn" {
 
 variable "admin_key" {
   type = string
+}
+
+variable "frontend_image" {
+  type = string
+}
+
+variable "frontend_replicas" {
+  type = number
+  default = 1
 }
 
 provider "kubernetes" {
@@ -108,4 +117,6 @@ module "stage2" {
   dmtr_api_key        = var.dmtr_api_key
   dmtr_port_name      = var.dmtr_port_name
   hydra_scripts_tx_id = var.hydra_scripts_tx_id
+  frontend_image      = var.frontend_image
+  frontend_replicas   = var.frontend_replicas
 }

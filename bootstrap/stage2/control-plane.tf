@@ -147,7 +147,7 @@ resource "kubernetes_ingress_v1" "control_plane_ingress" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = "${var.control_plane_prefix}.${var.external_domain}"
+      host = local.control_plane_host
       http {
         path {
           path      = "/"
