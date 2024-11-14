@@ -3,7 +3,7 @@ use k8s_openapi::{
         apps::v1::{Deployment, DeploymentSpec},
         core::v1::{
             ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource,
-            PodSpec, PodTemplateSpec, ResourceRequirements, SecretVolumeSource, Service,
+            EnvVar, PodSpec, PodTemplateSpec, ResourceRequirements, SecretVolumeSource, Service,
             ServicePort, ServiceSpec, Volume, VolumeMount,
         },
         networking::v1::{
@@ -281,6 +281,21 @@ impl HydraDoomNode {
                     name: Some("metrics".to_string()),
                     container_port: constants.metrics_port,
                     protocol: Some("TCP".to_string()),
+                    ..Default::default()
+                }]),
+                ..Default::default()
+            },
+            Container {
+                name: "dedicated".to_string(),
+                image: Some(config.dedicated_image.clone()),
+                env: Some(vec![EnvVar {
+                    name: "ADMIN_KEY_FILE".to_string(),
+                    value: Some(format!("{}/admin.sk", constants.secret_dir)),
+                    value_from: None,
+                }]),
+                volume_mounts: Some(vec![VolumeMount {
+                    name: "secret".to_string(),
+                    mount_path: constants.secret_dir.clone(),
                     ..Default::default()
                 }]),
                 ..Default::default()
