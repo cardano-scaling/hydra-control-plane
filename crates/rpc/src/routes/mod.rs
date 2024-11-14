@@ -5,4 +5,5 @@ pub mod heads;
 pub mod health;
 pub mod new_game;
 pub mod sample_transactions;
+pub mod start_game;
 pub mod stats;

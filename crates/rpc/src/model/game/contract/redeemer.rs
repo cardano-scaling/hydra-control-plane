@@ -9,6 +9,7 @@ pub struct Redeemer {
 }
 pub enum SpendAction {
     AddPlayer,
+    StartGame,
     EndGame,
     Collect,
 }
@@ -40,8 +41,9 @@ impl From<SpendAction> for PlutusData {
         PlutusData::Constr(Constr {
             tag: match value {
                 SpendAction::AddPlayer => 121,
-                SpendAction::EndGame => 122,
-                SpendAction::Collect => 123,
+                SpendAction::StartGame => 122,
+                SpendAction::EndGame => 123,
+                SpendAction::Collect => 124,
             },
             any_constructor: None,
             fields: MaybeIndefArray::Def(vec![]),
