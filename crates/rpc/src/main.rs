@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use model::cluster::ClusterState;
 use rocket::{http::Method, routes};

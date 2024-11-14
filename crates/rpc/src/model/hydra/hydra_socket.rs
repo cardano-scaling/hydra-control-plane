@@ -188,7 +188,10 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
         }
     });
 
-    sender.send(Message::Text(tx.into())).await.context("failed to send transaction")?;
+    sender
+        .send(Message::Text(tx.into()))
+        .await
+        .context("failed to send transaction")?;
 
     tokio::select! {
         // TODO: result.flatten https://github.com/rust-lang/rust/issues/70142

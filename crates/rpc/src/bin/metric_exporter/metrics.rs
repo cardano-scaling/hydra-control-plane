@@ -1,6 +1,9 @@
 use std::sync::Mutex;
 
-use prometheus::{histogram_opts, linear_buckets, Encoder, Histogram, HistogramTimer, IntCounter, IntGauge, Registry, TextEncoder};
+use prometheus::{
+    histogram_opts, linear_buckets, Encoder, Histogram, HistogramTimer, IntCounter, IntGauge,
+    Registry, TextEncoder,
+};
 
 pub enum NodeState {
     Offline,
@@ -77,7 +80,7 @@ impl Metrics {
 
         let bytes = IntCounter::new(
             "hydra_doom_node_bytes",
-            "Number of bytes in executed transactions."
+            "Number of bytes in executed transactions.",
         )
         .unwrap();
 
@@ -87,13 +90,11 @@ impl Metrics {
         )
         .unwrap();
 
-        let games_seconds = Histogram::with_opts(
-            histogram_opts!(
-                "hydra_doom_games_seconds",
-                "Duration of games in seconds.",
-                linear_buckets(0.0, 60.0, 20)?,
-            )
-        )
+        let games_seconds = Histogram::with_opts(histogram_opts!(
+            "hydra_doom_games_seconds",
+            "Duration of games in seconds.",
+            linear_buckets(0.0, 60.0, 20)?,
+        ))
         .unwrap();
 
         let players_total = IntCounter::new(
@@ -108,17 +109,10 @@ impl Metrics {
         )
         .unwrap();
 
-        let kills = IntCounter::new(
-            "hydra_doom_kills",
-            "Number of kills in the game.",
-        )
-        .unwrap();
+        let kills = IntCounter::new("hydra_doom_kills", "Number of kills in the game.").unwrap();
 
-        let suicides = IntCounter::new(
-            "hydra_doom_suicides",
-            "Number of suicides in the game.",
-        )
-        .unwrap();
+        let suicides =
+            IntCounter::new("hydra_doom_suicides", "Number of suicides in the game.").unwrap();
 
         let registry = Registry::default();
         registry.register(Box::new(state.clone()))?;
