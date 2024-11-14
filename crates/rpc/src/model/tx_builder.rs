@@ -57,12 +57,21 @@ impl TxBuilder {
 
         let script_address = Validator::address(network);
         println!("Script Address: {:?}", script_address.to_bech32());
-        let player_inbound_address = player
-            .inbound_address(self.admin_pkh, network)
-            .context("failed to build player multisig inbound address")?;
         let player_outbound_address = player
             .outbound_address(self.admin_pkh, network)
             .context("failed to build player multisig outbound address")?;
+
+        let mut admin_address_bytes = self.admin_pkh.to_vec();
+        admin_address_bytes.insert(
+            0,
+            0b1100000
+                | match network {
+                    Network::Testnet => 0,
+                    Network::Mainnet => 1,
+                    Network::Other(i) => i,
+                },
+        );
+        let admin_address = Address::from_bytes(admin_address_bytes.as_slice())?;
 
         let game_state: PlutusData = GameState::new(self.admin_pkh.into())
             .add_player(player.signing_key.into())
@@ -75,8 +84,9 @@ impl TxBuilder {
             // GameState Datum
             .output(Output::new(script_address, 0).set_inline_datum(datum))
             // Player Output
-            .output(Output::new(player_inbound_address, 0))
             .output(Output::new(player_outbound_address, 0))
+            //Server UTxO
+            .output(Output::new(admin_address, 0))
             // Maintain Initial UTxO
             .output(Output::new(
                 input_utxo.address.clone(),
@@ -123,9 +133,6 @@ impl TxBuilder {
 
         let script_address = Validator::address(network);
 
-        let inbound_player_address = player
-            .inbound_address(self.admin_pkh, network)
-            .context("failed to construct player multisig inbound address")?;
         let outbound_player_address = player
             .outbound_address(self.admin_pkh, network)
             .context("failed to construct player multisig outbound address")?;
@@ -139,7 +146,6 @@ impl TxBuilder {
             // GameState Output
             .output(Output::new(script_address, 0).set_inline_datum(datum))
             // Player Output
-            .output(Output::new(inbound_player_address, 0))
             .output(Output::new(outbound_player_address, 0))
             .add_spend_redeemer(
                 game_state_utxo.into(),
@@ -350,16 +356,9 @@ impl TxBuilder {
 
         for player in game_state.players {
             let player: Player = player.into();
-            let inbound_address = player
-                .inbound_address(self.admin_pkh, network)
-                .context("failed to get player inbound address")?;
             let outbound_address = player
                 .outbound_address(self.admin_pkh, network)
                 .context("failed to get player outbound address")?;
-            let inbound_script = player.inbound_script(self.admin_pkh);
-            let mut inbound_bytes = Vec::new();
-            encode(&inbound_script, &mut inbound_bytes)
-                .context("Failed to cbor encode outbound script")?;
             let outbound_script = player.outbound_script(self.admin_pkh);
             let mut outbound_bytes = Vec::new();
             encode(&outbound_script, &mut outbound_bytes)
@@ -367,18 +366,15 @@ impl TxBuilder {
             let player_utxos: Vec<_> = utxos
                 .clone()
                 .into_iter()
-                .filter(|utxo| utxo.address == inbound_address || utxo.address == outbound_address)
+                .filter(|utxo| utxo.address == outbound_address)
                 .collect();
             for utxo in player_utxos {
                 if let Some(builder) = tx_builder {
-                    tx_builder = Some(builder.input(utxo.clone().into()).script(
-                        ScriptKind::Native,
-                        if utxo.address == inbound_address {
-                            inbound_bytes.clone()
-                        } else {
-                            outbound_bytes.clone()
-                        },
-                    ))
+                    tx_builder = Some(
+                        builder
+                            .input(utxo.clone().into())
+                            .script(ScriptKind::Native, outbound_bytes.clone()),
+                    )
                 }
             }
         }

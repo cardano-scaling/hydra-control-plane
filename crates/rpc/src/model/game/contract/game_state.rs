@@ -9,6 +9,7 @@ use pallas::ledger::{
 };
 
 use crate::model::game::player::Player;
+use crate::model::hydra::utxo::Datum;
 
 #[derive(Debug)]
 pub struct PaymentCredential([u8; 28]);
@@ -111,6 +112,17 @@ impl From<GameState> for PlutusData {
                 cheater,
             ]),
         })
+    }
+}
+
+impl TryFrom<Datum> for GameState {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Datum) -> Result<Self, Self::Error> {
+        match value {
+            Datum::Inline(data) => data.try_into(),
+            _ => bail!("invalid datum type"),
+        }
     }
 }
 

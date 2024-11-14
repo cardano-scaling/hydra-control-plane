@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use hex::FromHex;
 use pallas::{
     crypto::key::ed25519::SecretKey,
@@ -11,7 +11,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use tracing::debug;
 
 use crate::model::{
-    game::player::Player,
+    game::{contract::game_state::GameState, player::Player},
     hydra::{
         hydra_socket,
         messages::{new_tx::NewTx, tx_valid::TxValid},
@@ -88,6 +88,12 @@ impl NodeClient {
 
     pub async fn new_game(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+        if utxos
+            .iter()
+            .any(|utxo| GameState::try_from(utxo.datum.clone()).is_ok())
+        {
+            bail!("game UTxO already exists")
+        }
 
         let new_game_tx = self
             .tx_builder
