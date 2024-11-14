@@ -1,5 +1,5 @@
 resource "kubernetes_deployment_v1" "control_plane" {
-  wait_for_rollout = false
+  wait_for_rollout = true
 
   metadata {
     namespace = var.namespace
