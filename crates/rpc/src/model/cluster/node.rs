@@ -97,7 +97,7 @@ impl NodeClient {
 
         let new_game_tx = self
             .tx_builder
-            .build_new_game(player, utxos, Network::Testnet)
+            .new_game(player, utxos, Network::Testnet)
             .context("failed to build transaction")?; // TODO: pass in network
         debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
@@ -111,6 +111,31 @@ impl NodeClient {
             Duration::from_secs(10),
         )
         .await?;
+
+        Ok(tx_hash)
+    }
+
+    //TODO: don't hardcode network
+    pub async fn start_game(&self) -> Result<Vec<u8>> {
+        let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
+        let start_game_tx = self
+            .tx_builder
+            .start_game(utxos, Network::Testnet)
+            .context("failed to build transaction")?;
+
+        debug!("start game tx: {}", hex::encode(&start_game_tx.tx_bytes));
+
+        let tx_hash = start_game_tx.tx_hash.0.to_vec();
+
+        let new_tx = NewTx::new(start_game_tx).context("failed to build NewTx message")?;
+        hydra_socket::submit_tx_roundtrip(
+            &self.connection.to_websocket_url(),
+            new_tx, // TODO: make this configurable
+            Duration::from_secs(30),
+        )
+        .await
+        .context("failed to submit transaction")?;
 
         Ok(tx_hash)
     }

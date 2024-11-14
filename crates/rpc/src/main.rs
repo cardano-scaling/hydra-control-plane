@@ -4,7 +4,8 @@ use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::{
     add_player::add_player, cleanup::cleanup, head::head, heads::heads, health::health,
-    new_game::new_game, sample_transactions::sample_transactions, stats::global_stats,
+    new_game::new_game, sample_transactions::sample_transactions, start_game::start_game,
+    stats::global_stats,
 };
 use serde::Deserialize;
 
@@ -48,10 +49,11 @@ async fn main() -> Result<()> {
                 heads,
                 head,
                 add_player,
+                start_game,
                 cleanup,
                 sample_transactions,
                 global_stats,
-                health
+                health,
             ],
         )
         .attach(cors.to_cors().unwrap())
