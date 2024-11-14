@@ -32,7 +32,7 @@ resource "kubernetes_deployment_v1" "frontend" {
 
           env {
             name  = "VITE_SERVER_URL"
-            value = "http://${local.control_plane_url}/"
+            value = "https://${local.control_plane_url}/"
           }
 
           volume_mount {

@@ -108,6 +108,6 @@ module "stage2" {
   dmtr_api_key        = var.dmtr_api_key
   dmtr_port_name      = var.dmtr_port_name
   hydra_scripts_tx_id = var.hydra_scripts_tx_id
-  frontend_image      = "ghcr.io/demeter-run/hydra-doom-frontend:rc3"
+  frontend_image      = "ghcr.io/demeter-run/hydra-doom-frontend:rc5"
   frontend_replicas   = 1
 }
