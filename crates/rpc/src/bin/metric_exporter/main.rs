@@ -91,9 +91,9 @@ fn start_game(metrics: &State<Arc<Metrics>>) {
     metrics.start_game();
 }
 
-#[post("/end_game")]
-fn end_game(metrics: &State<Arc<Metrics>>) {
-    metrics.end_game();
+#[post("/end_game?<remaining_players>")]
+fn end_game(remaining_players: i64, metrics: &State<Arc<Metrics>>) {
+    metrics.end_game(remaining_players);
 }
 
 #[post("/player_joined")]

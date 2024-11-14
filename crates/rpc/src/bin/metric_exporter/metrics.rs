@@ -169,7 +169,8 @@ impl Metrics {
         *guard = Some(self.games_seconds.start_timer());
     }
 
-    pub fn end_game(&self) {
+    pub fn end_game(&self, remaining_players: i64) {
+        self.players_current.sub(remaining_players);
         self.games_current.dec();
         self.game_state.set(GameState::Done.into());
         let mut guard = self.game_timer.lock().unwrap();
