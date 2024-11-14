@@ -137,7 +137,7 @@ jobs:
       TF_VAR_eks_cluster_arn: arn:aws:eks:us-east-1:509399595051:cluster/hydra-doom-dev-cluster
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
-      TF_VAR_frontend_image: ghcr.io/demeter-run/hydra-doom-frontend:rc5
+      TF_VAR_frontend_image: ghcr.io/demeter-run/hydra-doom-frontend:rc6
     steps:
       - uses: actions/checkout@v2
 

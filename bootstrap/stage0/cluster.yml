@@ -20,8 +20,8 @@ managedNodeGroups:
       hydra.doom/availability-zone: az1
     instanceTypes: [ t3a.medium, t3.medium ]
     minSize: 0
-    maxSize: 2
-    desiredCapacity: 2
+    maxSize: 3
+    desiredCapacity: 3
     spot: true
     availabilityZones:
       - us-east-1b
