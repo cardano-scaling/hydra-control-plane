@@ -80,10 +80,6 @@ variable "frontend_replicas" {
   default = 1
 }
 
-variable "ssl_cert_arn" {
-  type = string
-}
-
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -94,15 +90,6 @@ provider "helm" {
     config_path    = "~/.kube/config"
     config_context = var.eks_cluster_arn
   }
-}
-
-module "stage0" {
-  source = "../../bootstrap/stage0/"
-}
-
-module "stage1" {
-  source       = "../../bootstrap/stage1/"
-  ssl_cert_arn = var.ssl_cert_arn
 }
 
 module "stage2" {
