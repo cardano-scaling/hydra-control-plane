@@ -67,7 +67,7 @@ variable "external_port" {
 }
 
 variable "external_protocol" {
-  type = number
+  type = string
 }
 
 variable "admin_key" {
