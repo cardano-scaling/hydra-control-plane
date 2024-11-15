@@ -7,4 +7,7 @@ resource "helm_release" "ingress_nginx" {
 
   # Ensure the namespace exists before installing
   create_namespace = true
+  values = [templatefile("${path.module}/ingress_controller_values.yml.tftpl", {
+    ssl_cert_arn = var.ssl_cert_arn
+  })]
 }
