@@ -138,7 +138,6 @@ jobs:
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
       TF_VAR_frontend_image: ghcr.io/demeter-run/hydra-doom-frontend:rc7
-      TF_VAR_ssl_cert_arn: arn:aws:acm:us-east-1:509399595051:certificate/6ab8319d-1dec-494f-b71c-3a4132e42a5e
     steps:
       - uses: actions/checkout@v2
 
