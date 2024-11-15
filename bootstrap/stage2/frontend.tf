@@ -29,6 +29,7 @@ resource "kubernetes_deployment_v1" "frontend" {
         container {
           image = var.frontend_image
           name  = "main"
+          image_pull_policy = "Always"
 
           env {
             name  = "VITE_SERVER_URL"
