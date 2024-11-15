@@ -82,6 +82,11 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
+            name  = "EXTERNAL_PROTOCOL"
+            value = var.external_protocol
+          }
+
+          env {
             name  = "ADMIN_ADDR"
             value = var.admin_addr
           }

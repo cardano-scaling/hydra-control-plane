@@ -66,6 +66,10 @@ variable "external_port" {
   type = number
 }
 
+variable "external_protocol" {
+  type = string
+}
+
 variable "admin_key" {
   type        = string
   description = "The admin key in cardano-cli JSON format."

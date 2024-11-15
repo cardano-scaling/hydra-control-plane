@@ -295,7 +295,8 @@ impl K8sContext {
                 transactions: 0,
                 local_url: format!("ws://{}:{}", crd.internal_host(), self.constants.port),
                 external_url: format!(
-                    "ws://{}:{}",
+                    "{}://{}:{}",
+                    self.config.external_protocol,
                     crd.external_host(&self.config, &self.constants),
                     self.config.external_port
                 ),
