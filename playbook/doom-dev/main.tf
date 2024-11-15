@@ -93,8 +93,7 @@ provider "helm" {
 }
 
 module "stage2" {
-  source     = "../../bootstrap/stage2"
-  depends_on = [module.stage1]
+  source = "../../bootstrap/stage2"
 
   admin_key           = var.admin_key
   protocol_parameters = file("${path.module}/protocol-parameters.json")
