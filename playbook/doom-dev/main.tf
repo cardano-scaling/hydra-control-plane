@@ -76,8 +76,12 @@ variable "frontend_image" {
 }
 
 variable "frontend_replicas" {
-  type = number
+  type    = number
   default = 1
+}
+
+variable "ssl_cert_arn" {
+  type = string
 }
 
 provider "kubernetes" {
@@ -92,8 +96,13 @@ provider "helm" {
   }
 }
 
+module "stage0" {
+  source = "../../bootstrap/stage0/"
+}
+
 module "stage1" {
-  source = "../../bootstrap/stage1/"
+  source       = "../../bootstrap/stage1/"
+  ssl_cert_arn = var.ssl_cert_arn
 }
 
 module "stage2" {
@@ -102,7 +111,8 @@ module "stage2" {
 
   admin_key           = var.admin_key
   protocol_parameters = file("${path.module}/protocol-parameters.json")
-  external_port       = 80
+  external_port       = 443
+  external_protocol   = "wss"
 
   namespace           = local.namespace
   external_domain     = var.external_domain
