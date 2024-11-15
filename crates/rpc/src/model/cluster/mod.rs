@@ -26,10 +26,11 @@ pub struct ClusterState {
     store: kube::runtime::reflector::Store<HydraDoomNode>,
     watcher_handle: Arc<tokio::task::JoinHandle<()>>,
     pub admin_sk: SecretKey,
+    pub remote: bool,
 }
 
 impl ClusterState {
-    pub async fn try_new(admin_key_file: &str) -> anyhow::Result<Self> {
+    pub async fn try_new(admin_key_file: &str, remote: bool) -> anyhow::Result<Self> {
         let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
             File::open(admin_key_file).context("unable to open key file")?,
         )?;
@@ -61,6 +62,7 @@ impl ClusterState {
             store,
             watcher_handle: Arc::new(watcher_handle),
             admin_sk,
+            remote,
         })
     }
 

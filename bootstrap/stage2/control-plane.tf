@@ -44,6 +44,11 @@ resource "kubernetes_deployment_v1" "control_plane" {
           }
 
           env {
+            name  = "ROCKET_REMOTE"
+            value = "false"
+          }
+
+          env {
             name  = "ROCKET_LOG_LEVEL"
             value = "normal"
           }
