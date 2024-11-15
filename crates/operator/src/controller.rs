@@ -281,6 +281,19 @@ impl K8sContext {
         }
     }
 
+    fn get_internal_url(&self, crd: &HydraDoomNode) -> String {
+        format!("ws://{}:{}", crd.internal_host(), self.constants.port)
+    }
+
+    fn get_external_url(&self, crd: &HydraDoomNode) -> String {
+        format!(
+            "{}://{}:{}",
+            self.config.external_protocol,
+            crd.external_host(&self.config, &self.constants),
+            self.config.external_port
+        )
+    }
+
     async fn get_status_from_crd(&self, crd: &HydraDoomNode) -> HydraDoomNodeStatus {
         let url = format!(
             "http://{}:{}{}",
@@ -293,13 +306,8 @@ impl K8sContext {
             return HydraDoomNodeStatus {
                 state: HydraDoomNodeState::Sleeping.into(),
                 transactions: 0,
-                local_url: format!("ws://{}:{}", crd.internal_host(), self.constants.port),
-                external_url: format!(
-                    "{}://{}:{}",
-                    self.config.external_protocol,
-                    crd.external_host(&self.config, &self.constants),
-                    self.config.external_port
-                ),
+                local_url: self.get_internal_url(crd),
+                external_url: self.get_external_url(crd),
             };
         }
 
@@ -337,16 +345,8 @@ impl K8sContext {
                                 (Some(state), Some(transactions)) => HydraDoomNodeStatus {
                                     transactions,
                                     state: state.into(),
-                                    local_url: format!(
-                                        "ws://{}:{}",
-                                        crd.internal_host(),
-                                        self.constants.port
-                                    ),
-                                    external_url: format!(
-                                        "ws://{}:{}",
-                                        crd.external_host(&self.config, &self.constants),
-                                        self.config.external_port
-                                    ),
+                                    local_url: self.get_internal_url(crd),
+                                    external_url: self.get_external_url(crd),
                                 },
                                 _ => default,
                             }

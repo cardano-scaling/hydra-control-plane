@@ -110,7 +110,8 @@ impl HydraDoomNodeStatus {
             transactions: 0,
             local_url: format!("ws://{}:{}", crd.internal_host(), constants.port),
             external_url: format!(
-                "ws://{}:{}",
+                "{}://{}:{}",
+                config.external_protocol,
                 crd.external_host(config, constants),
                 config.external_port
             ),
