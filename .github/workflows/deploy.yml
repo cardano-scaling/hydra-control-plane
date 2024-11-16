@@ -140,7 +140,7 @@ jobs:
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:latest
-      TF_VAR_dedicated_image: ghcr.io/cardano-scaling/hydra-doom-dedicated:sha-ce42c2c # latest?
+      TF_VAR_dedicated_image: ghcr.io/cardano-scaling/hydra-doom-dedicated:sha-0a25515 # latest?
 
     steps:
       - uses: actions/checkout@v2
