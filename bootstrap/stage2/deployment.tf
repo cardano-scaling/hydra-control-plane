@@ -57,6 +57,11 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
+            name = "DEDICATED_IMAGE"
+            value = var.dedicated_image
+          }
+
+          env {
             name  = "CONFIGMAP"
             value = local.configmap
           }
