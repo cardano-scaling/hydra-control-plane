@@ -20,6 +20,7 @@ pub enum State {
     Running,
     Cheated,
     Finished,
+    Aborted,
 }
 #[derive(Debug)]
 pub struct GameState {
@@ -304,6 +305,11 @@ impl From<State> for PlutusData {
                 any_constructor: None,
                 fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
+            State::Aborted => Constr {
+                tag: 125,
+                any_constructor: None,
+                fields: alonzo::MaybeIndefArray::Def(vec![]),
+            },
         })
     }
 }
@@ -318,6 +324,7 @@ impl TryFrom<PlutusData> for State {
                 122 => Ok(State::Running),
                 123 => Ok(State::Cheated),
                 124 => Ok(State::Finished),
+                125 => Ok(State::Aborted),
                 _ => bail!("Invalid constructor tag for State."),
             },
             _ => bail!("Invalid data type for State."),

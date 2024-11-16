@@ -1,5 +1,6 @@
 pub mod add_player;
 pub mod cleanup;
+pub mod end_game;
 pub mod head;
 pub mod heads;
 pub mod health;

@@ -191,22 +191,14 @@ impl NodeClient {
         Ok(tx_hash)
     }
 
-    // Just using this for testing now, hardcoding some values
+    // This is just used for testing for now, always aborting the game
+    // TODO: actually handle winner and losers
     pub async fn end_game(&self) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
-        let player = match Address::from_bech32(
-            "addr_test1qpq0htjtaygzwtj3h4akj2mvzaxgpru4yje4ca9a507jtdw5pcy8kzccynfps4ayhmtc38j6tyjrkyfccdytnxwnd6psfelznq",
-        )
-        .expect("Failed to decode player address")
-        {
-            Address::Shelley(shelley) => *shelley.payment().as_hash(),
-            _ => panic!("Expected Shelley address"),
-        };
-
         let end_game_tx = self
             .tx_builder
-            .end_game(player.into(), false, utxos, Network::Testnet)
+            .end_game(None, utxos, Network::Testnet)
             .context("failed to build transaction")?;
 
         debug!("end_game_tx tx: {}", hex::encode(&end_game_tx.tx_bytes));

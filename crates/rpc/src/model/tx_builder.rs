@@ -257,8 +257,11 @@ impl TxBuilder {
 
     pub fn end_game(
         &self,
-        player: Player,
-        is_cheater: bool,
+        // This feels clunky, but we need to know if we are aborting the game, if they are a cheater, or a winner.
+        // If this is None, we are aborting,
+        // if this is Some(_, true), we are marking as cheated
+        // If this is Some(_, false), we are marking as finished
+        is_player_cheater: Option<(Player, bool)>,
         utxos: Vec<UTxO>,
         network: Network,
     ) -> Result<BuiltTransaction> {
@@ -273,15 +276,23 @@ impl TxBuilder {
             Datum::Inline(data) => data.try_into()?,
             Datum::None => bail!("No datum in game utxo"),
         };
-        if is_cheater {
-            game_state = game_state
-                .set_state(State::Cheated)
-                .set_cheater(player.into());
-        } else {
-            game_state = game_state
-                .set_state(State::Finished)
-                .set_winner(player.into());
-        };
+
+        match is_player_cheater {
+            None => {
+                game_state = game_state.set_state(State::Aborted);
+            }
+            Some((player, is_cheater)) => {
+                if is_cheater {
+                    game_state = game_state
+                        .set_state(State::Cheated)
+                        .set_cheater(player.into());
+                } else {
+                    game_state = game_state
+                        .set_state(State::Finished)
+                        .set_winner(player.into());
+                };
+            }
+        }
 
         let game_state: PlutusData = game_state.into();
         let mut datum: Vec<u8> = Vec::new();
@@ -361,10 +372,11 @@ impl TxBuilder {
             Datum::None => bail!("No datum in game utxo"),
         };
 
-        let collateral_utxos = self.find_admin_utxos(utxos.clone());
+        let admin_utxos = self.find_admin_utxos(utxos.clone());
 
-        let collateral_utxo = collateral_utxos
-            .first()
+        let initial_state_utxo = admin_utxos
+            .iter()
+            .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
         let redeemer: PlutusData = Redeemer::new(0, SpendAction::Collect).into();
@@ -374,10 +386,9 @@ impl TxBuilder {
         let mut tx_builder = Some(
             StagingTransaction::new()
                 .input(game_state_utxo.clone().into())
-                .input(collateral_utxo.clone().into())
-                .collateral_input(collateral_utxo.clone().into())
+                .collateral_input(initial_state_utxo.clone().into())
                 .output(
-                    collateral_utxo
+                    initial_state_utxo
                         .clone()
                         .try_into()
                         .context("failed to build target output from utxo object")?,
@@ -419,6 +430,7 @@ impl TxBuilder {
                 .fee(0),
         );
 
+        // Cleanup the player state utxos
         for player in game_state.players {
             let player: Player = player.into();
             let outbound_address = player
@@ -441,6 +453,13 @@ impl TxBuilder {
                             .script(ScriptKind::Native, outbound_bytes.clone()),
                     )
                 }
+            }
+        }
+
+        // clean up any extraneous admin utxos
+        for utxo in admin_utxos {
+            if let Some(builder) = tx_builder {
+                tx_builder = Some(builder.input(utxo.into()));
             }
         }
 
