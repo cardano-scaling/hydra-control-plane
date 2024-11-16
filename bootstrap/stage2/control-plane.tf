@@ -1,5 +1,5 @@
 resource "kubernetes_deployment_v1" "control_plane" {
-  wait_for_rollout = false
+  wait_for_rollout = true
 
   metadata {
     namespace = var.namespace
@@ -41,6 +41,11 @@ resource "kubernetes_deployment_v1" "control_plane" {
           env {
             name  = "K8S_IN_CLUSTER"
             value = "true"
+          }
+
+          env {
+            name  = "ROCKET_REMOTE"
+            value = "false"
           }
 
           env {
@@ -147,7 +152,7 @@ resource "kubernetes_ingress_v1" "control_plane_ingress" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = "${var.control_plane_prefix}.${var.external_domain}"
+      host = local.control_plane_host
       http {
         path {
           path      = "/"

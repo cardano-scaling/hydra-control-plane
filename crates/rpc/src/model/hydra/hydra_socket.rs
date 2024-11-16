@@ -20,7 +20,7 @@ use futures_util::{
 use tokio::{
     net::TcpStream,
     sync::{mpsc::UnboundedSender, Mutex},
-    task::yield_now,
+    task::{yield_now, JoinHandle},
 };
 use tokio_native_tls::TlsStream;
 use tracing::{debug, info, warn};
@@ -29,7 +29,7 @@ use crate::model::hydra::hydra_message::HydraEventMessage;
 
 use super::{
     hydra_message::{HydraData, HydraMessage},
-    messages::new_tx::NewTx,
+    messages::{new_tx::NewTx, tx_valid::TxValid},
 };
 
 #[allow(dead_code)]
@@ -159,6 +159,43 @@ impl HydraSender {
     }
 }
 
+pub async fn sample_txs(url: &str, count: usize, timeout: Duration) -> Result<Vec<TxValid>> {
+    let request = url.into_client_request().unwrap();
+    info!("attempting to connect to {}", &url);
+    let (ws_stream, _) = connect_async(request).await.context("failed to connect")?;
+    info!("connected to {}", &url);
+
+    let (_, mut receiver) = ws_stream.split();
+    let fetch_transactions: JoinHandle<Result<Vec<TxValid>>> = tokio::spawn(async move {
+        let mut transactions: Vec<TxValid> = Vec::with_capacity(count);
+        loop {
+            let next = receiver.next().await.context("failed to receive")??;
+            let msg = HydraMessage::try_from(next).context("failed to parse hydra message")?;
+
+            if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(tx)) = msg {
+                transactions.push(tx);
+                if transactions.len() == count {
+                    break;
+                }
+            }
+        }
+
+        Ok(transactions)
+    });
+
+    tokio::select! {
+        join = fetch_transactions => {
+            match join {
+                Ok(result) => result,
+                Err(e) => Err(e.into()),
+            }
+        }
+        _ = tokio::time::sleep(timeout) => {
+            Err(anyhow!("failed to fetch {} transactions within timeout", count))
+        }
+    }
+}
+
 pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Result<()> {
     let request = url.into_client_request().unwrap();
     let (ws_stream, _) = connect_async(request).await.context("failed to connect")?;
@@ -173,17 +210,11 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
             let next = receiver.next().await.context("failed to receive")?;
             let msg = HydraMessage::try_from(next?).context("failed to parse hydra message")?;
 
-            match msg {
-                HydraMessage::HydraEvent(x) => match x {
-                    HydraEventMessage::TxValid(x) => {
-                        if x.tx_id == tx_id {
-                            info!("Tx confirmed: {:?}", x);
-                            break anyhow::Result::Ok(());
-                        }
-                    }
-                    _ => (),
-                },
-                _ => {}
+            if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(x)) = msg {
+                if x.tx_id == tx_id {
+                    info!("Tx confirmed: {:?}", x);
+                    break anyhow::Result::Ok(());
+                }
             }
         }
     });

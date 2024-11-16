@@ -26,10 +26,11 @@ pub struct ClusterState {
     store: kube::runtime::reflector::Store<HydraDoomNode>,
     watcher_handle: Arc<tokio::task::JoinHandle<()>>,
     pub admin_sk: SecretKey,
+    pub remote: bool,
 }
 
 impl ClusterState {
-    pub async fn try_new(admin_key_file: &str) -> anyhow::Result<Self> {
+    pub async fn try_new(admin_key_file: &str, remote: bool) -> anyhow::Result<Self> {
         let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
             File::open(admin_key_file).context("unable to open key file")?,
         )?;
@@ -61,6 +62,7 @@ impl ClusterState {
             store,
             watcher_handle: Arc::new(watcher_handle),
             admin_sk,
+            remote,
         })
     }
 
@@ -68,14 +70,13 @@ impl ClusterState {
         self.store
             .state()
             .iter()
-            .filter(|n| n.status.as_ref().is_some_and(|s| s.state == "HeadIsOpen"))
-            .next()
+            .find(|n| n.status.as_ref().is_some_and(|s| s.state == "HeadIsOpen"))
             .cloned()
             .ok_or(anyhow::anyhow!("no available warm nodes found"))
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {
-        self.store.state().iter().cloned().collect()
+        self.store.state().to_vec()
     }
 
     pub fn get_node_by_id(&self, id: &str) -> Option<Arc<HydraDoomNode>> {

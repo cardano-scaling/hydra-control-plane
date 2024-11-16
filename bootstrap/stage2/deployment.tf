@@ -1,5 +1,5 @@
 resource "kubernetes_deployment_v1" "operator" {
-  wait_for_rollout = false
+  wait_for_rollout = true
 
   metadata {
     namespace = var.namespace
@@ -87,6 +87,11 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
+            name  = "EXTERNAL_PROTOCOL"
+            value = var.external_protocol
+          }
+
+          env {
             name  = "ADMIN_ADDR"
             value = var.admin_addr
           }
@@ -109,6 +114,26 @@ resource "kubernetes_deployment_v1" "operator" {
           env {
             name  = "DMTR_PORT_NAME"
             value = var.dmtr_port_name
+          }
+
+          env {
+            name  = "INIT_IMAGE"
+            value = var.init_image
+          }
+
+          env {
+            name  = "BUCKET"
+            value = var.bucket
+          }
+
+          env {
+            name  = "INIT_AWS_ACCESS_KEY_ID"
+            value = var.init_aws_access_key_id
+          }
+
+          env {
+            name  = "INIT_AWS_SECRET_ACCESS_KEY"
+            value = var.init_aws_secret_access_key
           }
 
           resources {

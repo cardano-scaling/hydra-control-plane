@@ -9,6 +9,7 @@ use crate::model::cluster::{ClusterState, NodeClient};
 pub struct AddPlayerResponse {
     ip: String,
     player_state: String,
+    admin_pkh: String,
 }
 
 #[get("/add_player?<address>&<id>")]
@@ -18,13 +19,13 @@ pub async fn add_player(
     state: &State<ClusterState>,
 ) -> Result<Json<AddPlayerResponse>, Status> {
     let pkh = match Address::from_bech32(address).map_err(|_| Status::BadRequest)? {
-        Address::Shelley(shelley) => Ok(shelley.payment().as_hash().clone()),
+        Address::Shelley(shelley) => Ok(*shelley.payment().as_hash()),
         _ => Err(Status::BadRequest),
     }?;
 
     let node = state.get_node_by_id(id).ok_or(Status::NotFound)?;
 
-    let client = NodeClient::new(node, state.admin_sk.clone(), true)
+    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote)
         .inspect_err(|err| error!("error connecting to node: {}", err))
         .map_err(|_| Status::InternalServerError)?;
 
@@ -44,5 +45,6 @@ pub async fn add_player(
     Ok(Json(AddPlayerResponse {
         ip,
         player_state: format!("{}#1", hex::encode(tx_hash)),
+        admin_pkh: hex::encode(client.tx_builder.admin_pkh),
     }))
 }

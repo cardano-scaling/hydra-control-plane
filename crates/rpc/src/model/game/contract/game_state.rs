@@ -9,15 +9,17 @@ use pallas::ledger::{
 };
 
 use crate::model::game::player::Player;
+use crate::model::hydra::utxo::Datum;
 
 #[derive(Debug)]
 pub struct PaymentCredential([u8; 28]);
 
 #[derive(Debug)]
 pub enum State {
-    RUNNING,
-    CHEATED,
-    FINISHED,
+    Lobby,
+    Running,
+    Cheated,
+    Finished,
 }
 #[derive(Debug)]
 pub struct GameState {
@@ -33,7 +35,7 @@ impl GameState {
         Self {
             referee,
             players: Vec::new(),
-            state: State::RUNNING,
+            state: State::Lobby,
             winner: None,
             cheater: None,
         }
@@ -111,6 +113,17 @@ impl From<GameState> for PlutusData {
                 cheater,
             ]),
         })
+    }
+}
+
+impl TryFrom<Datum> for GameState {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Datum) -> Result<Self, Self::Error> {
+        match value {
+            Datum::Inline(data) => data.try_into(),
+            _ => bail!("invalid datum type"),
+        }
     }
 }
 
@@ -212,9 +225,9 @@ impl From<PaymentKeyHash> for PaymentCredential {
     }
 }
 
-impl Into<Hash<28>> for PaymentCredential {
-    fn into(self) -> Hash<28> {
-        self.0.into()
+impl From<PaymentCredential> for Hash<28> {
+    fn from(value: PaymentCredential) -> Hash<28> {
+        value.0.into()
     }
 }
 
@@ -271,18 +284,23 @@ impl TryFrom<PlutusData> for PaymentCredential {
 impl From<State> for PlutusData {
     fn from(value: State) -> Self {
         PlutusData::Constr(match value {
-            State::RUNNING => Constr {
+            State::Lobby => Constr {
                 tag: 121,
                 any_constructor: None,
                 fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
-            State::CHEATED => Constr {
+            State::Running => Constr {
                 tag: 122,
                 any_constructor: None,
                 fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
-            State::FINISHED => Constr {
+            State::Cheated => Constr {
                 tag: 123,
+                any_constructor: None,
+                fields: alonzo::MaybeIndefArray::Def(vec![]),
+            },
+            State::Finished => Constr {
+                tag: 124,
                 any_constructor: None,
                 fields: alonzo::MaybeIndefArray::Def(vec![]),
             },
@@ -296,9 +314,10 @@ impl TryFrom<PlutusData> for State {
     fn try_from(value: PlutusData) -> Result<Self, Self::Error> {
         match value {
             PlutusData::Constr(constr) => match constr.tag {
-                121 => Ok(State::RUNNING),
-                122 => Ok(State::CHEATED),
-                123 => Ok(State::FINISHED),
+                121 => Ok(State::Lobby),
+                122 => Ok(State::Running),
+                123 => Ok(State::Cheated),
+                124 => Ok(State::Finished),
                 _ => bail!("Invalid constructor tag for State."),
             },
             _ => bail!("Invalid data type for State."),

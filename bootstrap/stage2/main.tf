@@ -4,6 +4,9 @@ locals {
   secret                  = "hydra-pod-admin-key"
   secret_mount_path       = "/var/secret"
   control_plane_component = "control-plane"
+  control_plane_host      = "${var.control_plane_prefix}.${var.external_domain}"
+  frontend_component      = "frontend"
+  frontend_port           = 3000
 }
 
 variable "namespace" {
@@ -49,8 +52,26 @@ variable "control_plane_prefix" {
   default = "api"
 }
 
+variable "frontend_prefix" {
+  type    = string
+  default = "frontend"
+}
+
+variable "frontend_image" {
+  type = string
+}
+
+variable "frontend_replicas" {
+  type    = number
+  default = 2
+}
+
 variable "external_port" {
   type = number
+}
+
+variable "external_protocol" {
+  type = string
 }
 
 variable "admin_key" {
@@ -81,6 +102,23 @@ variable "dmtr_api_key" {
 }
 
 variable "dmtr_port_name" {
+  type = string
+}
+
+variable "init_image" {
+  type = string
+}
+
+variable "bucket" {
+  type    = string
+  default = "hydradoomsnapshots"
+}
+
+variable "init_aws_access_key_id" {
+  type = string
+}
+
+variable "init_aws_secret_access_key" {
   type = string
 }
 
@@ -118,6 +156,29 @@ variable "resources" {
 }
 
 variable "control_plane_resources" {
+  type = object({
+    limits = object({
+      cpu    = optional(string)
+      memory = string
+    })
+    requests = object({
+      cpu    = string
+      memory = string
+    })
+  })
+  default = {
+    requests = {
+      cpu    = "500m"
+      memory = "512Mi"
+    }
+    limits = {
+      cpu    = "2"
+      memory = "512Mi"
+    }
+  }
+}
+
+variable "frontend_resources" {
   type = object({
     limits = object({
       cpu    = optional(string)

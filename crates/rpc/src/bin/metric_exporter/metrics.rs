@@ -12,9 +12,9 @@ pub enum NodeState {
     HeadIsOpen,
 }
 
-impl Into<i64> for NodeState {
-    fn into(self) -> i64 {
-        match self {
+impl From<NodeState> for i64 {
+    fn from(value: NodeState) -> Self {
+        match value {
             NodeState::Offline => 0,
             NodeState::Online => 1,
             NodeState::HeadIsInitializing => 2,
@@ -30,9 +30,9 @@ pub enum GameState {
     Done,
 }
 
-impl Into<i64> for GameState {
-    fn into(self) -> i64 {
-        match self {
+impl From<GameState> for i64 {
+    fn from(value: GameState) -> Self {
+        match value {
             GameState::Waiting => 0,
             GameState::Lobby => 1,
             GameState::Running => 2,

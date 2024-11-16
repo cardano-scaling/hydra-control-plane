@@ -43,9 +43,8 @@ variable "external_domain" {
   description = "The domain prefix that will be used to access the hydra node."
 }
 
-variable "operator_image" {
-  type        = string
-  description = "The image to use for the operator component."
+variable "image" {
+  type = string
 }
 
 variable "hydra_node_image" {
@@ -88,6 +87,26 @@ variable "eks_cluster_arn" {
   description = "The ARN of the EKS cluster."
 }
 
+variable "admin_key" {
+  type = string
+}
+
+variable "snapshot_aws_access_key_id" {
+  type = string
+}
+
+variable "snapshot_aws_secret_access_key" {
+  type = string
+
+variable "frontend_image" {
+  type = string
+}
+
+variable "frontend_replicas" {
+  type    = number
+  default = 1
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -100,30 +119,31 @@ provider "helm" {
   }
 }
 
-module "stage1" {
-  source = "../../bootstrap/stage1/"
-}
-
 module "stage2" {
-  source     = "../../bootstrap/stage2"
-  depends_on = [module.stage1]
+  source = "../../bootstrap/stage2"
 
-  admin_key           = file("${path.module}/admin.sk")
+  admin_key           = var.admin_key
   protocol_parameters = file("${path.module}/protocol-parameters.json")
-  external_port       = 80
+  external_port       = 443
+  external_protocol   = "wss"
 
-  namespace           = local.namespace
-  external_domain     = var.external_domain
-  operator_image      = var.operator_image
-  hydra_node_image    = var.hydra_node_image
-  sidecar_image       = var.sidecar_image
-  dedicated_image     = var.dedicated_image
-  open_head_image     = var.open_head_image
-  control_plane_image = var.control_plane_image
-  blockfrost_key      = var.blockfrost_key
-  admin_addr          = var.admin_addr
-  dmtr_project_id     = var.dmtr_project_id
-  dmtr_api_key        = var.dmtr_api_key
-  dmtr_port_name      = var.dmtr_port_name
-  hydra_scripts_tx_id = var.hydra_scripts_tx_id
+  namespace                  = local.namespace
+  external_domain            = var.external_domain
+  hydra_node_image           = var.hydra_node_image
+  operator_image             = var.image
+  sidecar_image              = var.image
+  open_head_image            = var.image
+  control_plane_image        = var.image
+  dedicated_image            = var.dedicated_image
+  blockfrost_key             = var.blockfrost_key
+  admin_addr                 = var.admin_addr
+  dmtr_project_id            = var.dmtr_project_id
+  dmtr_api_key               = var.dmtr_api_key
+  dmtr_port_name             = var.dmtr_port_name
+  hydra_scripts_tx_id        = var.hydra_scripts_tx_id
+  init_aws_access_key_id     = var.snapshot_aws_access_key_id
+  init_aws_secret_access_key = var.snapshot_aws_secret_access_key
+  init_image                 = "ghcr.io/demeter-run/doom-patrol-init:b7b4fc499b5274cd71b6b72f93ab4ba8199437fe"
+  frontend_image             = var.frontend_image
+  frontend_replicas          = var.frontend_replicas
 }

@@ -1,6 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
-
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use hex::FromHex;
 use pallas::{
     crypto::key::ed25519::SecretKey,
@@ -9,11 +7,15 @@ use pallas::{
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tracing::debug;
 
 use crate::model::{
-    game::player::Player,
-    hydra::{hydra_socket, messages::new_tx::NewTx},
+    game::{contract::game_state::GameState, player::Player},
+    hydra::{
+        hydra_socket,
+        messages::{new_tx::NewTx, tx_valid::TxValid},
+    },
     tx_builder::TxBuilder,
 };
 
@@ -86,10 +88,17 @@ impl NodeClient {
 
     pub async fn new_game(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+        // Removing for now, to make iterative development easier
+        // if utxos
+        //     .iter()
+        //     .any(|utxo| GameState::try_from(utxo.datum.clone()).is_ok())
+        // {
+        //     bail!("game UTxO already exists")
+        // }
 
         let new_game_tx = self
             .tx_builder
-            .build_new_game(player, utxos, Network::Testnet)
+            .new_game(player, utxos, Network::Testnet)
             .context("failed to build transaction")?; // TODO: pass in network
         debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
@@ -103,6 +112,31 @@ impl NodeClient {
             Duration::from_secs(10),
         )
         .await?;
+
+        Ok(tx_hash)
+    }
+
+    //TODO: don't hardcode network
+    pub async fn start_game(&self) -> Result<Vec<u8>> {
+        let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+
+        let start_game_tx = self
+            .tx_builder
+            .start_game(utxos, Network::Testnet)
+            .context("failed to build transaction")?;
+
+        debug!("start game tx: {}", hex::encode(&start_game_tx.tx_bytes));
+
+        let tx_hash = start_game_tx.tx_hash.0.to_vec();
+
+        let new_tx = NewTx::new(start_game_tx).context("failed to build NewTx message")?;
+        hydra_socket::submit_tx_roundtrip(
+            &self.connection.to_websocket_url(),
+            new_tx, // TODO: make this configurable
+            Duration::from_secs(30),
+        )
+        .await
+        .context("failed to submit transaction")?;
 
         Ok(tx_hash)
     }
@@ -166,7 +200,7 @@ impl NodeClient {
         )
         .expect("Failed to decode player address")
         {
-            Address::Shelley(shelley) => shelley.payment().as_hash().clone(),
+            Address::Shelley(shelley) => *shelley.payment().as_hash(),
             _ => panic!("Expected Shelley address"),
         };
 
@@ -206,6 +240,16 @@ impl NodeClient {
             .collect::<Result<Vec<UTxO>>>()?;
 
         Ok(utxos)
+    }
+
+    pub async fn sample_txs(&self, count: usize) -> Result<Vec<TxValid>> {
+        //TODO: make duration configurable
+        hydra_socket::sample_txs(
+            &format!("{}/?history=no", &self.connection.to_websocket_url()),
+            count,
+            Duration::from_secs(10),
+        )
+        .await
     }
 }
 
