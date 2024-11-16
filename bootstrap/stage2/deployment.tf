@@ -1,5 +1,5 @@
 resource "kubernetes_deployment_v1" "operator" {
-  wait_for_rollout = false
+  wait_for_rollout = true
 
   metadata {
     namespace = var.namespace
@@ -79,6 +79,11 @@ resource "kubernetes_deployment_v1" "operator" {
           env {
             name  = "EXTERNAL_PORT"
             value = var.external_port
+          }
+
+          env {
+            name  = "EXTERNAL_PROTOCOL"
+            value = var.external_protocol
           }
 
           env {

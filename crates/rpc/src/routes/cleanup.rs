@@ -7,7 +7,7 @@ use crate::model::cluster::{ClusterState, NodeClient};
 pub async fn cleanup(id: &str, state: &State<ClusterState>) -> Result<(), Status> {
     let node = state.get_node_by_id(id).ok_or(Status::NotFound)?;
 
-    let client = NodeClient::new(node, state.admin_sk.clone(), true)
+    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote)
         .inspect_err(|err| error!("error connecting to node: {}", err))
         .map_err(|_| Status::InternalServerError)?;
 

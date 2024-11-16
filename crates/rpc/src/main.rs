@@ -3,8 +3,9 @@ use model::cluster::ClusterState;
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::{
-    add_player::add_player, cleanup::cleanup, head::head, heads::heads, new_game::new_game,
-    sample_transactions::sample_transactions, stats::global_stats,
+    add_player::add_player, cleanup::cleanup, head::head, heads::heads, health::health,
+    new_game::new_game, sample_transactions::sample_transactions, start_game::start_game,
+    stats::global_stats,
 };
 use serde::Deserialize;
 
@@ -15,6 +16,7 @@ mod routes;
 #[derive(Deserialize)]
 pub struct Config {
     pub admin_key_file: String,
+    pub remote: bool,
 }
 
 #[rocket::main]
@@ -27,7 +29,7 @@ async fn main() -> Result<()> {
     // initializer assumes that this process is running within the cluster or that the local kubeconfig
     // context is set to the cluster. If you wanted to connect to a remote cluster, you can use the
     // `ClusterState::remote` initializer.
-    let cluster = ClusterState::try_new(&config.admin_key_file).await?;
+    let cluster = ClusterState::try_new(&config.admin_key_file, config.remote).await?;
 
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
@@ -48,9 +50,11 @@ async fn main() -> Result<()> {
                 heads,
                 head,
                 add_player,
+                start_game,
                 cleanup,
                 sample_transactions,
-                global_stats
+                global_stats,
+                health,
             ],
         )
         .attach(cors.to_cors().unwrap())

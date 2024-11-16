@@ -19,6 +19,7 @@ pub struct Config {
     pub blockfrost_key: String,
     pub external_domain: String,
     pub external_port: String,
+    pub external_protocol: String,
     pub admin_addr: String,
     pub hydra_scripts_tx_id: String,
     pub dmtr_project_id: String,
@@ -39,6 +40,8 @@ impl Config {
             blockfrost_key: env::var("BLOCKFROST_KEY").expect("Missing BLOCKFROST_KEY env var"),
             external_domain: env::var("EXTERNAL_DOMAIN").expect("Missing EXTERNAL_DOMAIN env var."),
             external_port: env::var("EXTERNAL_PORT").expect("Missing EXTERNAL_PORT env var."),
+            external_protocol: env::var("EXTERNAL_PROTOCOL")
+                .expect("Missing EXTERNAL_PROTOCOL env var."),
             admin_addr: env::var("ADMIN_ADDR").expect("Missing ADMIN_ADDR env var."),
             hydra_scripts_tx_id: env::var("HYDRA_SCRIPTS_TX_ID")
                 .expect("Missing HYDRA_SCRIPTS_TX_ID env var."),

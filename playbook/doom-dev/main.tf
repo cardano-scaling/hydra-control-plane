@@ -77,6 +77,14 @@ variable "snapshot_aws_access_key_id" {
 
 variable "snapshot_aws_secret_access_key" {
   type = string
+
+variable "frontend_image" {
+  type = string
+}
+
+variable "frontend_replicas" {
+  type    = number
+  default = 1
 }
 
 provider "kubernetes" {
@@ -91,17 +99,13 @@ provider "helm" {
   }
 }
 
-module "stage1" {
-  source = "../../bootstrap/stage1/"
-}
-
 module "stage2" {
-  source     = "../../bootstrap/stage2"
-  depends_on = [module.stage1]
+  source = "../../bootstrap/stage2"
 
   admin_key           = var.admin_key
   protocol_parameters = file("${path.module}/protocol-parameters.json")
-  external_port       = 80
+  external_port       = 443
+  external_protocol   = "wss"
 
   namespace                  = local.namespace
   external_domain            = var.external_domain
@@ -119,5 +123,6 @@ module "stage2" {
   init_aws_access_key_id     = var.snapshot_aws_access_key_id
   init_aws_secret_access_key = var.snapshot_aws_secret_access_key
   init_image                 = "ghcr.io/demeter-run/doom-patrol-init:b7b4fc499b5274cd71b6b72f93ab4ba8199437fe"
-
+  frontend_image             = var.frontend_image
+  frontend_replicas          = var.frontend_replicas
 }
