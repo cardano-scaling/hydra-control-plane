@@ -193,7 +193,7 @@ impl TxBuilder {
 
         let game_state: PlutusData = GameState::try_from(game_state_utxo.datum.clone())?
             .set_state(State::Running)
-            .try_into()?;
+            .into();
 
         let mut datum = Vec::new();
         encode(&game_state, &mut datum)?;

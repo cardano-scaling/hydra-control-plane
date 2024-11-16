@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use hex::FromHex;
 use pallas::{
     crypto::key::ed25519::SecretKey,
@@ -11,7 +11,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use tracing::debug;
 
 use crate::model::{
-    game::{contract::game_state::GameState, player::Player},
+    game::player::Player,
     hydra::{
         hydra_socket,
         messages::{new_tx::NewTx, tx_valid::TxValid},
