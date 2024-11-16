@@ -52,24 +52,9 @@ variable "hydra_node_image" {
   description = "The Docker image to use for the Hydra node component."
 }
 
-variable "sidecar_image" {
-  type        = string
-  description = "The Docker image to use for the sidecar component of the Hydra node."
-}
-
 variable "dedicated_image" {
   type        = string
   description = "The Docker image to use for the dedicated / referee server of the hydra node."
-}
-
-variable "open_head_image" {
-  type        = string
-  description = "The Docker image to use for the open head component of the Hydra node."
-}
-
-variable "control_plane_image" {
-  type        = string
-  description = "The Docker image to use for the control plane component of the Hydra node."
 }
 
 variable "hydra_scripts_tx_id" {
