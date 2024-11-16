@@ -101,6 +101,23 @@ variable "dmtr_port_name" {
   type = string
 }
 
+variable "init_image" {
+  type = string
+}
+
+variable "bucket" {
+  type    = string
+  default = "hydradoomsnapshots"
+}
+
+variable "init_aws_access_key_id" {
+  type = string
+}
+
+variable "init_aws_secret_access_key" {
+  type = string
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string

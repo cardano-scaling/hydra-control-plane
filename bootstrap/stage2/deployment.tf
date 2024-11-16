@@ -111,6 +111,26 @@ resource "kubernetes_deployment_v1" "operator" {
             value = var.dmtr_port_name
           }
 
+          env {
+            name  = "INIT_IMAGE"
+            value = var.init_image
+          }
+
+          env {
+            name  = "BUCKET"
+            value = var.bucket
+          }
+
+          env {
+            name  = "INIT_AWS_ACCESS_KEY_ID"
+            value = var.init_aws_access_key_id
+          }
+
+          env {
+            name  = "INIT_AWS_SECRET_ACCESS_KEY"
+            value = var.init_aws_secret_access_key
+          }
+
           resources {
             limits = {
               cpu    = var.resources.limits.cpu

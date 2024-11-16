@@ -3,7 +3,7 @@ use k8s_openapi::{
         apps::v1::{Deployment, DeploymentSpec},
         core::v1::{
             ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource,
-            PodSpec, PodTemplateSpec, ResourceRequirements, SecretVolumeSource, Service,
+            EnvVar, PodSpec, PodTemplateSpec, ResourceRequirements, SecretVolumeSource, Service,
             ServicePort, ServiceSpec, Volume, VolumeMount,
         },
         networking::v1::{
@@ -185,7 +185,7 @@ impl HydraDoomNode {
             "--api-port".to_string(),
             constants.port.to_string(),
             "--hydra-signing-key".to_string(),
-            format!("{}/hydra.sk", constants.data_dir),
+            format!("{}/keys/hydra.sk", constants.data_dir),
             "--ledger-protocol-parameters".to_string(),
             format!("{}/protocol-parameters.json", constants.config_dir),
             "--persistence-dir".to_string(),
@@ -265,8 +265,8 @@ impl HydraDoomNode {
             Container {
                 name: "sidecar".to_string(),
                 image: Some(config.sidecar_image.clone()),
-                command: Some(vec!["metrics-exporter".to_string()]),
                 args: Some(vec![
+                    "metrics-exporter".to_string(),
                     "--host".to_string(),
                     "localhost".to_string(),
                     "--port".to_string(),
@@ -284,52 +284,6 @@ impl HydraDoomNode {
 
         // Offline is optional. If undefined, the node is presumed to be online.
         if !self.spec.offline.unwrap_or(false) {
-            let mut open_head_args = vec![
-                "open-head".to_string(),
-                "--network-id".to_string(),
-                self.spec.network_id.unwrap_or(0).to_string(),
-                "--seed-input".to_string(),
-                self.spec.seed_input.clone(),
-                "--participant".to_string(),
-                config.admin_addr.clone(),
-                "--party-verification-file".to_string(),
-                format!("{}/hydra.vk", constants.data_dir),
-                "--cardano-key-file".to_string(),
-                format!("{}/admin.sk", constants.secret_dir),
-                "--blockfrost-key".to_string(),
-                config.blockfrost_key.clone(),
-            ];
-            if !self.spec.commit_inputs.is_empty() {
-                open_head_args.push("--commit-inputs".to_string());
-                open_head_args.extend(self.spec.commit_inputs.clone());
-            }
-
-            containers.push(Container {
-                name: "open-head".to_string(),
-                image: Some(config.open_head_image.clone()),
-                command: Some(vec!["open-head".to_string()]),
-                args: Some(open_head_args),
-                volume_mounts: Some(vec![
-                    VolumeMount {
-                        name: "config".to_string(),
-                        mount_path: constants.config_dir.clone(),
-                        ..Default::default()
-                    },
-                    VolumeMount {
-                        name: "secret".to_string(),
-                        mount_path: constants.secret_dir.clone(),
-                        ..Default::default()
-                    },
-                    VolumeMount {
-                        name: "data".to_string(),
-                        mount_path: constants.data_dir.clone(),
-                        ..Default::default()
-                    },
-                ]),
-                resources: None,
-                ..Default::default()
-            });
-
             containers.push(Container {
                 name: "dmtrctl".to_string(),
                 image: Some(constants.dmtrctl_image.to_string()),
@@ -376,11 +330,33 @@ impl HydraDoomNode {
                     spec: Some(PodSpec {
                         init_containers: Some(vec![Container {
                             name: "init".to_string(),
-                            image: Some(config.image.clone()),
-                            args: Some(vec![
-                                "gen-hydra-key".to_string(),
-                                "--output-file".to_string(),
-                                format!("{}/hydra", constants.data_dir),
+                            image: Some(config.init_image.clone()),
+                            env: Some(vec![
+                                EnvVar {
+                                    name: "BUCKET".to_string(),
+                                    value: Some(config.bucket.clone()),
+                                    ..Default::default()
+                                },
+                                EnvVar {
+                                    name: "KEY".to_string(),
+                                    value: Some(format!("{}.tar.gz", self.name_any())),
+                                    ..Default::default()
+                                },
+                                EnvVar {
+                                    name: "DATA_DIR".to_string(),
+                                    value: Some(constants.data_dir.clone()),
+                                    ..Default::default()
+                                },
+                                EnvVar {
+                                    name: "AWS_ACCESS_KEY_ID".to_string(),
+                                    value: Some(config.init_aws_access_key_id.clone()),
+                                    ..Default::default()
+                                },
+                                EnvVar {
+                                    name: "AWS_SECRET_ACCESS_KEY".to_string(),
+                                    value: Some(config.init_aws_secret_access_key.clone()),
+                                    ..Default::default()
+                                },
                             ]),
                             volume_mounts: Some(vec![VolumeMount {
                                 name: "data".to_string(),
