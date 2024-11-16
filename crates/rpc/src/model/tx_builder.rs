@@ -90,7 +90,7 @@ impl TxBuilder {
             // Maintain Initial UTxO
             .output(Output::new(
                 input_utxo.address.clone(),
-                input_utxo.value.get("lovelace").unwrap().to_owned(),
+                input_utxo.value.get("lovelace").unwrap_or(&0).to_owned(),
             ))
             .fee(0);
 
