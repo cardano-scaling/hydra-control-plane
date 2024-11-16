@@ -88,12 +88,13 @@ impl NodeClient {
 
     pub async fn new_game(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
-        if utxos
-            .iter()
-            .any(|utxo| GameState::try_from(utxo.datum.clone()).is_ok())
-        {
-            bail!("game UTxO already exists")
-        }
+        // Removing for now, to make iterative development easier
+        // if utxos
+        //     .iter()
+        //     .any(|utxo| GameState::try_from(utxo.datum.clone()).is_ok())
+        // {
+        //     bail!("game UTxO already exists")
+        // }
 
         let new_game_tx = self
             .tx_builder
