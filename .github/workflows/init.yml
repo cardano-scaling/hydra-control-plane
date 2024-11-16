@@ -11,6 +11,8 @@ on:
 
 jobs:
   build-images:
+    permissions: write-all
+
     strategy:
       fail-fast: false
       matrix:
@@ -38,4 +40,6 @@ jobs:
           file: ${{ matrix.file }}
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/${{ matrix.endpoint }},ghcr.io/${{ matrix.endpoint }}:${{ github.sha }}
+          tags:
+            ghcr.io/${{ matrix.endpoint }},ghcr.io/${{ matrix.endpoint }}:${{
+            github.sha }}
