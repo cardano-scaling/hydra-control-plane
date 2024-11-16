@@ -83,7 +83,7 @@ fn metrics_endpoint(metrics: &State<Arc<Metrics>>) -> String {
     metrics.gather()
 }
 
-#[get("/start_server")]
+#[post("/start_server")]
 fn start_server(metrics: &State<Arc<Metrics>>) {
     metrics.start_server();
 }
