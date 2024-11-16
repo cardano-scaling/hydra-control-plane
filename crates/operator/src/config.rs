@@ -14,6 +14,7 @@ pub struct Config {
     pub image: String,
     pub init_image: String,
     pub sidecar_image: String,
+    pub dedicated_image: String,
     pub configmap: String,
     pub secret: String,
     pub blockfrost_key: String,
@@ -35,6 +36,7 @@ impl Config {
         Self {
             image: env::var("IMAGE").unwrap_or("ghcr.io/cardano-scaling/hydra-node".into()),
             sidecar_image: env::var("SIDECAR_IMAGE").expect("Missing SIDECAR_IMAGE env var"),
+            dedicated_image: env::var("DEDICATED_IMAGE").expect("Missing DEDICATED_IMAGE env var"),
             configmap: env::var("CONFIGMAP").expect("Missing CONFIGMAP env var"),
             secret: env::var("SECRET").expect("Missing SECRET env var"),
             blockfrost_key: env::var("BLOCKFROST_KEY").expect("Missing BLOCKFROST_KEY env var"),

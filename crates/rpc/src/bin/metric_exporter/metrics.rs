@@ -154,16 +154,22 @@ impl Metrics {
 
     pub fn start_server(&self) {
         self.game_state.set(GameState::Waiting.into());
+        self.players_current.set(0);
     }
 
     pub fn start_game(&self) {
         self.games_current.inc();
         self.game_state.set(GameState::Running.into());
         let mut guard = self.game_timer.lock().unwrap();
+        if let Some(prev) = guard.take() {
+            // The previous game didn't end properly, so we discard the duration so as not to pollute the timing
+            prev.stop_and_discard();
+        }
         *guard = Some(self.games_seconds.start_timer());
     }
 
     pub fn end_game(&self) {
+        self.players_current.set(0);
         self.games_current.dec();
         self.game_state.set(GameState::Done.into());
         let mut guard = self.game_timer.lock().unwrap();

@@ -31,6 +31,10 @@ variable "sidecar_image" {
   type = string
 }
 
+variable "dedicated_image" {
+  type = string
+}
+
 variable "control_plane_image" {
   type = string
 }
