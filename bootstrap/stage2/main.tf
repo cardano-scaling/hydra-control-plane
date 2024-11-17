@@ -31,7 +31,7 @@ variable "sidecar_image" {
   type = string
 }
 
-variable "dedicated_image" {
+variable "referee_image" {
   type = string
 }
 

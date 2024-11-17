@@ -52,9 +52,9 @@ variable "hydra_node_image" {
   description = "The Docker image to use for the Hydra node component."
 }
 
-variable "dedicated_image" {
+variable "referee_image" {
   type        = string
-  description = "The Docker image to use for the dedicated / referee server of the hydra node."
+  description = "The Docker image to use for the referee server of the hydra node."
 }
 
 variable "hydra_scripts_tx_id" {
@@ -120,7 +120,7 @@ module "stage2" {
   sidecar_image              = var.image
   open_head_image            = var.image
   control_plane_image        = var.image
-  dedicated_image            = var.dedicated_image
+  referee_image              = var.referee_image
   blockfrost_key             = var.blockfrost_key
   admin_addr                 = var.admin_addr
   dmtr_project_id            = var.dmtr_project_id

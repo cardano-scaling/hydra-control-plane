@@ -281,8 +281,8 @@ impl HydraDoomNode {
                 ..Default::default()
             },
             Container {
-                name: "dedicated".to_string(),
-                image: Some(config.dedicated_image.clone()),
+                name: "referee".to_string(),
+                image: Some(config.referee_image.clone()),
                 env: Some(vec![EnvVar {
                     name: "ADMIN_KEY_FILE".to_string(),
                     value: Some(format!("{}/admin.sk", constants.secret_dir)),

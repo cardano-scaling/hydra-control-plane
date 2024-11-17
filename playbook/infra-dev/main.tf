@@ -58,9 +58,9 @@ variable "sidecar_image" {
   description = "The Docker image to use for the sidecar component of the Hydra node."
 }
 
-variable "dedicated_image" {
+variable "referee_image" {
   type        = string
-  description = "The Docker image to use for the dedicated / referee server component of the Hydra node."
+  description = "The Docker image to use for the referee server component of the Hydra node."
 }
 
 variable "open_head_image" {
@@ -112,7 +112,7 @@ module "stage2" {
   operator_image      = var.operator_image
   hydra_node_image    = var.hydra_node_image
   sidecar_image       = var.sidecar_image
-  dedicated_image     = var.dedicated_image
+  referee_image       = var.referee_image
   open_head_image     = var.open_head_image
   control_plane_image = var.control_plane_image
   blockfrost_key      = var.blockfrost_key

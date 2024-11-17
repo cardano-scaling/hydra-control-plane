@@ -57,8 +57,8 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name = "DEDICATED_IMAGE"
-            value = var.dedicated_image
+            name = "REFEREE_IMAGE"
+            value = var.referee_image
           }
 
           env {
