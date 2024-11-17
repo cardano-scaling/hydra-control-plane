@@ -279,7 +279,7 @@ impl ConnectionInfo {
     pub fn to_http_url(&self) -> String {
         let schema = if self.secure { "https" } else { "http" };
 
-        format!("{}://{}", schema, self.host,)
+        format!("{}://{}:{}", schema, self.host, self.port)
     }
 
     #[allow(dead_code)]
