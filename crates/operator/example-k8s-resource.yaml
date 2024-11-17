@@ -1,7 +1,7 @@
 apiVersion: hydra.doom/v1alpha1
 kind: HydraDoomNode
 metadata:
-  name: a1
+  name: a0
   namespace: hydra-doom
 spec:
   commitInputs:
