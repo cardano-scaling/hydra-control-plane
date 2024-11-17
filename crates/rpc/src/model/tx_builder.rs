@@ -199,7 +199,7 @@ impl TxBuilder {
         encode(&game_state, &mut datum)?;
 
         let script_address = Validator::address(network);
-        let redeemer: PlutusData = Redeemer::new(0, SpendAction::AddPlayer).into();
+        let redeemer: PlutusData = Redeemer::new(0, SpendAction::StartGame).into();
         let mut redeemer_bytes = Vec::new();
         encode(&redeemer, &mut redeemer_bytes)?;
 
