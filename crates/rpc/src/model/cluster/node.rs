@@ -226,10 +226,16 @@ impl NodeClient {
             .await
             .context("http error")?;
 
+        println!("fetched utxos and converted to hashmap");
+
         let utxos = body
             .iter()
-            .map(|(key, value)| UTxO::try_from_value(key, value))
-            .collect::<Result<Vec<UTxO>>>()?;
+            .map(|(key, value)| {
+                println!("Trying to build UTxO from Value: {:?}", value);
+                UTxO::try_from_value(key, value)
+            })
+            .collect::<Result<Vec<UTxO>>>()
+            .context("failed to deserialize utxos")?;
 
         Ok(utxos)
     }
