@@ -57,6 +57,11 @@ variable "referee_image" {
   description = "The Docker image to use for the referee server of the hydra node."
 }
 
+variable "ai_image" {
+  type        = string
+  description = "The Docker image to use for the AI bot."
+}
+
 variable "hydra_scripts_tx_id" {
   type        = string
   description = "The transaction ID of the Hydra scripts."
@@ -121,6 +126,7 @@ module "stage2" {
   open_head_image            = var.image
   control_plane_image        = var.image
   referee_image              = var.referee_image
+  ai_image                   = var.ai_image
   blockfrost_key             = var.blockfrost_key
   admin_addr                 = var.admin_addr
   dmtr_project_id            = var.dmtr_project_id

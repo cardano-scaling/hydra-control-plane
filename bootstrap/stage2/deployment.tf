@@ -62,6 +62,11 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
+            name = "AI_IMAGE"
+            value = var.ai_image
+          }
+
+          env {
             name  = "CONFIGMAP"
             value = local.configmap
           }

@@ -35,6 +35,10 @@ variable "referee_image" {
   type = string
 }
 
+variable "ai_image" {
+  type = string
+}
+
 variable "control_plane_image" {
   type = string
 }

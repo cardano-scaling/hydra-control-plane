@@ -295,6 +295,11 @@ impl HydraDoomNode {
                 }]),
                 ..Default::default()
             },
+            Container {
+                name: "ai-1".to_string(),
+                image: Some(config.ai_image.clone()),
+                ..Default::default()
+            },
         ];
 
         // Offline is optional. If undefined, the node is presumed to be online.

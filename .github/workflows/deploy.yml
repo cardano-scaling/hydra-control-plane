@@ -141,6 +141,7 @@ jobs:
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:latest
       TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-a9d2498 # latest?
+      TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-876b187 # latest?
 
     steps:
       - uses: actions/checkout@v2
