@@ -245,6 +245,7 @@ impl TxBuilder {
                     4, 1293828, 28716, 63, 0, 1, 1006041, 43623, 251, 0, 1,
                 ],
             )
+            .disclosed_signer(self.admin_pkh)
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
