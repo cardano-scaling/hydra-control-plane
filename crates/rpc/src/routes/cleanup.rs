@@ -1,10 +1,17 @@
 use rocket::{http::Status, post, State};
 use tracing::error;
 
-use crate::model::cluster::{ClusterState, NodeClient};
+use crate::{
+    guards::api_key::ApiKey,
+    model::cluster::{ClusterState, NodeClient},
+};
 
 #[post("/cleanup?<id>")]
-pub async fn cleanup(id: &str, state: &State<ClusterState>) -> Result<(), Status> {
+pub async fn cleanup(
+    id: &str,
+    _api_key: ApiKey,
+    state: &State<ClusterState>,
+) -> Result<(), Status> {
     let node = state.get_node_by_id(id).ok_or(Status::NotFound)?;
 
     let client = NodeClient::new(node, state.admin_sk.clone(), state.remote)
