@@ -1,11 +1,18 @@
-use rocket::{get, http::Status, State};
+use rocket::{http::Status, post, State};
 use rocket_errors::anyhow::Result;
 use tracing::{error, info};
 
-use crate::model::cluster::{ClusterState, NodeClient};
+use crate::{
+    guards::api_key::ApiKey,
+    model::cluster::{ClusterState, NodeClient},
+};
 
-#[get("/start_game?<id>")]
-pub async fn start_game(id: &str, state: &State<ClusterState>) -> Result<(), Status> {
+#[post("/start_game?<id>")]
+pub async fn start_game(
+    id: &str,
+    _api_key: ApiKey,
+    state: &State<ClusterState>,
+) -> Result<(), Status> {
     let node = state
         .get_node_by_id(id)
         .ok_or(Status::BadRequest)
