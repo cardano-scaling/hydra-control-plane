@@ -89,6 +89,10 @@ variable "snapshot_aws_secret_access_key" {
   type = string
 }
 
+variable "api_key" {
+  type = string
+}
+
 variable "frontend_image" {
   type = string
 }
@@ -129,6 +133,7 @@ module "stage2" {
   ai_image                   = var.ai_image
   blockfrost_key             = var.blockfrost_key
   admin_addr                 = var.admin_addr
+  api_key                    = var.api_key
   dmtr_project_id            = var.dmtr_project_id
   dmtr_api_key               = var.dmtr_api_key
   dmtr_port_name             = var.dmtr_port_name

@@ -9,6 +9,7 @@ use routes::{
 };
 use serde::Deserialize;
 
+mod guards;
 mod model;
 mod providers;
 mod routes;

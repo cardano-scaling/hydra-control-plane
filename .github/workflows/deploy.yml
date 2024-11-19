@@ -130,6 +130,7 @@ jobs:
       TF_VAR_admin_key: ${{ secrets.DEV_HYDRA_ADMIN_KEY }}
       TF_VAR_snapshot_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       TF_VAR_snapshot_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_api_key: ${{ secrets.API_KEY }}
 
       # Vars
       TF_VAR_dmtr_port_name: preprod-4raar2
