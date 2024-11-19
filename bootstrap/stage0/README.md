@@ -1,16 +1,20 @@
 ## Manual steps
 
-1. Create cluster:
+### Prerequisites
+
+1. Create ALBC IAM policy (this should be created once for the whole account,
+   not per cluster).
+
+### Cluster creation steps
+
+1. Create cluster. You must modify the `.metadata.name`, `.metadata.region` and
+   `.managedNodeGroups[].availabilityZones` values accordingly.
 
    ```
    eksctl create cluster -f cluster.yml
    ```
-2. Associate OIDC provider
-
-   ```
-   eksctl utils associate-iam-oidc-provider --cluster YOUR_CLUSTER_NAME --approve
-   ```
-3. Create service account for albc.
+2. Create service account for albc (ALBC is not an addon, so service account
+   must be created and linked).
     ```
     eksctl create iamserviceaccount \    
     --cluster=hydra-doom-dev-cluster \  
@@ -20,7 +24,7 @@
     --override-existing-serviceaccounts \  
     --approve
     ```
-4. Install ALBC via helm.
+3. Install ALBC via helm.
 
    ```
    helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -31,3 +35,5 @@
        --set serviceAccount.name=aws-load-balancer-controller \
        -n kube-system
    ```
+4. Create SSL cert on the corresponding region using AWS Cert Manager (you will
+   need the ARN to set up the ingress controller on `stage1`).
