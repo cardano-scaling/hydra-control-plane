@@ -79,9 +79,9 @@ impl From<Resources> for ResourceRequirements {
 )]
 #[kube(status = "HydraDoomNodeStatus")]
 #[kube(printcolumn = r#"
-        {"name": "State", "jsonPath":".status.state", "type": "string"}, 
-        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"}, 
-        {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"}, 
+        {"name": "State", "jsonPath":".status.state", "type": "string"},
+        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"},
+        {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"},
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
 #[serde(rename_all = "camelCase")]
@@ -283,11 +283,18 @@ impl HydraDoomNode {
             Container {
                 name: "referee".to_string(),
                 image: Some(config.referee_image.clone()),
-                env: Some(vec![EnvVar {
-                    name: "ADMIN_KEY_FILE".to_string(),
-                    value: Some(format!("{}/admin.sk", constants.secret_dir)),
-                    value_from: None,
-                }]),
+                env: Some(vec![
+                    EnvVar {
+                        name: "ADMIN_KEY_FILE".to_string(),
+                        value: Some(format!("{}/admin.sk", constants.secret_dir)),
+                        value_from: None,
+                    },
+                    EnvVar {
+                        name: "API_KEY".to_string(),
+                        value: Some(config.api_key.clone()),
+                        value_from: None,
+                    },
+                ]),
                 volume_mounts: Some(vec![VolumeMount {
                     name: "secret".to_string(),
                     mount_path: constants.secret_dir.clone(),
