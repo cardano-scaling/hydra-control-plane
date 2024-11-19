@@ -29,7 +29,7 @@ use crate::model::hydra::hydra_message::HydraEventMessage;
 
 use super::{
     hydra_message::{HydraData, HydraMessage},
-    messages::{new_tx::NewTx, tx_valid::TxValid},
+    messages::{new_tx::NewTx, snapshot_confirmed::Transaction},
 };
 
 #[allow(dead_code)]
@@ -159,23 +159,25 @@ impl HydraSender {
     }
 }
 
-pub async fn sample_txs(url: &str, count: usize, timeout: Duration) -> Result<Vec<TxValid>> {
+pub async fn sample_txs(url: &str, count: usize, timeout: Duration) -> Result<Vec<Transaction>> {
     let request = url.into_client_request().unwrap();
     info!("attempting to connect to {}", &url);
     let (ws_stream, _) = connect_async(request).await.context("failed to connect")?;
     info!("connected to {}", &url);
 
     let (_, mut receiver) = ws_stream.split();
-    let fetch_transactions: JoinHandle<Result<Vec<TxValid>>> = tokio::spawn(async move {
-        let mut transactions: Vec<TxValid> = Vec::with_capacity(count);
-        loop {
+    let fetch_transactions: JoinHandle<Result<Vec<Transaction>>> = tokio::spawn(async move {
+        let mut transactions: Vec<Transaction> = Vec::with_capacity(count);
+        'outer: loop {
             let next = receiver.next().await.context("failed to receive")??;
             let msg = HydraMessage::try_from(next).context("failed to parse hydra message")?;
 
-            if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(tx)) = msg {
-                transactions.push(tx);
-                if transactions.len() == count {
-                    break;
+            if let HydraMessage::HydraEvent(HydraEventMessage::SnapshotConfirmed(snapshot)) = msg {
+                for transaction in snapshot.confirmed_transactions {
+                    transactions.push(transaction);
+                    if transactions.len() == count {
+                        break 'outer;
+                    }
                 }
             }
         }

@@ -2,7 +2,7 @@ use rand::seq::SliceRandom;
 
 use crate::model::{
     cluster::{ClusterState, NodeClient},
-    hydra::messages::tx_valid::TxValid,
+    hydra::messages::snapshot_confirmed::Transaction,
 };
 use rand::thread_rng;
 use rocket::{get, http::Status, serde::json::Json, State};
@@ -46,8 +46,8 @@ pub async fn sample_transactions(
     Ok(Json(transactions))
 }
 
-impl From<TxValid> for SampleTransaction {
-    fn from(value: TxValid) -> Self {
+impl From<Transaction> for SampleTransaction {
+    fn from(value: Transaction) -> Self {
         Self {
             cbor: hex::encode(value.cbor),
             tx_id: value.tx_id,
