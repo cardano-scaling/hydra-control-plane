@@ -11,7 +11,7 @@ use crate::model::{
     game::player::Player,
     hydra::{
         hydra_socket,
-        messages::{new_tx::NewTx, snapshot_confirmed::Transaction},
+        messages::{new_tx::NewTx, Transaction},
     },
     tx_builder::TxBuilder,
 };
@@ -243,7 +243,7 @@ impl NodeClient {
         hydra_socket::sample_txs(
             &format!("{}/?history=no", &self.connection.to_websocket_url()),
             count,
-            Duration::from_secs(60),
+            Duration::from_secs(30),
         )
         .await
     }

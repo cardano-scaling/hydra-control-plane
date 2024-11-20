@@ -3,6 +3,8 @@ use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
 
+use super::Transaction;
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct SnapshotConfirmed {
@@ -85,53 +87,6 @@ impl TryFrom<Value> for SnapshotConfirmed {
             snapshot_number,
             utxo,
             timestamp: timestamp.to_string(),
-        })
-    }
-}
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct Transaction {
-    pub cbor: Vec<u8>,
-    pub description: String,
-    pub tx_id: String,
-    pub tx_type: String,
-}
-
-impl TryFrom<&Value> for Transaction {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &Value) -> Result<Self, Self::Error> {
-        let cbor = hex::decode(
-            value
-                .get("cborHex")
-                .context("missing cborHex field")?
-                .as_str()
-                .context("invalid cborHex field")?,
-        )?;
-        let description = value
-            .get("description")
-            .context("missing description field")?
-            .as_str()
-            .context("invalid description value")?
-            .to_owned();
-        let tx_id = value
-            .get("txId")
-            .context("missing txId field")?
-            .as_str()
-            .context("invalid txId field")?
-            .to_owned();
-        let tx_type = value
-            .get("type")
-            .context("missing type field")?
-            .as_str()
-            .context("invalid type field")?
-            .to_owned();
-
-        Ok(Transaction {
-            cbor,
-            description,
-            tx_id,
-            tx_type,
         })
     }
 }

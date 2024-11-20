@@ -2,7 +2,7 @@ use rand::seq::SliceRandom;
 
 use crate::model::{
     cluster::{ClusterState, NodeClient},
-    hydra::messages::snapshot_confirmed::Transaction,
+    hydra::messages::Transaction,
 };
 use rand::thread_rng;
 use rocket::{get, http::Status, serde::json::Json, State};

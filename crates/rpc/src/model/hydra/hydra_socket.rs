@@ -29,7 +29,7 @@ use crate::model::hydra::hydra_message::HydraEventMessage;
 
 use super::{
     hydra_message::{HydraData, HydraMessage},
-    messages::{new_tx::NewTx, snapshot_confirmed::Transaction},
+    messages::{new_tx::NewTx, Transaction},
 };
 
 #[allow(dead_code)]
@@ -168,16 +168,14 @@ pub async fn sample_txs(url: &str, count: usize, timeout: Duration) -> Result<Ve
     let (_, mut receiver) = ws_stream.split();
     let fetch_transactions: JoinHandle<Result<Vec<Transaction>>> = tokio::spawn(async move {
         let mut transactions: Vec<Transaction> = Vec::with_capacity(count);
-        'outer: loop {
+        loop {
             let next = receiver.next().await.context("failed to receive")??;
             let msg = HydraMessage::try_from(next).context("failed to parse hydra message")?;
 
-            if let HydraMessage::HydraEvent(HydraEventMessage::SnapshotConfirmed(snapshot)) = msg {
-                for transaction in snapshot.confirmed_transactions {
-                    transactions.push(transaction);
-                    if transactions.len() == count {
-                        break 'outer;
-                    }
+            if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(tx)) = msg {
+                transactions.push(tx.transaction);
+                if transactions.len() == count {
+                    break;
                 }
             }
         }
