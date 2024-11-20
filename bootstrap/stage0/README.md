@@ -5,6 +5,12 @@
 1. Create ALBC IAM policy (this should be created once for the whole account,
    not per cluster).
 
+   ```
+   aws iam create-policy \
+     --policy-name AWSLoadBalancerControllerIAMPolicy \
+     --policy-document file://albc_iam_policy.json
+   ```
+
 ### Cluster creation steps
 
 1. Create cluster. You must modify the `.metadata.name`, `.metadata.region` and
@@ -17,7 +23,7 @@
    must be created and linked).
     ```
     eksctl create iamserviceaccount \    
-    --cluster=hydra-doom-dev-cluster \  
+    --cluster=YOUR_CLUSTER_NAME \  
     --namespace=kube-system \  
     --name=aws-load-balancer-controller \  
     --attach-policy-arn=arn:aws:iam::YOUR_ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy \  

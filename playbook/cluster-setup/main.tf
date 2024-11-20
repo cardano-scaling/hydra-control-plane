@@ -5,7 +5,6 @@ locals {
 terraform {
   backend "s3" {
     bucket = "hydra-doom-tf"
-    key    = "clusters/hydra-doom-dev-cluster/tfstate.cluster-setup.eu-central-1"
     region = "us-east-1"
   }
   required_providers {
@@ -20,7 +19,6 @@ variable "eks_cluster_arn" {
   type        = string
   description = "The ARN of the EKS cluster."
 }
-
 variable "ssl_cert_arn" {
   type = string
 }
@@ -38,6 +36,6 @@ provider "helm" {
 }
 
 module "stage1" {
-  source       = "../../../bootstrap/stage1/"
+  source       = "../../bootstrap/stage1/"
   ssl_cert_arn = var.ssl_cert_arn
 }
