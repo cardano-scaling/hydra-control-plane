@@ -168,7 +168,7 @@ jobs:
 
       - name: init terraform
         working-directory: playbook/doom-dev
-        run: terraform init
+        run: terraform init -backend-config=backend.us-east-1.conf
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:sha-${{ steps.image_tag.outputs.sha_short }}
 
