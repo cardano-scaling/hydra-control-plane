@@ -17,7 +17,10 @@ resource "kubernetes_manifest" "prometheus" {
           },
         ]
       }
-      "enableAdminAPI"              = false
+      "enableAdminAPI" = false
+      "externalLabels" = {
+        "cluster" : var.cluster_name
+      }
       "podMonitorNamespaceSelector" = {}
       "podMonitorSelector" = {
         "matchLabels" = {
@@ -55,6 +58,9 @@ resource "kubernetes_manifest" "prometheus" {
             }
           }
         }
+      }
+      "thanos" = {
+        "image" = "quay.io/thanos/thanos:v0.36.1"
       }
     }
   }
