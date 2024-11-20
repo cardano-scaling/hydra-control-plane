@@ -11,7 +11,7 @@ use crate::model::{
     game::player::Player,
     hydra::{
         hydra_socket,
-        messages::{new_tx::NewTx, tx_valid::TxValid},
+        messages::{new_tx::NewTx, Transaction},
     },
     tx_builder::TxBuilder,
 };
@@ -238,12 +238,12 @@ impl NodeClient {
         Ok(utxos)
     }
 
-    pub async fn sample_txs(&self, count: usize) -> Result<Vec<TxValid>> {
+    pub async fn sample_txs(&self, count: usize) -> Result<Vec<Transaction>> {
         //TODO: make duration configurable
         hydra_socket::sample_txs(
             &format!("{}/?history=no", &self.connection.to_websocket_url()),
             count,
-            Duration::from_secs(10),
+            Duration::from_secs(30),
         )
         .await
     }
