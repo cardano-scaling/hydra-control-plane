@@ -19,6 +19,7 @@ variable "eks_cluster_arn" {
   type        = string
   description = "The ARN of the EKS cluster."
 }
+
 variable "ssl_cert_arn" {
   type = string
 }

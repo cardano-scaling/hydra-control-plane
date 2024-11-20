@@ -1,16 +1,10 @@
 locals {
   namespace = "hydra-doom"
-  state_key = (
-    var.region == "us-east-1"
-    ? "clusters/hydra-doom-dev-cluster/tfstate"
-    : "clusters/hydra-doom-dev-cluster/tfstate.${var.region}"
-  )
 }
 
 terraform {
   backend "s3" {
     bucket = "hydra-doom-tf"
-    key    = local.state_key
     region = "us-east-1"
   }
   required_providers {
@@ -25,11 +19,6 @@ resource "kubernetes_namespace" "namespace" {
   metadata {
     name = local.namespace
   }
-}
-
-variable "region" {
-  type    = string
-  default = "us-east-1"
 }
 
 variable "blockfrost_key" {
