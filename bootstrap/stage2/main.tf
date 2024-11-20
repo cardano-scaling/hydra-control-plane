@@ -126,6 +126,10 @@ variable "init_aws_secret_access_key" {
   type = string
 }
 
+variable "api_key" {
+  type = string
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string

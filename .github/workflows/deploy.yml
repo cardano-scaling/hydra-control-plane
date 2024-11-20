@@ -130,17 +130,18 @@ jobs:
       TF_VAR_admin_key: ${{ secrets.DEV_HYDRA_ADMIN_KEY }}
       TF_VAR_snapshot_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       TF_VAR_snapshot_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_api_key: ${{ secrets.API_KEY }}
 
       # Vars
       TF_VAR_dmtr_port_name: preprod-4raar2
       TF_VAR_dmtr_project_id: b55545f5-31e7-4e6b-81d6-22f4e6b5a144
       TF_VAR_external_domain: us-east-1.hydra-doom.sundae.fi
-      TF_VAR_hydra_node_image: ghcr.io/cardano-scaling/hydra-node:latest
+      TF_VAR_hydra_node_image: ghcr.io/cardano-scaling/hydra-node:unstable@sha256:bb3e65778e352336b65f362d54104d88148552bdeb706c33a312f98e343a7b30
       TF_VAR_eks_cluster_arn: arn:aws:eks:us-east-1:509399595051:cluster/hydra-doom-dev-cluster
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:latest
-      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-b72d073 # latest?
+      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-d313547 # latest?
       TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-68987ed # latest?
 
     steps:
@@ -167,7 +168,7 @@ jobs:
 
       - name: init terraform
         working-directory: playbook/doom-dev
-        run: terraform init
+        run: terraform init -backend-config=backend.us-east-1.conf
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:sha-${{ steps.image_tag.outputs.sha_short }}
 

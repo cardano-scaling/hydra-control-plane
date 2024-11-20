@@ -5,8 +5,16 @@ kind: ClusterConfig
 metadata:
   name: hydra-doom-dev-cluster
   region: us-east-1
+  # region: eu-central-1
   tags: 
     sundae-labs:cost-allocation:Service: hydra-doom
+
+iam:
+  withOIDC: true
+
+addons:
+- name: aws-ebs-csi-driver
+- name: eks-pod-identity-agent
 
 managedNodeGroups:
   # Consistent
@@ -25,6 +33,7 @@ managedNodeGroups:
     spot: true
     availabilityZones:
       - us-east-1b
+      # - eu-central-1b
 
 fargateProfiles:
   - name: fp-default

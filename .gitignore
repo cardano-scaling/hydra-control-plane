@@ -13,3 +13,5 @@ utxo.json
 admin.sk
 run.sh
 crates/rpc/keys
+varfiles/
+backends/

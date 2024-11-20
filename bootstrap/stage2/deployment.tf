@@ -57,12 +57,12 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name = "REFEREE_IMAGE"
+            name  = "REFEREE_IMAGE"
             value = var.referee_image
           }
 
           env {
-            name = "AI_IMAGE"
+            name  = "AI_IMAGE"
             value = var.ai_image
           }
 
@@ -74,6 +74,11 @@ resource "kubernetes_deployment_v1" "operator" {
           env {
             name  = "SECRET"
             value = local.secret
+          }
+
+          env {
+            name  = "API_KEY"
+            value = var.api_key
           }
 
           env {

@@ -158,7 +158,7 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
                     };
                 }
                 HydraEventMessage::TxValid(valid) => {
-                    metrics.new_transaction(valid.cbor.len() as u64);
+                    metrics.new_transaction(valid.transaction.cbor.len() as u64);
                 }
                 _ => {}
             },
