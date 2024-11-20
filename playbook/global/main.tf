@@ -1,10 +1,7 @@
-locals {
-  namespace = "hydra-doom"
-}
-
 terraform {
   backend "s3" {
     bucket = "hydra-doom-tf"
+    key    = "clusters/hydra-doom-dev-cluster/tfstate.global"
     region = "us-east-1"
   }
   required_providers {
@@ -20,28 +17,16 @@ variable "eks_cluster_arn" {
   description = "The ARN of the EKS cluster."
 }
 
-variable "ssl_cert_arn" {
-  type = string
-}
-
-variable "cluster_name" {
-  type = string
-}
-
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
 }
 
-provider "helm" {
-  kubernetes {
-    config_path    = "~/.kube/config"
-    config_context = var.eks_cluster_arn
-  }
-}
+module "global" {
+  source = "../../bootstrap/global/"
 
-module "stage1" {
-  source       = "../../bootstrap/stage1/"
-  ssl_cert_arn = var.ssl_cert_arn
-  cluster_name = var.cluster_name
+  thanos_endpoints = [
+    "k8s-hydradoo-thanossi-806f9000b2-386099bd8a7733a9.elb.us-east-1.amazonaws.com:10901",
+    "k8s-hydradoo-thanossi-2c4000794d-85ac7f5b7a39c8f7.elb.eu-central-1.amazonaws.com:10901",
+  ]
 }
