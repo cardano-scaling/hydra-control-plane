@@ -104,7 +104,7 @@ echo ""
 echo "---"
 ADDRESS=$(cardano-cli address build --verification-key-file "$ADMIN_VERIFICATION_KEY_FILE" --testnet-magic 1)
 SEED_INPUT=$(cardano-cli conway query utxo --address $ADDRESS --output-json --testnet-magic 1 --socket-path $CARDANO_NODE_SOCKET | jq -r 'to_entries[0].key')
-COMMIT_INPUT=$(cardano-cli conway query utxo --address $ADDRESS --output-json --testnet-magic 1 --socket-path $CARDANO_NODE_SOCKET | jq -r 'to_entries[1].key')
+COMMIT_INPUT=$(cardano-cli conway query utxo --address $ADDRESS --output-json --testnet-magic 1 --socket-path $CARDANO_NODE_SOCKET | jq -r 'to_entries[-1].key')
 
 echo "* Seed input: $SEED_INPUT"
 echo "* Commit input: $COMMIT_INPUT"
@@ -179,6 +179,6 @@ spec:
 EOF
 )
 printf "%s\n" "$FILE"
-printf "%s\n" "$FILE" > node.yml
+printf "%s\n" "$FILE" > "$NODE_ID.yml"
 
 rm -rf persistence keys
