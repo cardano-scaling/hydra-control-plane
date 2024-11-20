@@ -1,7 +1,6 @@
 use rocket::{get, serde::json::Json};
 use rocket_errors::anyhow::Result;
 use serde::Serialize;
-use std::collections::HashMap;
 
 #[derive(Debug, Serialize)]
 pub struct GlobalStats {
@@ -25,7 +24,7 @@ pub struct GlobalStats {
 pub async fn global_stats() -> Result<Json<GlobalStats>> {
     // TODO: fetch data from the observer server
     // dummy data for now
-    Ok(Json(GlobalStats{
+    Ok(Json(GlobalStats {
         total_games: 123,
         active_games: 21,
         total_players: 125,

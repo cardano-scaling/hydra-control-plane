@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
         secure: args.secure,
     };
     let socket = Arc::new(HydraSocket::new(
-        connection_info.to_websocket_url().as_str() + "?history=no"
+        &(connection_info.to_websocket_url() + "?history=no"),
         &connection_info.to_authority(),
         &tx,
     ));
