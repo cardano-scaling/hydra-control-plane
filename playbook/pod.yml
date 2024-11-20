@@ -1,7 +1,7 @@
 apiVersion: hydra.doom/v1alpha1
 kind: HydraDoomNode
 metadata:
-  name: b00000
+  name: a00000
   namespace: hydra-doom
 spec:
   offline: true
