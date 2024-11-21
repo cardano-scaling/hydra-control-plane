@@ -1,25 +1,45 @@
 ## Manual steps
 
-1. Create cluster:
+### Prerequisites
+
+1. Create ALBC IAM policy (this should be created once for the whole account,
+   not per cluster).
+
+   ```
+   aws iam create-policy \
+     --policy-name AWSLoadBalancerControllerIAMPolicy \
+     --policy-document file://albc_iam_policy.json
+   ```
+
+### Cluster creation steps
+
+1. Create cluster. You must modify the `.metadata.name`, `.metadata.region` and
+   `.managedNodeGroups[].availabilityZones` values accordingly.
 
    ```
    eksctl create cluster -f cluster.yml
    ```
-2. Associate OIDC provider
-
-   ```
-   eksctl utils associate-iam-oidc-provider --cluster YOUR_CLUSTER_NAME --approve
-   ```
-3. Create service account for albc.
+2. Create service account for albc (ALBC is not an addon, so service account
+   must be created and linked).
     ```
     eksctl create iamserviceaccount \    
-    --cluster=hydra-doom-dev-cluster \  
+    --cluster=YOUR_CLUSTER_NAME \  
     --namespace=kube-system \  
     --name=aws-load-balancer-controller \  
     --attach-policy-arn=arn:aws:iam::YOUR_ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy \  
     --override-existing-serviceaccounts \  
     --approve
     ```
+3. Create service account for EBS:
+   ```
+   eksctl create iamserviceaccount \
+        --name ebs-csi-controller-sa \
+        --namespace kube-system \
+        --cluster YOUR_CLUSTER_NAME \
+        --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+        --override-existing-serviceaccounts \
+        --approve
+   ```
 4. Install ALBC via helm.
 
    ```
@@ -31,3 +51,5 @@
        --set serviceAccount.name=aws-load-balancer-controller \
        -n kube-system
    ```
+5. Create SSL cert on the corresponding region using AWS Cert Manager (you will
+   need the ARN to set up the ingress controller on `stage1`).

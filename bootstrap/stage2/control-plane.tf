@@ -69,6 +69,11 @@ resource "kubernetes_deployment_v1" "control_plane" {
           }
 
           env {
+            name  = "API_KEY"
+            value = var.api_key
+          }
+
+          env {
             name = "KUBERNETES_NAMESPACE"
             value_from {
               field_ref {

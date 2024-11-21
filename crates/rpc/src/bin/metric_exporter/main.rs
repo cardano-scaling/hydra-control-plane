@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
         secure: args.secure,
     };
     let socket = Arc::new(HydraSocket::new(
-        connection_info.to_websocket_url().as_str(),
+        &(connection_info.to_websocket_url() + "?history=no"),
         &connection_info.to_authority(),
         &tx,
     ));
@@ -158,7 +158,7 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
                     };
                 }
                 HydraEventMessage::TxValid(valid) => {
-                    metrics.new_transaction(valid.cbor.len() as u64);
+                    metrics.new_transaction(valid.transaction.cbor.len() as u64);
                 }
                 _ => {}
             },

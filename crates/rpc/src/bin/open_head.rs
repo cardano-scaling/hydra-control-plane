@@ -89,7 +89,7 @@ async fn main() {
         .try_into()
         .expect("Failed to get party verification key from file");
 
-    println!("Building init transaction...");
+    debug!("Building init transaction...");
 
     let participant_hash = match Address::from_bech32(args.participant.as_str())
         .expect("Failed to parse bech32 participant address")
@@ -125,7 +125,7 @@ async fn main() {
         ))
         .expect("Failed to build tx");
 
-    println!("Tx bytes: {}", hex::encode(built_init_tx.tx_bytes.clone()));
+    debug!("Tx bytes: {}", hex::encode(built_init_tx.tx_bytes.clone()));
 
     let built_init_tx = built_init_tx
         .sign(admin_key.clone().into())
@@ -141,8 +141,8 @@ async fn main() {
         .await
         .expect("Failed to submit init tx");
 
-    println!("Submitted init tx: {}", init_tx_id);
-    println!("Committing funds...");
+    debug!("Submitted init tx: {}", init_tx_id);
+    debug!("Committing funds...");
 
     let commit_inputs: Vec<(InputWrapper, OutputWrapper)> = join_all(args.commit_inputs.into_iter().map(|input| async {
         let input: InputWrapper = input.try_into().expect("Failed to parse commit input. Please make sure it uses the following format: {tx_hash}#{index}");
@@ -196,7 +196,7 @@ async fn main() {
         .sign(admin_key.into())
         .expect("Failed to sign commit tx");
 
-    println!(
+    debug!(
         "Signed commit tx: {}",
         hex::encode(built_commit_tx.tx_bytes.clone())
     );
@@ -205,5 +205,5 @@ async fn main() {
         .submit_transaction(built_commit_tx)
         .await
         .expect("Failed to submit commit tx");
-    println!("Submitted commit tx: {}", commit_tx_id);
+    debug!("Submitted commit tx: {}", commit_tx_id);
 }

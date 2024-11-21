@@ -122,7 +122,8 @@ impl TxBuilder {
 
         let collateral_utxos = self.find_admin_utxos(utxos);
         let collateral_utxo = collateral_utxos
-            .first()
+            .iter()
+            .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
         let script_address = Validator::address(network);
@@ -205,7 +206,8 @@ impl TxBuilder {
 
         let collateral_utxos = self.find_admin_utxos(utxos);
         let collateral_utxo = collateral_utxos
-            .first()
+            .iter()
+            .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
         let tx_builder = StagingTransaction::new()
@@ -245,6 +247,7 @@ impl TxBuilder {
                     4, 1293828, 28716, 63, 0, 1, 1006041, 43623, 251, 0, 1,
                 ],
             )
+            .disclosed_signer(self.admin_pkh)
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
@@ -304,7 +307,8 @@ impl TxBuilder {
 
         let collateral_utxos = self.find_admin_utxos(utxos);
         let collateral_utxo = collateral_utxos
-            .first()
+            .iter()
+            .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
         let tx_builder = StagingTransaction::new()
