@@ -396,7 +396,10 @@ impl HydraDoomNode {
                         volumes: Some(vec![
                             Volume {
                                 name: "data".to_string(),
-                                empty_dir: Some(EmptyDirVolumeSource::default()),
+                                empty_dir: Some(EmptyDirVolumeSource {
+                                    medium: Some("Memory".to_string()),
+                                    ..Default::default()
+                                }),
                                 ..Default::default()
                             },
                             Volume {
