@@ -100,13 +100,15 @@ pub struct HydraDoomNodeSpec {
 pub struct HydraDoomNodeStatus {
     pub local_url: String,
     pub external_url: String,
-    pub state: String,
+    pub node_state: String,
+    pub game_state: String,
     pub transactions: i64,
 }
 impl HydraDoomNodeStatus {
     pub fn offline(crd: &HydraDoomNode, config: &Config, constants: &K8sConstants) -> Self {
         Self {
-            state: "Offline".to_string(),
+            node_state: "Offline".to_string(),
+            game_state: "Done".to_string(),
             transactions: 0,
             local_url: format!("ws://{}:{}", crd.internal_host(), constants.port),
             external_url: format!(

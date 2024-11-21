@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use hex::FromHex;
 use pallas::{
     crypto::key::ed25519::SecretKey,
-    ledger::addresses::{Address, Network},
+    ledger::addresses::Network,
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
