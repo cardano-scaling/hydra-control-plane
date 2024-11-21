@@ -26,7 +26,7 @@ module "global" {
   source = "../../bootstrap/global/"
 
   thanos_endpoints = [
-    "k8s-hydradoo-thanossi-806f9000b2-386099bd8a7733a9.elb.us-east-1.amazonaws.com:10901",
-    "k8s-hydradoo-thanossi-2c4000794d-85ac7f5b7a39c8f7.elb.eu-central-1.amazonaws.com:10901",
+    "k8s-hydradoo-thanossi-3e6cc6bace-ddd76e7d5e148d9f.elb.us-east-1.amazonaws.com:10901",
+    "k8s-hydradoo-thanossi-08d03cf670-c832566453f2a5a0.elb.eu-central-1.amazonaws.com:10901",
   ]
 }
