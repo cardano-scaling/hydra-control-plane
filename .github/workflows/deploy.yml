@@ -136,7 +136,7 @@ jobs:
       TF_VAR_dmtr_port_name: preprod-4raar2
       TF_VAR_dmtr_project_id: b55545f5-31e7-4e6b-81d6-22f4e6b5a144
       TF_VAR_external_domain: us-east-1.hydra-doom.sundae.fi
-      TF_VAR_hydra_node_image: ghcr.io/cardano-scaling/hydra-node:unstable@sha256:bb3e65778e352336b65f362d54104d88148552bdeb706c33a312f98e343a7b30
+      TF_VAR_hydra_node_image: ghcr.io/demeter-run/hydra-node:patch2
       TF_VAR_eks_cluster_arn: arn:aws:eks:us-east-1:509399595051:cluster/hydra-doom-dev-cluster
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
