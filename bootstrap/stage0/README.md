@@ -30,7 +30,17 @@
     --override-existing-serviceaccounts \  
     --approve
     ```
-3. Install ALBC via helm.
+3. Create service account for EBS:
+   ```
+   eksctl create iamserviceaccount \
+        --name ebs-csi-controller-sa \
+        --namespace kube-system \
+        --cluster YOUR_CLUSTER_NAME \
+        --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+        --override-existing-serviceaccounts \
+        --approve
+   ```
+4. Install ALBC via helm.
 
    ```
    helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -41,5 +51,5 @@
        --set serviceAccount.name=aws-load-balancer-controller \
        -n kube-system
    ```
-4. Create SSL cert on the corresponding region using AWS Cert Manager (you will
+5. Create SSL cert on the corresponding region using AWS Cert Manager (you will
    need the ARN to set up the ingress controller on `stage1`).
