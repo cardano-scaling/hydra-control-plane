@@ -12,6 +12,10 @@ variable "storage_class" {
   default     = "gp2"
 }
 
+variable "cluster_name" {
+  description = "Name of the cluster, used as label for prometheus."
+}
+
 resource "kubernetes_namespace_v1" "namespace" {
   metadata {
     name = var.namespace
@@ -29,4 +33,5 @@ module "o11y_resources" {
   source        = "./o11y/resources"
   namespace     = var.namespace
   storage_class = var.storage_class
+  cluster_name  = var.cluster_name
 }
