@@ -1,4 +1,4 @@
-variable "thanos_namespace" {
+variable "monitoring_namespace" {
   type    = string
   default = "hydra-doom-system"
 }
@@ -10,4 +10,8 @@ variable "thanos_querier_image" {
 
 variable "thanos_endpoints" {
   type = list(string)
+}
+
+variable "external_domain" {
+  type = string
 }

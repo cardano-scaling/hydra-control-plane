@@ -2,7 +2,7 @@ resource "kubernetes_deployment_v1" "thanos_querier" {
   wait_for_rollout = false
 
   metadata {
-    namespace = var.thanos_namespace
+    namespace = var.monitoring_namespace
     name      = "thanos-querier"
     labels = {
       role = "thanos-querier"
@@ -60,7 +60,7 @@ resource "kubernetes_deployment_v1" "thanos_querier" {
 resource "kubernetes_service_v1" "thanos_querier" {
   metadata {
     name      = "thanos-querier"
-    namespace = var.thanos_namespace
+    namespace = var.monitoring_namespace
   }
 
   spec {
