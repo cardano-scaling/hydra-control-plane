@@ -6,7 +6,7 @@ resource "kubernetes_manifest" "servicemonitor_kubelet" {
       "labels" = {
         "app.kubernetes.io/component" = "o11y"
         "app.kubernetes.io/name"      = "kubelet"
-        "app.kubernetes.io/part-of"   = "demeter"
+        "app.kubernetes.io/part-of"   = "hydradoom"
       }
       "name"      = "kubelet"
       "namespace" = var.namespace

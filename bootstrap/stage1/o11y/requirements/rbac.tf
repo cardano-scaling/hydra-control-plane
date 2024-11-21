@@ -7,7 +7,7 @@ resource "kubernetes_service_account" "prometheus" {
 
 resource "kubernetes_cluster_role" "prometheus" {
   metadata {
-    name = "demeter:prometheus"
+    name = "hydradoom:prometheus"
   }
 
   rule {
@@ -36,7 +36,7 @@ resource "kubernetes_cluster_role" "prometheus" {
 
 resource "kubernetes_cluster_role_binding" "prometheus" {
   metadata {
-    name = "demeter:prometheus"
+    name = "hydradoom:prometheus"
   }
 
   subject {
@@ -48,6 +48,6 @@ resource "kubernetes_cluster_role_binding" "prometheus" {
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
-    name      = "demeter:prometheus"
+    name      = "hydradoom:prometheus"
   }
 }

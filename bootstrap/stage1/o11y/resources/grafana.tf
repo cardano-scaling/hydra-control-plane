@@ -6,7 +6,7 @@ resource "kubernetes_config_map" "grafana_config" {
     labels = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "grafana"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
   }
   data = {
@@ -24,7 +24,7 @@ resource "kubernetes_stateful_set_v1" "grafana" {
     labels = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "grafana"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
   }
 
@@ -35,7 +35,7 @@ resource "kubernetes_stateful_set_v1" "grafana" {
       match_labels = {
         "app.kubernetes.io/component" = "o11y"
         "app.kubernetes.io/name"      = "grafana"
-        "app.kubernetes.io/part-of"   = "demeter"
+        "app.kubernetes.io/part-of"   = "hydradoom"
       }
     }
     volume_claim_template {
@@ -58,7 +58,7 @@ resource "kubernetes_stateful_set_v1" "grafana" {
         labels = {
           "app.kubernetes.io/component" = "o11y"
           "app.kubernetes.io/name"      = "grafana"
-          "app.kubernetes.io/part-of"   = "demeter"
+          "app.kubernetes.io/part-of"   = "hydradoom"
         }
       }
 
@@ -152,7 +152,7 @@ resource "kubernetes_service" "grafana" {
     selector = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "grafana"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
 
     port {

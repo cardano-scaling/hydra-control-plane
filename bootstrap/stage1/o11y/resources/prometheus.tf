@@ -22,7 +22,7 @@ resource "kubernetes_manifest" "prometheus" {
       "podMonitorSelector" = {
         "matchLabels" = {
           "app.kubernetes.io/component" = "o11y"
-          "app.kubernetes.io/part-of"   = "demeter"
+          "app.kubernetes.io/part-of"   = "hydradoom"
         }
       }
       "resources" = {
@@ -41,7 +41,7 @@ resource "kubernetes_manifest" "prometheus" {
       "serviceMonitorSelector" = {
         "matchLabels" = {
           "app.kubernetes.io/component" = "o11y"
-          "app.kubernetes.io/part-of"   = "demeter"
+          "app.kubernetes.io/part-of"   = "hydradoom"
         }
       }
       "storage" = {

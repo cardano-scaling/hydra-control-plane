@@ -3,7 +3,7 @@ resource "kubernetes_deployment" "kube_state" {
     labels = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "kube-state-metrics"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
     name      = "kube-state-metrics"
     namespace = var.namespace
@@ -15,7 +15,7 @@ resource "kubernetes_deployment" "kube_state" {
       match_labels = {
         "app.kubernetes.io/component" = "o11y"
         "app.kubernetes.io/name"      = "kube-state-metrics"
-        "app.kubernetes.io/part-of"   = "demeter"
+        "app.kubernetes.io/part-of"   = "hydradoom"
       }
     }
 
@@ -27,7 +27,7 @@ resource "kubernetes_deployment" "kube_state" {
         labels = {
           "app.kubernetes.io/component" = "o11y"
           "app.kubernetes.io/name"      = "kube-state-metrics"
-          "app.kubernetes.io/part-of"   = "demeter"
+          "app.kubernetes.io/part-of"   = "hydradoom"
         }
       }
 
@@ -161,7 +161,7 @@ resource "kubernetes_service_account" "kube_state" {
     labels = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "kube-state-metrics"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
     name      = "kube-state-metrics"
     namespace = var.namespace
@@ -175,9 +175,9 @@ resource "kubernetes_cluster_role" "kube_state" {
     labels = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "kube-state-metrics"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
-    name = "demeter:kube-state-metrics"
+    name = "hydradoom:kube-state-metrics"
   }
 
   rule {
@@ -376,15 +376,15 @@ resource "kubernetes_cluster_role_binding" "kube_state" {
     labels = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "kube-state-metrics"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
-    name = "demeter:kube-state-metrics"
+    name = "hydradoom:kube-state-metrics"
   }
 
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
-    name      = "demeter:kube-state-metrics"
+    name      = "hydradoom:kube-state-metrics"
   }
 
   subject {
@@ -399,7 +399,7 @@ resource "kubernetes_service" "kube_state" {
     labels = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "kube-state-metrics"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
     name      = "kube-state-metrics"
     namespace = var.namespace
@@ -423,7 +423,7 @@ resource "kubernetes_service" "kube_state" {
     selector = {
       "app.kubernetes.io/component" = "o11y"
       "app.kubernetes.io/name"      = "kube-state-metrics"
-      "app.kubernetes.io/part-of"   = "demeter"
+      "app.kubernetes.io/part-of"   = "hydradoom"
     }
   }
 }
@@ -436,7 +436,7 @@ resource "kubernetes_manifest" "kube_state_pod_monitor" {
       "labels" = {
         "app.kubernetes.io/component" = "o11y"
         "app.kubernetes.io/name"      = "kube-state-metrics"
-        "app.kubernetes.io/part-of"   = "demeter"
+        "app.kubernetes.io/part-of"   = "hydradoom"
       }
       "name"      = "kube-state-metrics"
       "namespace" = var.namespace
@@ -484,7 +484,7 @@ resource "kubernetes_manifest" "kube_state_pod_monitor" {
         "matchLabels" = {
           "app.kubernetes.io/component" = "o11y"
           "app.kubernetes.io/name"      = "kube-state-metrics"
-          "app.kubernetes.io/part-of"   = "demeter"
+          "app.kubernetes.io/part-of"   = "hydradoom"
         }
       }
     }

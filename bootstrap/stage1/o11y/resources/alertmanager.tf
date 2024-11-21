@@ -6,7 +6,7 @@ resource "kubernetes_manifest" "alertmanager" {
       "labels" = {
         "app.kubernetes.io/component" = "o11y"
         "app.kubernetes.io/name"      = "alertmanager"
-        "app.kubernetes.io/part-of"   = "demeter"
+        "app.kubernetes.io/part-of"   = "hydradoom"
       }
       "name"      = "alertmanager"
       "namespace" = var.namespace
@@ -17,7 +17,7 @@ resource "kubernetes_manifest" "alertmanager" {
         "labels" = {
           "app.kubernetes.io/component" = "o11y"
           "app.kubernetes.io/name"      = "alertmanager"
-          "app.kubernetes.io/part-of"   = "demeter"
+          "app.kubernetes.io/part-of"   = "hydradoom"
         }
       }
       "replicas" = 2

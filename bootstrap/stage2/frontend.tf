@@ -27,8 +27,8 @@ resource "kubernetes_deployment_v1" "frontend" {
 
       spec {
         container {
-          image = var.frontend_image
-          name  = "main"
+          image             = var.frontend_image
+          name              = "main"
           image_pull_policy = "Always"
 
           env {

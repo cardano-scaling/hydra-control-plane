@@ -5,7 +5,7 @@ resource "kubernetes_manifest" "pod_monitors" {
     metadata = {
       labels = {
         "app.kubernetes.io/component" = "o11y"
-        "app.kubernetes.io/part-of"   = "demeter"
+        "app.kubernetes.io/part-of"   = "hydradoom"
       }
       name      = "hydradoomnodes"
       namespace = var.namespace
