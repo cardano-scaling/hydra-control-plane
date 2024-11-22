@@ -47,6 +47,33 @@ impl From<HydraDoomNodeState> for String {
     }
 }
 
+pub enum HydraDoomGameState {
+    Waiting,
+    Lobby,
+    Running,
+    Done,
+}
+impl From<f64> for HydraDoomGameState {
+    fn from(value: f64) -> Self {
+        match value {
+            1.0 => Self::Lobby,
+            2.0 => Self::Running,
+            3.0 => Self::Done,
+              _ => Self::Waiting,
+        }
+    }
+}
+impl From<HydraDoomGameState> for String {
+    fn from(val: HydraDoomGameState) -> Self {
+        match val {
+            HydraDoomGameState::Waiting => "Waiting".to_string(),
+            HydraDoomGameState::Lobby => "Lobby".to_string(),
+            HydraDoomGameState::Running => "Running".to_string(),
+            HydraDoomGameState::Done => "Done".to_string(),
+        }
+    }
+}
+
 pub struct K8sConstants {
     pub config_dir: String,
     pub secret_dir: String,
@@ -61,7 +88,8 @@ pub struct K8sConstants {
     pub ingress_annotations: BTreeMap<String, String>,
     pub metrics_port: i32,
     pub metrics_endpoint: String,
-    pub state_metric: String,
+    pub node_state_metric: String,
+    pub game_state_metric: String,
     pub transactions_metric: String,
     pub dmtrctl_image: String,
     pub storage_class_name: String,
@@ -82,7 +110,8 @@ impl Default for K8sConstants {
             port: 4001,
             metrics_port: 8000,
             metrics_endpoint: "/metrics".to_string(),
-            state_metric: "hydra_doom_node_state".to_string(),
+            node_state_metric: "hydra_doom_node_state".to_string(),
+            game_state_metric: "hydra_doom_game_state".to_string(),
             transactions_metric: "hydra_doom_node_transactions".to_string(),
             ingress_class_name: "nginx".to_string(),
             ingress_annotations: [
@@ -304,7 +333,8 @@ impl K8sContext {
 
         if crd.spec.asleep.unwrap_or(false) {
             return HydraDoomNodeStatus {
-                state: HydraDoomNodeState::Sleeping.into(),
+                node_state: HydraDoomNodeState::Sleeping.into(),
+                game_state: HydraDoomGameState::Done.into(),
                 transactions: 0,
                 local_url: self.get_internal_url(crd),
                 external_url: self.get_external_url(crd),
@@ -319,16 +349,27 @@ impl K8sContext {
                     let lines: Vec<_> = body.lines().map(|s| Ok(s.to_owned())).collect();
                     match prometheus_parse::Scrape::parse(lines.into_iter()) {
                         Ok(metrics) => {
-                            let state = metrics
+                            let node_state = metrics
                                 .clone()
                                 .samples
                                 .into_iter()
-                                .find(|sample| sample.metric == self.constants.state_metric)
+                                .find(|sample| sample.metric == self.constants.node_state_metric)
                                 .map(|sample| match sample.value {
                                     prometheus_parse::Value::Gauge(value) => {
                                         HydraDoomNodeState::from(value)
                                     }
                                     _ => HydraDoomNodeState::Offline,
+                                });
+                            let game_state = metrics
+                                .clone()
+                                .samples
+                                .into_iter()
+                                .find(|sample| sample.metric == self.constants.game_state_metric)
+                                .map(|sample| match sample.value {
+                                    prometheus_parse::Value::Gauge(value) => {
+                                        HydraDoomGameState::from(value)
+                                    }
+                                    _ => HydraDoomGameState::Done,
                                 });
 
                             let transactions = metrics
@@ -341,10 +382,11 @@ impl K8sContext {
                                     _ => 0,
                                 });
 
-                            match (state, transactions) {
-                                (Some(state), Some(transactions)) => HydraDoomNodeStatus {
+                            match (node_state, game_state, transactions) {
+                                (Some(node_state), Some(game_state), Some(transactions)) => HydraDoomNodeStatus {
                                     transactions,
-                                    state: state.into(),
+                                    node_state: node_state.into(),
+                                    game_state: game_state.into(),
                                     local_url: self.get_internal_url(crd),
                                     external_url: self.get_external_url(crd),
                                 },

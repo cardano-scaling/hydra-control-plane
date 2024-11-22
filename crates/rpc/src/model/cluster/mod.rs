@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::fs::File;
+use std::time::Instant;
 use std::{future::ready, sync::Arc};
 
 use anyhow::Context;
@@ -12,6 +14,7 @@ mod node;
 
 pub use crd::*;
 pub use node::*;
+use tokio::sync::Mutex;
 use tracing::info;
 
 const DEFAULT_NAMESPACE: &str = "hydra-doom";
@@ -23,6 +26,7 @@ fn define_namespace() -> String {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct ClusterState {
+    recently_claimed: Arc<Mutex<HashMap<String, Instant>>>,
     store: kube::runtime::reflector::Store<HydraDoomNode>,
     watcher_handle: Arc<tokio::task::JoinHandle<()>>,
     pub admin_sk: SecretKey,
@@ -59,6 +63,7 @@ impl ClusterState {
         });
 
         Ok(Self {
+            recently_claimed: Arc::new(Mutex::new(HashMap::new())),
             store,
             watcher_handle: Arc::new(watcher_handle),
             admin_sk,
@@ -66,13 +71,26 @@ impl ClusterState {
         })
     }
 
-    pub fn get_warm_node(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
-        self.store
+    pub async fn select_node_for_new_game(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
+        let mut claimed = self.recently_claimed.lock().await;
+        let node = self.store
             .state()
             .iter()
-            .find(|n| n.status.as_ref().is_some_and(|s| s.state == "HeadIsOpen"))
+            .filter(|n| {
+                let id = n.metadata.name.as_ref().unwrap();
+                let recently_claimed = claimed.get(id).is_some_and(|t| t.elapsed().as_secs() < 60);
+                if let Some(status) = n.status.as_ref() {
+                    !recently_claimed && status.node_state == "HeadIsOpen" && status.game_state == "Waiting"
+                } else {
+                    false
+                }
+            })
+            .max_by_key(|n| n.metadata.creation_timestamp.clone())
             .cloned()
-            .ok_or(anyhow::anyhow!("no available warm nodes found"))
+            .ok_or(anyhow::anyhow!("no available nodes found"))?;
+        let entry = claimed.entry(node.metadata.name.clone().expect("node without a name")).or_insert(Instant::now());
+        *entry = Instant::now();
+        Ok(node)
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {

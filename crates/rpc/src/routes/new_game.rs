@@ -24,7 +24,7 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
         _ => return Result::Err(anyhow!("unsupported address type").into()),
     };
 
-    let node = state.get_warm_node().context("error getting warm node")?;
+    let node = state.select_node_for_new_game().await.context("error getting warm node")?;
     let node_id = node.metadata.name.clone().expect("node without a name");
     info!(id = node_id, "select node for new game");
 

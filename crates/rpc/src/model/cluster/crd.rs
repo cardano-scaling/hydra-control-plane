@@ -37,7 +37,8 @@ pub struct Resources {
 )]
 #[kube(status = "HydraDoomNodeStatus")]
 #[kube(printcolumn = r#"
-        {"name": "State", "jsonPath":".status.state", "type": "string"}, 
+        {"name": "Node State", "jsonPath":".status.node_state", "type": "string"}, 
+        {"name": "Game State", "jsonPath":".status.game_state", "type": "string"}, 
         {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"}, 
         {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"}, 
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
@@ -58,6 +59,7 @@ pub struct HydraDoomNodeSpec {
 pub struct HydraDoomNodeStatus {
     pub local_url: String,
     pub external_url: String,
-    pub state: String,
+    pub node_state: String,
+    pub game_state: String,
     pub transactions: i64,
 }
