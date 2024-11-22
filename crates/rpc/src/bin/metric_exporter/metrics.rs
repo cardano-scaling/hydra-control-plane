@@ -43,7 +43,7 @@ impl From<GameState> for i64 {
 
 pub struct Metrics {
     pub registry: Registry,
-    pub state: IntGauge,
+    pub node_state: IntGauge,
     pub game_state: IntGauge,
     pub transactions: IntCounter,
     pub bytes: IntCounter,
@@ -60,7 +60,7 @@ pub struct Metrics {
 
 impl Metrics {
     pub fn try_new() -> Result<Self, prometheus::Error> {
-        let state = IntGauge::new(
+        let node_state = IntGauge::new(
             "hydra_doom_node_state",
             "0 for OFFLINE, 1 for ONLINE, 2 for HEAD_IS_INITIALIZING, 3 for HEAD_IS_OPEN",
         )
@@ -115,7 +115,7 @@ impl Metrics {
             IntCounter::new("hydra_doom_suicides", "Number of suicides in the game.").unwrap();
 
         let registry = Registry::default();
-        registry.register(Box::new(state.clone()))?;
+        registry.register(Box::new(node_state.clone()))?;
         registry.register(Box::new(game_state.clone()))?;
         registry.register(Box::new(transactions.clone()))?;
         registry.register(Box::new(bytes.clone()))?;
@@ -128,7 +128,7 @@ impl Metrics {
 
         Ok(Self {
             registry,
-            state,
+            node_state,
             game_state,
             transactions,
             bytes,
