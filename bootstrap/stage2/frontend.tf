@@ -36,6 +36,16 @@ resource "kubernetes_deployment_v1" "frontend" {
             value = "https://${local.control_plane_host}/"
           }
 
+          env {
+            name = "VITE_API_BASE_URL"
+            value = "https://staging-rewardengine.dripdropz.io/"
+          }
+
+          env {
+            name = "VITE_API_KEY"
+            value = "067d20be-8baa-49cb-b501-e004af358870"
+          }
+
           resources {
             limits = {
               cpu    = var.frontend_resources.limits.cpu
