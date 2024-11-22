@@ -38,7 +38,7 @@ resource "kubernetes_deployment_v1" "frontend" {
 
           env {
             name = "VITE_API_BASE_URL"
-            value = "https://staging-rewardengine.dripdropz.io"
+            value = "https://staging-rewardengine.dripdropz.io/api/v1"
           }
 
           env {
