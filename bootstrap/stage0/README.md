@@ -40,7 +40,19 @@
         --override-existing-serviceaccounts \
         --approve
    ```
-4. Install ALBC via helm.
+4. Create service account for Hydra Doom Nodes (tipically
+   `HYDRA_DOOM_NODE_SERVICE_ACCOUNT=hydra-doom-node`,
+   `HYDRA_DOOM_NAMESPACE=hydra-doom`):
+   ```
+   eksctl create iamserviceaccount \
+        --name HYDRA_DOOM_NODE_SERVICE_ACCOUNT \
+        --namespace HYDRA_DOOM_NAMESPACE \
+        --cluster YOUR_CLUSTER_NAME \
+        --attach-policy-arn arn:aws:iam::509399595051:policy/hydra-doom-kinesis-writer \
+        --override-existing-serviceaccounts \
+        --approve
+   ```
+5. Install ALBC via helm.
 
    ```
    helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -51,5 +63,5 @@
        --set serviceAccount.name=aws-load-balancer-controller \
        -n kube-system
    ```
-5. Create SSL cert on the corresponding region using AWS Cert Manager (you will
+6. Create SSL cert on the corresponding region using AWS Cert Manager (you will
    need the ARN to set up the ingress controller on `stage1`).
