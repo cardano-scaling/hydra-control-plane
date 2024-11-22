@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::time::Instant;
+use std::sync::Mutex;
 use std::{future::ready, sync::Arc};
 
 use anyhow::Context;
@@ -14,7 +14,6 @@ mod node;
 
 pub use crd::*;
 pub use node::*;
-use tokio::sync::Mutex;
 use tracing::info;
 
 const DEFAULT_NAMESPACE: &str = "hydra-doom";
@@ -26,7 +25,7 @@ fn define_namespace() -> String {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct ClusterState {
-    recently_claimed: Arc<Mutex<HashMap<String, Instant>>>,
+    recently_claimed: Arc<Mutex<HashMap<String, bool>>>,
     store: kube::runtime::reflector::Store<HydraDoomNode>,
     watcher_handle: Arc<tokio::task::JoinHandle<()>>,
     pub admin_sk: SecretKey,
@@ -57,13 +56,25 @@ impl ClusterState {
             kube::runtime::watcher(nodes, kube::runtime::watcher::Config::default()),
         );
 
+        let claims_ = Arc::new(Mutex::new(HashMap::new()));
+        let claims = claims_.clone();
+
         let watcher_handle = tokio::spawn(async move {
-            let infinite_watch = rf.applied_objects().for_each(|_| ready(()));
+            let infinite_watch = rf.applied_objects().for_each(|node| {
+                if let Ok(node) = node {
+                    if node.status.as_ref().is_some_and(|n| n.game_state != "Waiting") {
+                        let id = node.metadata.name.as_ref().unwrap();
+                        let mut claims = claims.lock().unwrap();
+                        claims.remove(id);
+                    }
+                }
+                ready(())
+            });
             infinite_watch.await;
         });
 
         Ok(Self {
-            recently_claimed: Arc::new(Mutex::new(HashMap::new())),
+            recently_claimed: claims_.clone(),
             store,
             watcher_handle: Arc::new(watcher_handle),
             admin_sk,
@@ -71,14 +82,14 @@ impl ClusterState {
         })
     }
 
-    pub async fn select_node_for_new_game(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
-        let mut claimed = self.recently_claimed.lock().await;
+    pub fn select_node_for_new_game(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
+        let mut claimed = self.recently_claimed.lock().unwrap();
         let node = self.store
             .state()
             .iter()
             .filter(|n| {
                 let id = n.metadata.name.as_ref().unwrap();
-                let recently_claimed = claimed.get(id).is_some_and(|t| t.elapsed().as_secs() < 60);
+                let recently_claimed = claimed.get(id).unwrap_or(&false);
                 if let Some(status) = n.status.as_ref() {
                     !recently_claimed && status.node_state == "HeadIsOpen" && status.game_state == "Waiting"
                 } else {
@@ -88,8 +99,7 @@ impl ClusterState {
             .max_by_key(|n| n.metadata.creation_timestamp.clone())
             .cloned()
             .ok_or(anyhow::anyhow!("no available nodes found"))?;
-        let entry = claimed.entry(node.metadata.name.clone().expect("node without a name")).or_insert(Instant::now());
-        *entry = Instant::now();
+        claimed.entry(node.metadata.name.clone().expect("node without a name")).or_insert(true);
         Ok(node)
     }
 
