@@ -4,8 +4,9 @@ kind: ClusterConfig
 
 metadata:
   name: hydra-doom-dev-cluster
-  region: us-east-1
+  # region: us-east-1
   # region: eu-central-1
+  region: us-west-2
   tags: 
     sundae-labs:cost-allocation:Service: hydra-doom
 
@@ -17,7 +18,6 @@ addons:
 - name: eks-pod-identity-agent
 
 managedNodeGroups:
-  # Consistent
   - name: be-adm-x86-az1
     tags: 
       sundae-labs:cost-allocation:Service: hydra-doom
@@ -28,12 +28,13 @@ managedNodeGroups:
       hydra.doom/availability-zone: az1
     instanceTypes: [ t3a.medium, t3.medium ]
     minSize: 0
-    maxSize: 2
-    desiredCapacity: 2
+    maxSize: 3
+    desiredCapacity: 3
     spot: true
     availabilityZones:
-      - us-east-1b
+      # - us-east-1b
       # - eu-central-1b
+      - us-west-2b
 
 fargateProfiles:
   - name: fp-default
@@ -41,12 +42,5 @@ fargateProfiles:
       sundae-labs:cost-allocation:Service: hydra-doom
     selectors:
       - namespace: hydra-doom
-        labels:
-          run-on: fargate
-  - name: fp-dev
-    tags: 
-      sundae-labs:cost-allocation:Service: hydra-doom
-    selectors:
-      - namespace: hydra-doom-dev
         labels:
           run-on: fargate

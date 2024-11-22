@@ -10,6 +10,13 @@ on:
         options:
           - "true"
           - "false"
+      regions:
+        type: string
+        required: false
+        default: "all"
+        description: >
+          Comma-separated list of regions to deploy to (e.g., "us-east-1,eu-central-1").
+          Use "all" to deploy to all regions.
 
 jobs:
   build:
@@ -123,6 +130,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [docker]
 
+    strategy:
+      matrix:
+        include:
+          - region: us-east-1
+          - region: eu-central-1
+          - region: us-west-2
+
     env:
       # Secrets
       TF_VAR_blockfrost_key: ${{ secrets.DEV_BLOCKFROST_KEY }}
@@ -135,9 +149,9 @@ jobs:
       # Vars
       TF_VAR_dmtr_port_name: preprod-4raar2
       TF_VAR_dmtr_project_id: b55545f5-31e7-4e6b-81d6-22f4e6b5a144
-      TF_VAR_external_domain: us-east-1.hydra-doom.sundae.fi
+      TF_VAR_external_domain: ${{ matrix.region }}.hydra-doom.sundae.fi
       TF_VAR_hydra_node_image: ghcr.io/demeter-run/hydra-node:patch2
-      TF_VAR_eks_cluster_arn: arn:aws:eks:us-east-1:509399595051:cluster/hydra-doom-dev-cluster
+      TF_VAR_eks_cluster_arn: arn:aws:eks:${{ matrix.region }}:509399595051:cluster/hydra-doom-dev-cluster
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:latest
@@ -145,11 +159,22 @@ jobs:
       TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-68987ed # latest?
 
     steps:
+      - name: Filter regions
+        id: filter
+        run: |
+          selected_regions="${{ github.event.inputs.regions }}"
+          if [[ "$selected_regions" != "all" ]]; then
+            if [[ ! "${{ matrix.region }}" =~ (^|,)(${selected_regions})(,|$) ]]; then
+              echo "Skipping region ${{ matrix.region }}"
+              exit 0
+            fi
+          fi
+
       - uses: actions/checkout@v2
 
       - uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-region: us-east-1
+          aws-region: ${{ matrix.region }}
           aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
           role-to-assume: arn:aws:iam::509399595051:role/ClusterAdminRole
@@ -168,7 +193,7 @@ jobs:
 
       - name: init terraform
         working-directory: playbook/doom-dev
-        run: terraform init -backend-config=backend.us-east-1.conf
+        run: terraform init -backend-config=backend.${{ matrix.region }}.conf
         env:
           TF_VAR_image: ghcr.io/cardano-scaling/hydra-control-plane:sha-${{ steps.image_tag.outputs.sha_short }}
 
