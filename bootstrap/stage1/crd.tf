@@ -23,8 +23,13 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
         {
           "additionalPrinterColumns" = [
             {
-              "jsonPath" = ".status.state"
-              "name" = "State"
+              "jsonPath" = ".status.nodeState"
+              "name" = "Node State"
+              "type" = "string"
+            },
+            {
+              "jsonPath" = ".status.gameState"
+              "name" = "Game State"
               "type" = "string"
             },
             {

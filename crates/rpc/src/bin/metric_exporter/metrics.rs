@@ -143,8 +143,8 @@ impl Metrics {
         })
     }
 
-    pub fn set_state(&self, state: NodeState) {
-        self.state.set(state.into())
+    pub fn set_node_state(&self, state: NodeState) {
+        self.node_state.set(state.into())
     }
 
     pub fn new_transaction(&self, bytes: u64) {

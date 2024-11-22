@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
         secure: args.secure,
     };
     let socket = Arc::new(HydraSocket::new(
-        &(connection_info.to_websocket_url() + "?history=no"),
+        connection_info.to_websocket_url().as_str(),
         &connection_info.to_authority(),
         &tx,
     ));
@@ -121,13 +121,13 @@ fn player_suicided(metrics: &State<Arc<Metrics>>) {
 async fn update_connection_state(metrics: Arc<Metrics>, socket: Arc<HydraSocket>) {
     loop {
         tokio::time::sleep(Duration::from_secs(10)).await;
-        let current_value = metrics.state.get();
+        let current_value = metrics.node_state.get();
         let is_online = socket.online.load(std::sync::atomic::Ordering::SeqCst);
 
         if !is_online {
-            metrics.set_state(NodeState::Offline);
+            metrics.set_node_state(NodeState::Offline);
         } else if current_value == 0 {
-            metrics.set_state(NodeState::Online);
+            metrics.set_node_state(NodeState::Online);
         };
     }
 }
@@ -138,27 +138,27 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
             Some(HydraData::Received { message, .. }) => match message {
                 HydraEventMessage::HeadIsOpen(head_is_open) => {
                     info!("head_id {:?}", head_is_open.head_id);
-                    metrics.set_state(metrics::NodeState::HeadIsOpen);
+                    metrics.set_node_state(metrics::NodeState::HeadIsOpen);
                 }
                 HydraEventMessage::CommandFailed(command_failed) => {
                     println!("command failed {:?}", command_failed);
                 }
                 HydraEventMessage::HeadIsInitializing(_) => {
                     info!("node is initializing a head, marking as occupied");
-                    metrics.set_state(NodeState::HeadIsInitializing);
+                    metrics.set_node_state(NodeState::HeadIsInitializing);
                 }
                 HydraEventMessage::InvalidInput(invalid_input) => {
                     println!("Received InvalidInput: {:?}", invalid_input);
                 }
                 HydraEventMessage::Greetings(greetings) => {
                     match greetings.head_status.as_ref() {
-                        "Initializing" => metrics.set_state(NodeState::HeadIsInitializing),
-                        "Open" => metrics.set_state(NodeState::HeadIsOpen),
-                        _ => metrics.set_state(NodeState::Online),
+                        "Initializing" => metrics.set_node_state(NodeState::HeadIsInitializing),
+                        "Open" => metrics.set_node_state(NodeState::HeadIsOpen),
+                        _ => metrics.set_node_state(NodeState::Online),
                     };
                 }
                 HydraEventMessage::TxValid(valid) => {
-                    metrics.new_transaction(valid.transaction.cbor.len() as u64);
+                    metrics.new_transaction(valid.cbor.len() as u64);
                 }
                 _ => {}
             },
