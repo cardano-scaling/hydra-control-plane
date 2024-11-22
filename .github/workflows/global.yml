@@ -38,19 +38,19 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: init terraform
-        working-directory: playbook/cluster-setup
+        working-directory: playbook/global
         run: terraform init
 
       - name: validate terraform
-        working-directory: playbook/cluster-setup
+        working-directory: playbook/global
         run: terraform validate
 
       - name: plan terraform
-        working-directory: playbook/cluster-setup
+        working-directory: playbook/global
         if: inputs.dry-run == 'true'
         run: terraform plan -input=false
 
       - name: apply terraform
-        working-directory: playbook/cluster-setup
+        working-directory: playbook/global
         if: inputs.dry-run == 'false'
         run: terraform apply -auto-approve -input=false
