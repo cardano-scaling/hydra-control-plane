@@ -15,3 +15,7 @@ variable "thanos_endpoints" {
 variable "external_domain" {
   type = string
 }
+
+variable "ssl_cert_arn" {
+  type = string
+}

@@ -61,48 +61,28 @@ resource "kubernetes_service_v1" "thanos_querier" {
   metadata {
     name      = "thanos-querier"
     namespace = var.monitoring_namespace
+    annotations = {
+      "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" : "instance"
+      "service.beta.kubernetes.io/aws-load-balancer-scheme" : "internet-facing"
+      "service.beta.kubernetes.io/aws-load-balancer-type" : "external"
+      "service.beta.kubernetes.io/aws-load-balancer-ssl-cert" : var.ssl_cert_arn
+      "service.beta.kubernetes.io/aws-load-balancer-ssl-ports" : "443"
+    }
   }
 
   spec {
-    type = "ClusterIP"
+    type = "LoadBalancer"
 
+    load_balancer_class = "service.k8s.aws/nlb"
     selector = {
       role = "thanos-querier"
     }
 
     port {
       name        = "http"
-      port        = 9090
+      port        = 443
       target_port = "http"
       protocol    = "TCP"
-    }
-  }
-}
-
-resource "kubernetes_ingress_v1" "thanos_querier" {
-  metadata {
-    name      = "thanos-querier"
-    namespace = var.monitoring_namespace
-  }
-
-  spec {
-    ingress_class_name = "nginx"
-    rule {
-      host = "thanos.${var.external_domain}"
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = "thanos-querier"
-              port {
-                number = 9090
-              }
-            }
-          }
-        }
-      }
     }
   }
 }

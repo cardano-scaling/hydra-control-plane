@@ -17,6 +17,10 @@ variable "eks_cluster_arn" {
   description = "The ARN of the EKS cluster."
 }
 
+variable "ssl_cert_arn" {
+  type = string
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -25,6 +29,7 @@ provider "kubernetes" {
 module "global" {
   source = "../../bootstrap/global/"
 
+  ssl_cert_arn    = var.ssl_cert_arn
   external_domain = "us-east-1.hydra-doom.sundae.fi"
   thanos_endpoints = [
     "k8s-hydradoo-thanossi-3e6cc6bace-ddd76e7d5e148d9f.elb.us-east-1.amazonaws.com:10901",
