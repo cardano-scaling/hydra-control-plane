@@ -130,6 +130,20 @@ variable "api_key" {
   type = string
 }
 
+variable "autoscaler_region_prefix" {
+  type = string
+}
+
+variable "autoscaler_low_watermark" {
+  type    = number
+  default = 1
+}
+
+variable "autoscaler_high_watermark" {
+  type    = number
+  default = 5
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string
