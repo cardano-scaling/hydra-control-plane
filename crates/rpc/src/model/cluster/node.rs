@@ -65,7 +65,12 @@ impl TryInto<Vec<u8>> for KeyEnvelope {
 }
 
 impl NodeClient {
-    pub fn new(resource: Arc<HydraDoomNode>, admin_key: SecretKey, remote: bool) -> Result<Self> {
+    pub fn new(
+        resource: Arc<HydraDoomNode>,
+        admin_key: SecretKey,
+        remote: bool,
+        network: Network,
+    ) -> Result<Self> {
         let status = resource.status.as_ref().ok_or(anyhow!("no status found"))?;
 
         let (local_connection, remote_connection) = ConnectionInfo::from_resource(status)?;
@@ -77,7 +82,7 @@ impl NodeClient {
             } else {
                 local_connection
             },
-            tx_builder: TxBuilder::new(admin_key),
+            tx_builder: TxBuilder::new(admin_key, network),
         };
 
         Ok(node)
@@ -95,7 +100,7 @@ impl NodeClient {
 
         let new_game_tx = self
             .tx_builder
-            .new_game(player, utxos, Network::Testnet)
+            .new_game(player, utxos)
             .context("failed to build transaction")?; // TODO: pass in network
         debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
@@ -113,13 +118,12 @@ impl NodeClient {
         Ok(tx_hash)
     }
 
-    //TODO: don't hardcode network
     pub async fn start_game(&self) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
         let start_game_tx = self
             .tx_builder
-            .start_game(utxos, Network::Testnet)
+            .start_game(utxos)
             .context("failed to build transaction")?;
 
         debug!("start game tx: {}", hex::encode(&start_game_tx.tx_bytes));
@@ -138,13 +142,12 @@ impl NodeClient {
         Ok(tx_hash)
     }
 
-    //TODO: don't hardcode network
     pub async fn add_player(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
         let add_player_tx = self
             .tx_builder
-            .add_player(player, utxos, Network::Testnet)
+            .add_player(player, utxos)
             .context("failed to build transaction")?;
 
         debug!("add player tx: {}", hex::encode(&add_player_tx.tx_bytes));
@@ -169,7 +172,7 @@ impl NodeClient {
 
         let cleanup_tx = self
             .tx_builder
-            .cleanup_game(utxos, Network::Testnet)
+            .cleanup_game(utxos)
             .context("failed to build transaction")?;
 
         debug!("cleanup tx: {}", hex::encode(&cleanup_tx.tx_bytes));
@@ -195,7 +198,7 @@ impl NodeClient {
 
         let end_game_tx = self
             .tx_builder
-            .end_game(None, utxos, Network::Testnet)
+            .end_game(None, utxos)
             .context("failed to build transaction")?;
 
         debug!("end_game_tx tx: {}", hex::encode(&end_game_tx.tx_bytes));

@@ -28,7 +28,7 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
     let node_id = node.metadata.name.clone().expect("node without a name");
     info!(id = node_id, "select node for new game");
 
-    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote)
+    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote, state.network)
         .context("error connecting to node")?;
 
     info!(id = node_id, "connected to node");

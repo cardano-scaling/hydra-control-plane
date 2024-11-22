@@ -21,7 +21,7 @@ pub async fn start_game(
     let node_id = node.metadata.name.clone().expect("node without a name");
     info!(id = node_id, "start game for node");
 
-    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote)
+    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote, state.network)
         .inspect_err(|err| error!("failed to connect to node: {}", err))
         .map_err(|_| Status::ServiceUnavailable)?;
 

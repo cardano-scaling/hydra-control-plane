@@ -74,6 +74,11 @@ resource "kubernetes_deployment_v1" "control_plane" {
           }
 
           env {
+            name = "NETWORK_ID"
+            value = var.network_id
+          }
+
+          env {
             name = "KUBERNETES_NAMESPACE"
             value_from {
               field_ref {

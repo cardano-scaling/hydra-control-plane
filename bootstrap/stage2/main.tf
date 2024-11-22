@@ -148,6 +148,10 @@ variable "autoscaler_max_batch" {
   type = number
 }
 
+variable "network_id" {
+  type = number
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string

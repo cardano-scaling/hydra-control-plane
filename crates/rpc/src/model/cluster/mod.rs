@@ -7,6 +7,7 @@ use anyhow::Context;
 use futures_util::StreamExt as _;
 use kube::runtime::{reflector::ObjectRef, WatchStreamExt as _};
 use pallas::crypto::key::ed25519::SecretKey;
+use pallas::ledger::addresses::Network;
 use serde::Deserialize;
 
 mod crd;
@@ -30,10 +31,15 @@ pub struct ClusterState {
     watcher_handle: Arc<tokio::task::JoinHandle<()>>,
     pub admin_sk: SecretKey,
     pub remote: bool,
+    pub network: Network,
 }
 
 impl ClusterState {
-    pub async fn try_new(admin_key_file: &str, remote: bool) -> anyhow::Result<Self> {
+    pub async fn try_new(
+        admin_key_file: &str,
+        remote: bool,
+        network: Network,
+    ) -> anyhow::Result<Self> {
         let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
             File::open(admin_key_file).context("unable to open key file")?,
         )?;
@@ -81,6 +87,7 @@ impl ClusterState {
             watcher_handle: Arc::new(watcher_handle),
             admin_sk,
             remote,
+            network,
         })
     }
 

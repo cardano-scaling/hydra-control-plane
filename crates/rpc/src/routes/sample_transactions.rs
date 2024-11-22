@@ -30,7 +30,7 @@ pub async fn sample_transactions(
             .ok_or(Status::NotFound)?
             .to_owned(),
     };
-    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote)
+    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote, state.network)
         .inspect_err(|err| error!("error connecting to node: {}", err))
         .map_err(|_| Status::InternalServerError)?;
 

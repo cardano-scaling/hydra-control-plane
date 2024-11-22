@@ -30,23 +30,20 @@ use super::{
 pub struct TxBuilder {
     admin_key: SecretKey,
     pub admin_pkh: Hash<28>,
+    network: Network,
 }
 
 impl TxBuilder {
-    pub fn new(admin_key: SecretKey) -> Self {
+    pub fn new(admin_key: SecretKey, network: Network) -> Self {
         let admin_pkh = admin_key.public_key().compute_hash();
         TxBuilder {
             admin_key,
             admin_pkh,
+            network,
         }
     }
 
-    pub fn new_game(
-        &self,
-        player: Player,
-        utxos: Vec<UTxO>,
-        network: Network,
-    ) -> Result<BuiltTransaction> {
+    pub fn new_game(&self, player: Player, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
         let admin_utxos = self.find_admin_utxos(utxos);
 
         if admin_utxos.is_empty() {
@@ -55,17 +52,16 @@ impl TxBuilder {
 
         let input_utxo = admin_utxos.first().unwrap();
 
-        let script_address = Validator::address(network);
-        println!("Script Address: {:?}", script_address.to_bech32());
+        let script_address = Validator::address(self.network);
         let player_outbound_address = player
-            .outbound_address(self.admin_pkh, network)
+            .outbound_address(self.admin_pkh, self.network)
             .context("failed to build player multisig outbound address")?;
 
         let mut admin_address_bytes = self.admin_pkh.to_vec();
         admin_address_bytes.insert(
             0,
             0b1100000
-                | match network {
+                | match self.network {
                     Network::Testnet => 0,
                     Network::Mainnet => 1,
                     Network::Other(i) => i,
@@ -101,16 +97,11 @@ impl TxBuilder {
         Ok(signed_tx)
     }
 
-    pub fn add_player(
-        &self,
-        player: Player,
-        utxos: Vec<UTxO>,
-        network: Network,
-    ) -> Result<BuiltTransaction> {
+    pub fn add_player(&self, player: Player, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
         let game_state_utxo = utxos
             .clone()
             .into_iter()
-            .find(|utxo| utxo.address == Validator::address(network))
+            .find(|utxo| utxo.address == Validator::address(self.network))
             .ok_or_else(|| anyhow!("game state UTxO not found"))?;
 
         let game_state: PlutusData = GameState::try_from(game_state_utxo.datum.clone())?
@@ -126,10 +117,10 @@ impl TxBuilder {
             .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
 
-        let script_address = Validator::address(network);
+        let script_address = Validator::address(self.network);
 
         let outbound_player_address = player
-            .outbound_address(self.admin_pkh, network)
+            .outbound_address(self.admin_pkh, self.network)
             .context("failed to construct player multisig outbound address")?;
         let redeemer: PlutusData = Redeemer::new(0, SpendAction::AddPlayer).into();
         let mut redeemer_bytes = Vec::new();
@@ -185,11 +176,11 @@ impl TxBuilder {
         Ok(signed_tx)
     }
 
-    pub fn start_game(&self, utxos: Vec<UTxO>, network: Network) -> Result<BuiltTransaction> {
+    pub fn start_game(&self, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
         let game_state_utxo = utxos
             .clone()
             .into_iter()
-            .find(|utxo| utxo.address == Validator::address(network))
+            .find(|utxo| utxo.address == Validator::address(self.network))
             .ok_or_else(|| anyhow!("game state UTxO not found"))?;
 
         let game_state: PlutusData = GameState::try_from(game_state_utxo.datum.clone())?
@@ -199,7 +190,7 @@ impl TxBuilder {
         let mut datum = Vec::new();
         encode(&game_state, &mut datum)?;
 
-        let script_address = Validator::address(network);
+        let script_address = Validator::address(self.network);
         let redeemer: PlutusData = Redeemer::new(0, SpendAction::StartGame).into();
         let mut redeemer_bytes = Vec::new();
         encode(&redeemer, &mut redeemer_bytes)?;
@@ -266,12 +257,11 @@ impl TxBuilder {
         // If this is Some(_, false), we are marking as finished
         is_player_cheater: Option<(Player, bool)>,
         utxos: Vec<UTxO>,
-        network: Network,
     ) -> Result<BuiltTransaction> {
         let game_state_utxo = utxos
             .clone()
             .into_iter()
-            .find(|utxo| utxo.address == Validator::address(network))
+            .find(|utxo| utxo.address == Validator::address(self.network))
             .ok_or_else(|| anyhow!("game state UTxO not found"))?;
 
         let mut game_state: GameState = match game_state_utxo.datum.clone() {
@@ -315,7 +305,7 @@ impl TxBuilder {
             .input(game_state_utxo.clone().into())
             .collateral_input(collateral_utxo.clone().into())
             // GameState Output
-            .output(Output::new(Validator::address(network), 0).set_inline_datum(datum))
+            .output(Output::new(Validator::address(self.network), 0).set_inline_datum(datum))
             .add_spend_redeemer(
                 game_state_utxo.into(),
                 redeemer_bytes,
@@ -361,11 +351,11 @@ impl TxBuilder {
     }
 
     //TODO: sooo many clones here. Let's improve that if possible
-    pub fn cleanup_game(&self, utxos: Vec<UTxO>, network: Network) -> Result<BuiltTransaction> {
+    pub fn cleanup_game(&self, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
         let game_state_utxo = utxos
             .clone()
             .into_iter()
-            .find(|utxo| utxo.address == Validator::address(network))
+            .find(|utxo| utxo.address == Validator::address(self.network))
             .ok_or_else(|| anyhow!("game state UTxO not found"))?;
 
         let game_state: GameState = match game_state_utxo.datum.clone() {
@@ -438,7 +428,7 @@ impl TxBuilder {
         for player in game_state.players {
             let player: Player = player.into();
             let outbound_address = player
-                .outbound_address(self.admin_pkh, network)
+                .outbound_address(self.admin_pkh, self.network)
                 .context("failed to get player outbound address")?;
             let outbound_script = player.outbound_script(self.admin_pkh);
             let mut outbound_bytes = Vec::new();
@@ -517,7 +507,10 @@ mod tests {
             File::open("keys/preprod.sk").expect("Failed to open key file"),
         )
         .expect("unable to parse key file");
-        let tx_builder = TxBuilder::new(admin_key.try_into().expect("Failed to create SecretKey"));
+        let tx_builder = TxBuilder::new(
+            admin_key.try_into().expect("Failed to create SecretKey"),
+            Network::Testnet,
+        );
 
         let player = match Address::from_bech32(
             "addr_test1qpq0htjtaygzwtj3h4akj2mvzaxgpru4yje4ca9a507jtdw5pcy8kzccynfps4ayhmtc38j6tyjrkyfccdytnxwnd6psfelznq",
@@ -545,7 +538,7 @@ mod tests {
         }];
 
         let tx = tx_builder
-            .new_game(player.into(), utxos, Network::Testnet)
+            .new_game(player.into(), utxos)
             .expect("Failed to build tx");
 
         debug!("{}", hex::encode(tx.tx_bytes));
