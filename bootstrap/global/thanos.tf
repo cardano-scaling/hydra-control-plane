@@ -78,3 +78,31 @@ resource "kubernetes_service_v1" "thanos_querier" {
     }
   }
 }
+
+resource "kubernetes_ingress_v1" "thanos_querier" {
+  metadata {
+    name      = "thanos-querier"
+    namespace = var.monitoring_namespace
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+    rule {
+      host = "thanos.${var.external_domain}"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "thanos-querier"
+              port {
+                number = 9090
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
