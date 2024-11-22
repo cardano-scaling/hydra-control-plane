@@ -31,6 +31,7 @@ pub struct Config {
     pub bucket: String,
     pub init_aws_access_key_id: String,
     pub init_aws_secret_access_key: String,
+    pub network_id: String,
     // Autoscaler
     pub autoscaler_delay: Duration,
     pub autoscaler_low_watermark: usize,
@@ -85,6 +86,7 @@ impl Config {
             autoscaler_max_batch: env::var("AUTOSCALER_MAX_BATCH")
                 .map(|x| x.parse().expect("Failed to parse AUTOSCALER_MAX_BATCH"))
                 .expect("Missing AUTOSCALER_MAX_BATCH env var."),
+            network_id: env::var("NETWORK_ID").expect("Missing NETWORK_ID env var."),
         }
     }
 }

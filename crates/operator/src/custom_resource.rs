@@ -320,6 +320,11 @@ impl HydraDoomNode {
                         value: Some(config.api_key.clone()),
                         value_from: None,
                     },
+                    EnvVar {
+                        name: "NETWORK_ID".to_string(),
+                        value: Some(config.network_id.clone()),
+                        value_from: None,
+                    },
                 ]),
                 volume_mounts: Some(vec![VolumeMount {
                     name: "secret".to_string(),
@@ -331,6 +336,11 @@ impl HydraDoomNode {
             Container {
                 name: "ai-1".to_string(),
                 image: Some(config.ai_image.clone()),
+                env: Some(vec![EnvVar {
+                    name: "NETWORK_ID".to_string(),
+                    value: Some(config.network_id.clone()),
+                    value_from: None,
+                }]),
                 ..Default::default()
             },
         ];
