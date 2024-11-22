@@ -93,6 +93,7 @@ pub struct K8sConstants {
     pub transactions_metric: String,
     pub dmtrctl_image: String,
     pub storage_class_name: String,
+    pub service_account_name: String,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
@@ -114,6 +115,7 @@ impl Default for K8sConstants {
             game_state_metric: "hydra_doom_game_state".to_string(),
             transactions_metric: "hydra_doom_node_transactions".to_string(),
             ingress_class_name: "nginx".to_string(),
+            service_account_name: "hydra-doom-node".to_string(),
             ingress_annotations: [
                 (
                     "nginx.ingress.kubernetes.io/proxy-read-timeout".to_string(),

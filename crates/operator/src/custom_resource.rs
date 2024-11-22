@@ -358,6 +358,7 @@ impl HydraDoomNode {
                         ..Default::default()
                     }),
                     spec: Some(PodSpec {
+                        service_account_name: Some(constants.service_account_name.clone()),
                         init_containers: Some(vec![Container {
                             name: "init".to_string(),
                             image: Some(config.init_image.clone()),
