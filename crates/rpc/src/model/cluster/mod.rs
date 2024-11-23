@@ -65,7 +65,9 @@ impl ClusterState {
                     if node.status.as_ref().is_some_and(|n| n.game_state != "Waiting") {
                         let id = node.metadata.name.as_ref().unwrap();
                         let mut claims = claims.lock().unwrap();
-                        claims.remove(id);
+                        if claims.remove(id).is_some() {
+                            info!(namespace, "node {} is now available", id);
+                        }
                     }
                 }
                 ready(())
@@ -90,6 +92,7 @@ impl ClusterState {
             .filter(|n| {
                 let id = n.metadata.name.as_ref().unwrap();
                 let recently_claimed = claimed.get(id).unwrap_or(&false);
+                info!("checking node {}, recently claimed: {}, status: {}", id, recently_claimed, n.status.as_ref().map(|s| s.game_state.as_str()).unwrap_or("unknown"));
                 if let Some(status) = n.status.as_ref() {
                     !recently_claimed && status.node_state == "HeadIsOpen" && status.game_state == "Waiting"
                 } else {
