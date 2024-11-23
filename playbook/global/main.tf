@@ -34,5 +34,6 @@ module "global" {
   thanos_endpoints = [
     "k8s-hydradoo-thanossi-3e6cc6bace-ddd76e7d5e148d9f.elb.us-east-1.amazonaws.com:10901",
     "k8s-hydradoo-thanossi-08d03cf670-c832566453f2a5a0.elb.eu-central-1.amazonaws.com:10901",
+    "k8s-hydradoo-thanossi-ee478628bf-6cd33f983e73ae8f.elb.us-west-2.amazonaws.com:10901"
   ]
 }

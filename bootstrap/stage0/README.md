@@ -65,3 +65,11 @@
    ```
 6. Create SSL cert on the corresponding region using AWS Cert Manager (you will
    need the ARN to set up the ingress controller on `stage1`).
+
+   1. Go to Cert manager (in the corresponding region).
+   2. Click Request
+   3. Choose `Request a public certificate`, then `Next`.
+   4. Type the domain. `*.{region}.hydra-doom.sundae.fi`. Add the `sundae-labs:cost-allocation:Service: hydra-doom` tag. Click `Request`.
+   5. Click `Create records in Route 53`.
+   6. Click `Create Records`.
+   7. Wait for certificate to be deemed valid.
