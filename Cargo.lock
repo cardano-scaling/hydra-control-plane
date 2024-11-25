@@ -1334,6 +1334,7 @@ dependencies = [
  "kube",
  "lazy_static",
  "prometheus-parse",
+ "rand",
  "reqwest",
  "schemars",
  "serde",

@@ -6,7 +6,7 @@ use tracing::{error, info, instrument};
 
 use hydra_control_plane_operator::{
     config::Config,
-    controller::{error_policy, patch_statuses, reconcile, K8sContext},
+    controller::{error_policy, patch_statuses, reconcile, run_autoscaler, K8sContext},
     custom_resource::HydraDoomNode,
 };
 
@@ -34,8 +34,9 @@ async fn main() -> Result<()> {
             }
         });
     let patch_statuses_controller = patch_statuses(context.clone());
+    let autoscaler_controller = run_autoscaler(context.clone());
 
-    let _ = tokio::join!(controller, patch_statuses_controller);
+    let _ = tokio::join!(controller, patch_statuses_controller, autoscaler_controller);
 
     Ok(())
 }

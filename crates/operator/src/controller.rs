@@ -9,12 +9,24 @@ use kube::{
     runtime::controller::Action,
     Api, Client, ResourceExt,
 };
+use rand::{distributions::Alphanumeric, Rng};
 use serde_json::json;
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use thiserror::Error;
 use tracing::{error, info, warn};
 
-use crate::{config::Config, custom_resource::HydraDoomNodeStatus};
+pub fn random_name() -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect()
+}
+
+use crate::{
+    config::Config,
+    custom_resource::{HydraDoomNodeSpec, HydraDoomNodeStatus},
+};
 
 use super::custom_resource::{HydraDoomNode, HYDRA_DOOM_NODE_FINALIZER};
 
@@ -59,7 +71,7 @@ impl From<f64> for HydraDoomGameState {
             1.0 => Self::Lobby,
             2.0 => Self::Running,
             3.0 => Self::Done,
-              _ => Self::Waiting,
+            _ => Self::Waiting,
         }
     }
 }
@@ -385,13 +397,15 @@ impl K8sContext {
                                 });
 
                             match (node_state, game_state, transactions) {
-                                (Some(node_state), Some(game_state), Some(transactions)) => HydraDoomNodeStatus {
-                                    transactions,
-                                    node_state: node_state.into(),
-                                    game_state: game_state.into(),
-                                    local_url: self.get_internal_url(crd),
-                                    external_url: self.get_external_url(crd),
-                                },
+                                (Some(node_state), Some(game_state), Some(transactions)) => {
+                                    HydraDoomNodeStatus {
+                                        transactions,
+                                        node_state: node_state.into(),
+                                        game_state: game_state.into(),
+                                        local_url: self.get_internal_url(crd),
+                                        external_url: self.get_external_url(crd),
+                                    }
+                                }
                                 _ => default,
                             }
                         }
@@ -455,6 +469,76 @@ impl K8sContext {
 
         Ok(())
     }
+
+    pub async fn deploy_node(&self) -> anyhow::Result<HydraDoomNode> {
+        info!("Deploying new node.");
+
+        // List available snapshots.
+        // Try move from available to used dir.
+        // If successful, start new node.
+        // If anything fails, at any point, deploy offline node.
+
+        let api: Api<HydraDoomNode> = Api::default_namespaced(self.client.clone());
+        let name = format!(
+            "{}{}{}",
+            self.config.autoscaler_region_prefix,
+            "0", // 1 for online, 0 for offline
+            random_name()
+        );
+        let new_node = HydraDoomNode {
+            spec: HydraDoomNodeSpec::default(),
+            status: None,
+            metadata: kube::api::ObjectMeta {
+                name: Some(name.clone()),
+                ..Default::default()
+            },
+        };
+        // Create or patch the deployment
+        api.patch(
+            &name,
+            &PatchParams::apply("hydra-doom-pod-controller"),
+            &Patch::Apply(&new_node),
+        )
+        .await
+        .map_err(|err| {
+            error!(err = err.to_string(), "Failed to create new node.");
+            err.into()
+        })
+    }
+
+    pub async fn remove_node(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
+        info!("Removing node: {}", crd.name_any());
+        todo!()
+    }
+
+    pub async fn scale(&self) -> anyhow::Result<()> {
+        let api: Api<HydraDoomNode> = Api::default_namespaced(self.client.clone());
+        let crds = api.list(&ListParams::default()).await?;
+
+        let mut available_hydra_nodes: Vec<HydraDoomNode> = crds
+            .into_iter()
+            .filter(|crd| match &crd.status {
+                Some(status) => status.game_state == String::from(HydraDoomGameState::Waiting),
+                None => false,
+            })
+            .collect();
+
+        if available_hydra_nodes.len() < self.config.autoscaler_low_watermark {
+            let amount = available_hydra_nodes.len() - self.config.autoscaler_low_watermark;
+            // One after the other to avoid race conditions.
+            for _ in 0..amount {
+                self.deploy_node().await?;
+            }
+        } else if available_hydra_nodes.len() > self.config.autoscaler_high_watermark {
+            while available_hydra_nodes.len() > self.config.autoscaler_high_watermark {
+                // High watermark will never be < 1.
+                self.remove_node(&available_hydra_nodes.pop().unwrap())
+                    .await?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 pub async fn patch_statuses(context: Arc<K8sContext>) -> Result<()> {
@@ -463,6 +547,15 @@ pub async fn patch_statuses(context: Arc<K8sContext>) -> Result<()> {
     loop {
         context.patch_statuses().await?;
         tokio::time::sleep(Duration::from_secs(5)).await;
+    }
+}
+
+pub async fn run_autoscaler(context: Arc<K8sContext>) -> Result<()> {
+    info!("Running autoscaler loop.");
+
+    loop {
+        context.scale().await?;
+        tokio::time::sleep(context.config.autoscaler_delay).await;
     }
 }
 

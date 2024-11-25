@@ -96,6 +96,20 @@ pub struct HydraDoomNodeSpec {
     pub resources: Option<Resources>,
 }
 
+impl Default for HydraDoomNodeSpec {
+    fn default() -> Self {
+        Self {
+            offline: Some(true),
+            network_id: None,
+            seed_input: "_".to_string(),
+            commit_inputs: vec![],
+            start_chain_from: None,
+            asleep: None,
+            resources: None,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeStatus {

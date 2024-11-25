@@ -101,6 +101,20 @@ variable "frontend_replicas" {
   default = 1
 }
 
+variable "autoscaler_low_watermark" {
+  type    = number
+  default = 1
+}
+
+variable "autoscaler_low_watermark" {
+  type    = number
+  default = 5
+}
+
+variable "autoscaler_region_prefix" {
+  type = string
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -142,4 +156,7 @@ module "stage2" {
   init_image                 = "ghcr.io/demeter-run/doom-patrol-init:b7b4fc499b5274cd71b6b72f93ab4ba8199437fe"
   frontend_image             = var.frontend_image
   frontend_replicas          = var.frontend_replicas
+  autoscaler_high_watermark  = var.autoscaler_high_watermark
+  autoscaler_low_watermark   = var.autoscaler_low_watermark
+  autoscaler_region_prefix   = var.autoscaler_region_prefix
 }

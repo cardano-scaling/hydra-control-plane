@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use std::env;
+use std::{env, time::Duration};
 
 lazy_static! {
     static ref CONTROLLER_CONFIG: Config = Config::from_env();
@@ -31,6 +31,11 @@ pub struct Config {
     pub bucket: String,
     pub init_aws_access_key_id: String,
     pub init_aws_secret_access_key: String,
+    // Autoscaler
+    pub autoscaler_delay: Duration,
+    pub autoscaler_low_watermark: usize,
+    pub autoscaler_high_watermark: usize,
+    pub autoscaler_region_prefix: String,
 }
 
 impl Config {
@@ -60,6 +65,22 @@ impl Config {
                 .expect("Missing INIT_AWS_ACCESS_KEY_ID env var."),
             init_aws_secret_access_key: env::var("INIT_AWS_SECRET_ACCESS_KEY")
                 .expect("Missing INIT_AWS_SECRET_ACCESS_KEY env var."),
+            autoscaler_delay: env::var("AUTOSCALER_DELAY")
+                .map(|duration| {
+                    Duration::from_secs(duration.parse().expect("Failed to parse AUTOSCALER_DELAY"))
+                })
+                .expect("Missing AUTOSCALER_DELAY env var."),
+            autoscaler_high_watermark: env::var("AUTOSCALER_HIGH_WATERMARK")
+                .map(|x| {
+                    x.parse()
+                        .expect("Failed to parse AUTOSCALER_HIGH_WATERMARK")
+                })
+                .expect("Missing AUTOSCALER_HIGH_WATERMARK env var."),
+            autoscaler_low_watermark: env::var("AUTOSCALER_LOW_WATERMARK")
+                .map(|x| x.parse().expect("Failed to parse AUTOSCALER_LOW_WATERMARK"))
+                .expect("Missing AUTOSCALER_LOW_WATERMARK env var."),
+            autoscaler_region_prefix: env::var("AUTOSCALER_REGION_PREFIX")
+                .expect("Missing AUTOSCALER_REGION_PREFIX env var."),
         }
     }
 }

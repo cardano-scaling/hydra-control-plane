@@ -146,6 +146,26 @@ resource "kubernetes_deployment_v1" "operator" {
             value = var.init_aws_secret_access_key
           }
 
+          env {
+            name  = "AUTOSCALER_DELAY"
+            value = "60"
+          }
+
+          env {
+            name  = "AUTOSCALER_LOW_WATERMARK"
+            value = var.autoscaler_low_watermark
+          }
+
+          env {
+            name  = "AUTOSCALER_HIGH_WATERMARK"
+            value = var.autoscaler_high_watermark
+          }
+
+          env {
+            name  = "AUTOSCALER_REGION_PREFIX"
+            value = var.autoscaler_region_prefix
+          }
+
           resources {
             limits = {
               cpu    = var.resources.limits.cpu
