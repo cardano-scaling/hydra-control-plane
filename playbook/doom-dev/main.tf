@@ -115,6 +115,11 @@ variable "autoscaler_region_prefix" {
   type = string
 }
 
+variable "autoscaler_max_batch" {
+  type    = number
+  default = 2
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -159,4 +164,5 @@ module "stage2" {
   autoscaler_high_watermark  = var.autoscaler_high_watermark
   autoscaler_low_watermark   = var.autoscaler_low_watermark
   autoscaler_region_prefix   = var.autoscaler_region_prefix
+  autoscaler_max_batch       = var.autoscaler_max_batch
 }

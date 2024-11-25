@@ -11,7 +11,7 @@ use kube::{
 };
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::json;
-use std::{collections::BTreeMap, sync::Arc, time::Duration};
+use std::{cmp::min, collections::BTreeMap, sync::Arc, time::Duration};
 use thiserror::Error;
 use tracing::{error, info, warn};
 
@@ -471,8 +471,6 @@ impl K8sContext {
     }
 
     pub async fn deploy_node(&self) -> anyhow::Result<HydraDoomNode> {
-        info!("Deploying new node.");
-
         // List available snapshots.
         // Try move from available to used dir.
         // If successful, start new node.
@@ -485,6 +483,7 @@ impl K8sContext {
             "0", // 1 for online, 0 for offline
             random_name().to_lowercase()
         );
+        info!("Deploying new node: {}", name);
         let new_node = HydraDoomNode {
             spec: HydraDoomNodeSpec::default(),
             status: None,
@@ -522,15 +521,35 @@ impl K8sContext {
                 None => false,
             })
             .collect();
+        info!(
+            "Amount of nodes in waiting state: {}",
+            available_hydra_nodes.len()
+        );
 
         if available_hydra_nodes.len() < self.config.autoscaler_low_watermark {
-            let amount = available_hydra_nodes.len() - self.config.autoscaler_low_watermark;
+            info!(
+                existing = available_hydra_nodes.len(),
+                desired = self.config.autoscaler_low_watermark,
+                "Scaling out amount of hydra nodes...",
+            );
+            let amount = min(
+                self.config.autoscaler_low_watermark - available_hydra_nodes.len(),
+                self.config.autoscaler_max_batch,
+            );
+
+            info!("About to scale the amount of Hydra nodes by {}", amount);
+
             // One after the other to avoid race conditions.
             for _ in 0..amount {
                 self.deploy_node().await?;
             }
         } else if available_hydra_nodes.len() > self.config.autoscaler_high_watermark {
             while available_hydra_nodes.len() > self.config.autoscaler_high_watermark {
+                info!(
+                    current = available_hydra_nodes.len(),
+                    desired = self.config.autoscaler_high_watermark,
+                    "Removing a Hydra Node..."
+                );
                 // High watermark will never be < 1.
                 self.remove_node(&available_hydra_nodes.pop().unwrap())
                     .await?;

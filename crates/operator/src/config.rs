@@ -36,6 +36,7 @@ pub struct Config {
     pub autoscaler_low_watermark: usize,
     pub autoscaler_high_watermark: usize,
     pub autoscaler_region_prefix: String,
+    pub autoscaler_max_batch: usize,
 }
 
 impl Config {
@@ -81,6 +82,9 @@ impl Config {
                 .expect("Missing AUTOSCALER_LOW_WATERMARK env var."),
             autoscaler_region_prefix: env::var("AUTOSCALER_REGION_PREFIX")
                 .expect("Missing AUTOSCALER_REGION_PREFIX env var."),
+            autoscaler_max_batch: env::var("AUTOSCALER_MAX_BATCH")
+                .map(|x| x.parse().expect("Failed to parse AUTOSCALER_MAX_BATCH"))
+                .expect("Missing AUTOSCALER_MAX_BATCH env var."),
         }
     }
 }
