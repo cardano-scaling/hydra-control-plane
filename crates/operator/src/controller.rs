@@ -437,18 +437,27 @@ impl K8sContext {
             &self.constants.available_snapshot_prefix,
             &self.constants.used_snapshot_prefix,
         );
-        match self
+
+        // TODO: This should be ACID to avoid race conditions between regions.
+        // Copy object to used snapshots.
+        let _ = self
             .s3_client
             .copy_object()
             .copy_source(format!("{}/{}", self.config.bucket, snapshot_key))
             .bucket(self.config.bucket.clone())
             .key(new_key.clone())
             .send()
-            .await
-        {
-            Ok(_) => Ok(new_key),
-            Err(_) => bail!("Failed to move snapshot to use."),
-        }
+            .await?;
+
+        // Remove object from available snapshots.
+        self.s3_client
+            .delete_object()
+            .bucket(self.config.bucket.clone())
+            .key(format!("{}/{}", self.config.bucket, snapshot_key))
+            .send()
+            .await?;
+
+        Ok(new_key)
     }
 
     pub async fn deploy_node(&self) -> anyhow::Result<HydraDoomNode> {
