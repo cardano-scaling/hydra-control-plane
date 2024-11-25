@@ -11,7 +11,12 @@ use kube::{
 };
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::json;
-use std::{cmp::min, collections::BTreeMap, sync::Arc, time::Duration};
+use std::{
+    cmp::{min, Ordering},
+    collections::BTreeMap,
+    sync::Arc,
+    time::Duration,
+};
 use thiserror::Error;
 use tracing::{error, info, warn};
 
@@ -243,7 +248,17 @@ impl K8sContext {
             .await
         {
             Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
+            Err(e) => match &e {
+                kube::Error::Api(error_response) => {
+                    if error_response.reason == "NotFound" {
+                        info!("ConfigMap not found in cluster, skipping.");
+                        Ok(())
+                    } else {
+                        Err(e.into())
+                    }
+                }
+                _ => Err(e.into()),
+            },
         }
     }
 
@@ -269,7 +284,17 @@ impl K8sContext {
 
         match api.delete(&crd.internal_name(), &dp).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
+            Err(e) => match &e {
+                kube::Error::Api(error_response) => {
+                    if error_response.reason == "NotFound" {
+                        info!("Deployment not found in cluster, skipping.");
+                        Ok(())
+                    } else {
+                        Err(e.into())
+                    }
+                }
+                _ => Err(e.into()),
+            },
         }
     }
 
@@ -296,7 +321,17 @@ impl K8sContext {
         let dp = DeleteParams::default();
         match services.delete(&crd.internal_name(), &dp).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
+            Err(e) => match &e {
+                kube::Error::Api(error_response) => {
+                    if error_response.reason == "NotFound" {
+                        info!("Service not found in cluster, skipping.");
+                        Ok(())
+                    } else {
+                        Err(e.into())
+                    }
+                }
+                _ => Err(e.into()),
+            },
         }
     }
 
@@ -320,7 +355,17 @@ impl K8sContext {
         let dp = DeleteParams::default();
         match api.delete(&crd.internal_name(), &dp).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
+            Err(e) => match &e {
+                kube::Error::Api(error_response) => {
+                    if error_response.reason == "NotFound" {
+                        info!("Ingress not found in cluster, skipping.");
+                        Ok(())
+                    } else {
+                        Err(e.into())
+                    }
+                }
+                _ => Err(e.into()),
+            },
         }
     }
 
@@ -507,7 +552,12 @@ impl K8sContext {
 
     pub async fn remove_node(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         info!("Removing node: {}", crd.name_any());
-        todo!()
+        let api: Api<HydraDoomNode> = Api::default_namespaced(self.client.clone());
+        let dp = DeleteParams::default();
+        match api.delete(&crd.name_any(), &dp).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
     }
 
     pub async fn scale(&self) -> anyhow::Result<()> {
@@ -521,6 +571,19 @@ impl K8sContext {
                 None => false,
             })
             .collect();
+
+        // Sorted for LIFO
+        available_hydra_nodes.sort_by(|a, b| {
+            match (
+                &a.metadata.creation_timestamp,
+                &b.metadata.creation_timestamp,
+            ) {
+                (Some(a), Some(b)) => a.cmp(b),
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => Ordering::Equal,
+            }
+        });
         info!(
             "Amount of nodes in waiting state: {}",
             available_hydra_nodes.len()
