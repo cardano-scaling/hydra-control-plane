@@ -118,6 +118,11 @@ variable "bucket" {
   default = "hydradoomsnapshots"
 }
 
+variable "bucket_region" {
+  type    = string
+  default = "us-east-1"
+}
+
 variable "init_aws_access_key_id" {
   type = string
 }

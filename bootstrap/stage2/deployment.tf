@@ -137,6 +137,11 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
+            name  = "BUCKET_REGION"
+            value = var.bucket_region
+          }
+
+          env {
             name  = "INIT_AWS_ACCESS_KEY_ID"
             value = var.init_aws_access_key_id
           }
