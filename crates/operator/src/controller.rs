@@ -483,7 +483,7 @@ impl K8sContext {
             "{}{}{}",
             self.config.autoscaler_region_prefix,
             "0", // 1 for online, 0 for offline
-            random_name()
+            random_name().to_lowercase()
         );
         let new_node = HydraDoomNode {
             spec: HydraDoomNodeSpec::default(),
