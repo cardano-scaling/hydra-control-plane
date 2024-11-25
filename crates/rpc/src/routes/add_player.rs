@@ -1,9 +1,9 @@
-use pallas::ledger::addresses::Address;
+use std::collections::HashMap;
+
 use rocket::{get, http::Status, serde::json::Json, State};
 use serde::Serialize;
-use tracing::error;
 
-use crate::model::cluster::{ClusterState, NodeClient};
+use crate::model::cluster::ClusterState;
 
 #[derive(Serialize)]
 pub struct AddPlayerResponse {
@@ -18,33 +18,31 @@ pub async fn add_player(
     id: &str,
     state: &State<ClusterState>,
 ) -> Result<Json<AddPlayerResponse>, Status> {
-    let pkh = match Address::from_bech32(address).map_err(|_| Status::BadRequest)? {
-        Address::Shelley(shelley) => Ok(*shelley.payment().as_hash()),
-        _ => Err(Status::BadRequest),
-    }?;
-
     let node = state.get_node_by_id(id).ok_or(Status::NotFound)?;
 
-    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote, state.network)
-        .inspect_err(|err| error!("error connecting to node: {}", err))
-        .map_err(|_| Status::InternalServerError)?;
-
-    let tx_hash = client
-        .add_player(pkh.into())
-        .await
-        .inspect_err(|err| error!("error adding player: {}", err))
-        .map_err(|_| Status::InternalServerError)?;
-
-    let ip = client
-        .resource
+    let (external_url, local_url): (String, String) = node
         .status
         .as_ref()
-        .map(|status| status.external_url.clone())
+        .map(|status| (status.external_url.clone(), status.local_url.clone()))
         .unwrap_or_default();
 
+    let url = local_url + "/game/add_player?address=" + address;
+    let response = reqwest::get(url).await.map_err(|_| Status::BadGateway)?;
+
+    let body = response
+        .json::<HashMap<String, String>>()
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+
     Ok(Json(AddPlayerResponse {
-        ip,
-        player_state: format!("{}#1", hex::encode(tx_hash)),
-        admin_pkh: hex::encode(client.tx_builder.admin_pkh),
+        ip: external_url,
+        player_state: body
+            .get("player_state")
+            .ok_or(Status::InternalServerError)?
+            .to_owned(),
+        admin_pkh: body
+            .get("admin_pkh")
+            .ok_or(Status::InternalServerError)?
+            .to_owned(),
     }))
 }

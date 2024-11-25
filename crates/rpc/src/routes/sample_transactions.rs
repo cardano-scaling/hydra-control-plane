@@ -1,7 +1,7 @@
 use rand::seq::SliceRandom;
 
 use crate::model::{
-    cluster::{ClusterState, NodeClient},
+    cluster::{ClusterState, ConnectionInfo, NodeClient},
     hydra::messages::Transaction,
 };
 use rand::thread_rng;
@@ -30,9 +30,15 @@ pub async fn sample_transactions(
             .ok_or(Status::NotFound)?
             .to_owned(),
     };
-    let client = NodeClient::new(node, state.admin_sk.clone(), state.remote, state.network)
-        .inspect_err(|err| error!("error connecting to node: {}", err))
-        .map_err(|_| Status::InternalServerError)?;
+
+    let (local, remote) =
+        ConnectionInfo::from_resource(node.status.as_ref().ok_or(Status::InternalServerError)?)
+            .map_err(|_| Status::InternalServerError)?;
+
+    let client = NodeClient::new(
+        if state.remote { remote } else { local },
+        state.admin_sk.clone(),
+    );
 
     let transactions = client
         .sample_txs(count)
