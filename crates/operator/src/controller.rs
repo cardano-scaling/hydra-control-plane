@@ -33,7 +33,7 @@ use crate::{
     custom_resource::{HydraDoomNodeSpec, HydraDoomNodeStatus},
 };
 
-use super::custom_resource::{HydraDoomNode, HYDRA_DOOM_NODE_FINALIZER};
+use super::custom_resource::HydraDoomNode;
 
 pub enum HydraDoomNodeState {
     Offline,
@@ -184,45 +184,12 @@ impl K8sContext {
             self.patch_service(crd),
             self.patch_ingress(crd),
             self.patch_configmap(crd),
-            self.patch_crd(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => (),
+            (Ok(_), Ok(_), Ok(_), Ok(_)) => (),
             _ => bail!("Failed to apply patch for components."),
         };
 
         Ok(())
-    }
-
-    pub async fn delete(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        match tokio::join!(
-            self.remove_deployment(crd),
-            self.remove_service(crd),
-            self.remove_ingress(crd),
-            self.remove_configmap(crd),
-        ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_)) => Ok(()),
-            _ => bail!("Failed to remove resources"),
-        }
-    }
-
-    async fn patch_crd(&self, crd: &HydraDoomNode) -> anyhow::Result<HydraDoomNode> {
-        let api: Api<HydraDoomNode> =
-            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-
-        api.patch(
-            &crd.name_any(),
-            &PatchParams::default(),
-            &Patch::Merge(json!({
-                "metadata": {
-                    "finalizers": [HYDRA_DOOM_NODE_FINALIZER]
-                }
-            })),
-        )
-        .await
-        .map_err(|err| {
-            error!(err = err.to_string(), "Failed to patch CRD.");
-            anyhow::Error::from(err)
-        })
     }
 
     async fn patch_configmap(&self, crd: &HydraDoomNode) -> anyhow::Result<ConfigMap> {
@@ -241,27 +208,6 @@ impl K8sContext {
         })
     }
 
-    async fn remove_configmap(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        let api: Api<ConfigMap> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-        match api
-            .delete(&crd.internal_name(), &DeleteParams::default())
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => match &e {
-                kube::Error::Api(error_response) => {
-                    if error_response.reason == "NotFound" {
-                        info!("ConfigMap not found in cluster, skipping.");
-                        Ok(())
-                    } else {
-                        Err(e.into())
-                    }
-                }
-                _ => Err(e.into()),
-            },
-        }
-    }
-
     async fn patch_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<Deployment> {
         let api: Api<Deployment> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
 
@@ -276,26 +222,6 @@ impl K8sContext {
             error!(err = err.to_string(), "Failed to create deployment.");
             err.into()
         })
-    }
-
-    async fn remove_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        let api: Api<Deployment> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-        let dp = DeleteParams::default();
-
-        match api.delete(&crd.internal_name(), &dp).await {
-            Ok(_) => Ok(()),
-            Err(e) => match &e {
-                kube::Error::Api(error_response) => {
-                    if error_response.reason == "NotFound" {
-                        info!("Deployment not found in cluster, skipping.");
-                        Ok(())
-                    } else {
-                        Err(e.into())
-                    }
-                }
-                _ => Err(e.into()),
-            },
-        }
     }
 
     async fn patch_service(&self, crd: &HydraDoomNode) -> anyhow::Result<Service> {
@@ -315,26 +241,6 @@ impl K8sContext {
             })
     }
 
-    async fn remove_service(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        let services: Api<Service> =
-            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-        let dp = DeleteParams::default();
-        match services.delete(&crd.internal_name(), &dp).await {
-            Ok(_) => Ok(()),
-            Err(e) => match &e {
-                kube::Error::Api(error_response) => {
-                    if error_response.reason == "NotFound" {
-                        info!("Service not found in cluster, skipping.");
-                        Ok(())
-                    } else {
-                        Err(e.into())
-                    }
-                }
-                _ => Err(e.into()),
-            },
-        }
-    }
-
     async fn patch_ingress(&self, crd: &HydraDoomNode) -> anyhow::Result<Ingress> {
         // Apply the service to the cluster
         let api: Api<Ingress> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
@@ -348,25 +254,6 @@ impl K8sContext {
             error!(err = err.to_string(), "Failed to create ingress.");
             err.into()
         })
-    }
-
-    async fn remove_ingress(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        let api: Api<Ingress> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-        let dp = DeleteParams::default();
-        match api.delete(&crd.internal_name(), &dp).await {
-            Ok(_) => Ok(()),
-            Err(e) => match &e {
-                kube::Error::Api(error_response) => {
-                    if error_response.reason == "NotFound" {
-                        info!("Ingress not found in cluster, skipping.");
-                        Ok(())
-                    } else {
-                        Err(e.into())
-                    }
-                }
-                _ => Err(e.into()),
-            },
-        }
     }
 
     fn get_internal_url(&self, crd: &HydraDoomNode) -> String {
@@ -657,36 +544,6 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub async fn reconcile(crd: Arc<HydraDoomNode>, ctx: Arc<K8sContext>) -> Result<Action, Error> {
     tracing::info!("Reconciling {}", crd.name_any());
-    // Check if deletion timestamp is set
-    if crd.metadata.deletion_timestamp.is_some() {
-        let hydra_doom_pod_api: Api<HydraDoomNode> =
-            Api::namespaced(ctx.client.clone(), &crd.namespace().unwrap());
-        // Finalizer logic for cleanup
-        if crd
-            .finalizers()
-            .contains(&HYDRA_DOOM_NODE_FINALIZER.to_string())
-        {
-            // Delete associated resources
-            ctx.delete(&crd).await?;
-            // Remove finalizer
-            let patch = json!({
-                "metadata": {
-                    "finalizers": crd.finalizers().iter().filter(|f| *f != HYDRA_DOOM_NODE_FINALIZER).collect::<Vec<_>>()
-                }
-            });
-            let _ = hydra_doom_pod_api
-                .patch(
-                    &crd.name_any(),
-                    &PatchParams::default(),
-                    &Patch::Merge(&patch),
-                )
-                .await
-                .map_err(anyhow::Error::from)?;
-        }
-        return Ok(Action::await_change());
-    }
-
-    // Ensure finalizer is set
     ctx.patch(&crd).await?;
     Ok(Action::await_change())
 }

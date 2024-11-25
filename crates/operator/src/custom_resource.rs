@@ -11,9 +11,9 @@ use k8s_openapi::{
             IngressServiceBackend, IngressSpec, ServiceBackendPort,
         },
     },
-    apimachinery::pkg::api::resource::Quantity,
+    apimachinery::pkg::{api::resource::Quantity, apis::meta::v1::OwnerReference},
 };
-use kube::{api::ObjectMeta, CustomResource, ResourceExt};
+use kube::{api::ObjectMeta, CustomResource, Resource, ResourceExt};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -21,8 +21,6 @@ use std::collections::BTreeMap;
 use crate::config::Config;
 
 use super::controller::K8sConstants;
-
-pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct ResourcesInner {
@@ -149,6 +147,15 @@ impl HydraDoomNode {
         ])
     }
 
+    pub fn owner_references(&self) -> Vec<OwnerReference> {
+        vec![OwnerReference {
+            api_version: HydraDoomNode::api_version(&()).to_string(),
+            kind: HydraDoomNode::kind(&()).to_string(),
+            name: self.name_any(),
+            ..Default::default()
+        }]
+    }
+
     pub fn internal_host(&self) -> String {
         format!(
             "{}.{}.svc.cluster.local",
@@ -167,6 +174,7 @@ impl HydraDoomNode {
         ConfigMap {
             metadata: ObjectMeta {
                 name: Some(name),
+                owner_references: Some(self.owner_references()),
                 ..Default::default()
             },
             data: Some(BTreeMap::from([(
@@ -354,6 +362,7 @@ impl HydraDoomNode {
         Deployment {
             metadata: ObjectMeta {
                 name: Some(name.clone()),
+                owner_references: Some(self.owner_references()),
                 ..Default::default()
             },
             spec: Some(DeploymentSpec {
@@ -462,6 +471,7 @@ impl HydraDoomNode {
         Service {
             metadata: ObjectMeta {
                 name: Some(name),
+                owner_references: Some(self.owner_references()),
                 ..Default::default()
             },
             spec: Some(ServiceSpec {
@@ -502,6 +512,7 @@ impl HydraDoomNode {
         Ingress {
             metadata: ObjectMeta {
                 name: Some(name.clone()),
+                owner_references: Some(self.owner_references()),
                 annotations: Some(constants.ingress_annotations.clone()),
                 ..Default::default()
             },
