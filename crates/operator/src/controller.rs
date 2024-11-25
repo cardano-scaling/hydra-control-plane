@@ -9,7 +9,7 @@ use kube::{
     runtime::controller::Action,
     Api, Client, ResourceExt,
 };
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distributions::Alphanumeric, seq::SliceRandom, thread_rng, Rng};
 use serde_json::json;
 use std::{
     cmp::{min, Ordering},
@@ -414,12 +414,12 @@ impl K8sContext {
             .list_objects_v2()
             .bucket(self.config.bucket.clone())
             .prefix(self.constants.available_snapshot_prefix.clone())
-            .max_keys(10)
+            .max_keys(100)
             .into_paginator()
             .send();
         match response.next().await {
             Some(result) => match result {
-                Ok(output) => match output.contents().first() {
+                Ok(output) => match output.contents().choose(&mut thread_rng()) {
                     Some(object) => object.key().map(|key| key.to_string()),
                     None => None,
                 },
@@ -438,7 +438,6 @@ impl K8sContext {
             &self.constants.used_snapshot_prefix,
         );
 
-        // TODO: This should be ACID to avoid race conditions between regions.
         // Copy object to used snapshots.
         let _ = self
             .s3_client
@@ -449,7 +448,8 @@ impl K8sContext {
             .send()
             .await?;
 
-        // Remove object from available snapshots.
+        // Remove object from available snapshots. If failed, then the snapshot was stolen by
+        // another agent. Return Err in that case, and continue with offline node.
         self.s3_client
             .delete_object()
             .bucket(self.config.bucket.clone())
