@@ -5,21 +5,17 @@ use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::{
     add_player::add_player,
-    cleanup::cleanup,
-    end_game::end_game,
     head::head,
     heads::heads,
     health::health,
     new_game::new_game,
     sample_transactions::sample_transactions,
-    start_game::start_game,
     stats::{global_stats, refresh_stats, StatsState},
 };
 use serde::Deserialize;
 use std::env;
 use tracing::error;
 
-mod guards;
 mod model;
 mod providers;
 mod routes;
@@ -76,9 +72,6 @@ async fn main() -> Result<()> {
                 heads,
                 head,
                 add_player,
-                start_game,
-                cleanup,
-                end_game,
                 sample_transactions,
                 global_stats,
                 health,

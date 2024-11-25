@@ -4,7 +4,7 @@ use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use tracing::debug;
 
 use crate::model::{
@@ -18,12 +18,8 @@ use crate::model::{
 
 use crate::model::hydra::utxo::UTxO;
 
-use super::crd::HydraDoomNode;
-
 #[derive(Clone, Serialize, Debug)]
 pub struct NodeClient {
-    pub resource: Arc<HydraDoomNode>,
-
     #[serde(skip)]
     pub connection: ConnectionInfo,
 
@@ -65,27 +61,11 @@ impl TryInto<Vec<u8>> for KeyEnvelope {
 }
 
 impl NodeClient {
-    pub fn new(
-        resource: Arc<HydraDoomNode>,
-        admin_key: SecretKey,
-        remote: bool,
-        network: Network,
-    ) -> Result<Self> {
-        let status = resource.status.as_ref().ok_or(anyhow!("no status found"))?;
-
-        let (local_connection, remote_connection) = ConnectionInfo::from_resource(status)?;
-
-        let node = Self {
-            resource,
-            connection: if remote {
-                remote_connection
-            } else {
-                local_connection
-            },
-            tx_builder: TxBuilder::new(admin_key, network),
-        };
-
-        Ok(node)
+    pub fn new(connection: ConnectionInfo, admin_key: SecretKey) -> Self {
+        Self {
+            connection,
+            tx_builder: TxBuilder::new(admin_key),
+        }
     }
 
     pub async fn new_game(&self, player: Player) -> Result<Vec<u8>> {
@@ -253,14 +233,21 @@ impl NodeClient {
 }
 
 impl ConnectionInfo {
-    fn from_resource(resource: &super::crd::HydraDoomNodeStatus) -> Result<(Self, Self)> {
+    pub fn local() -> Self {
+        Self {
+            host: "localhost".to_string(),
+            port: 4001,
+            secure: false,
+        }
+    }
+    pub fn from_resource(resource: &super::crd::HydraDoomNodeStatus) -> Result<(Self, Self)> {
         Ok((
             ConnectionInfo::from_url(&resource.local_url)?,
             ConnectionInfo::from_url(&resource.external_url)?,
         ))
     }
 
-    fn from_url(value: &str) -> Result<Self> {
+    pub fn from_url(value: &str) -> Result<Self> {
         // default to secure connection if no schema provided
         let url = Url::parse(value)?;
 
