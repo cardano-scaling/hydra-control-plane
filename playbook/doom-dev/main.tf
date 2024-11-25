@@ -106,7 +106,7 @@ variable "autoscaler_low_watermark" {
   default = 1
 }
 
-variable "autoscaler_low_watermark" {
+variable "autoscaler_high_watermark" {
   type    = number
   default = 5
 }

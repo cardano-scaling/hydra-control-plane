@@ -134,8 +134,11 @@ jobs:
       matrix:
         include:
           - region: us-east-1
+            region_prefix: a
           - region: eu-central-1
+            region_prefix: b
           - region: us-west-2
+            region_prefix: c
 
     env:
       # Secrets
@@ -157,6 +160,9 @@ jobs:
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-a786f53
       TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-f68f1d4 # latest?
       TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-f68f1d4 # latest?
+      TF_VAR_autoscaler_high_watermark: "5"
+      TF_VAR_autoscaler_low_watermark: "1"
+      TF_VAR_autoscaler_region_prefix: ${{ matrix.region_prefix }}
 
     steps:
       - name: Filter regions
