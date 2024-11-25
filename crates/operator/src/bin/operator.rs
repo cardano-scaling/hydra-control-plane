@@ -1,4 +1,6 @@
 use anyhow::Result;
+use aws_config::{meta::region::RegionProviderChain, BehaviorVersion};
+use aws_sdk_s3::config::Region;
 use futures::StreamExt;
 use kube::{runtime::controller::Controller, Api, Client};
 use std::sync::Arc;
@@ -20,7 +22,13 @@ async fn main() -> Result<()> {
     info!("Initiating operator.");
     let client = Client::try_default().await?;
     let config = Config::from_env();
-    let context = Arc::new(K8sContext::new(client.clone(), config));
+    let region_provider = RegionProviderChain::first_try(Region::new(config.bucket_region.clone()));
+    let shared_config = aws_config::defaults(BehaviorVersion::latest())
+        .region(region_provider)
+        .load()
+        .await;
+    let s3_client = aws_sdk_s3::Client::new(&shared_config);
+    let context = Arc::new(K8sContext::new(client.clone(), config, s3_client));
 
     // Create controller for MyApp custom resource
     let api: Api<HydraDoomNode> = Api::default_namespaced(client);

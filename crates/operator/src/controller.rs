@@ -111,10 +111,14 @@ pub struct K8sConstants {
     pub dmtrctl_image: String,
     pub storage_class_name: String,
     pub service_account_name: String,
+    pub available_snapshot_prefix: String,
+    pub used_snapshot_prefix: String,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
         Self {
+            available_snapshot_prefix: "snapshots".to_string(),
+            used_snapshot_prefix: "used".to_string(),
             storage_class_name: "efs-sc".to_string(),
             config_dir: "/etc/config".to_string(),
             secret_dir: "/var/secret".to_string(),
@@ -166,14 +170,16 @@ pub struct K8sContext {
     pub client: Client,
     pub config: Config,
     pub constants: K8sConstants,
+    pub s3_client: aws_sdk_s3::Client,
 }
 
 impl K8sContext {
-    pub fn new(client: Client, config: Config) -> Self {
+    pub fn new(client: Client, config: Config, s3_client: aws_sdk_s3::Client) -> Self {
         Self {
             client,
             config,
             constants: Default::default(),
+            s3_client,
         }
     }
 
@@ -402,22 +408,86 @@ impl K8sContext {
         Ok(())
     }
 
+    async fn get_snapshot(&self) -> Option<String> {
+        let mut response = self
+            .s3_client
+            .list_objects_v2()
+            .bucket(self.config.bucket.clone())
+            .prefix(self.constants.available_snapshot_prefix.clone())
+            .max_keys(10)
+            .into_paginator()
+            .send();
+        match response.next().await {
+            Some(result) => match result {
+                Ok(output) => match output.contents().first() {
+                    Some(object) => object.key().map(|key| key.to_string()),
+                    None => None,
+                },
+                Err(e) => {
+                    warn!(error = e.to_string(), "Error query s3 for snapshots.");
+                    None
+                }
+            },
+            None => None,
+        }
+    }
+
+    async fn use_snapshot(&self, snapshot_key: &str) -> anyhow::Result<String> {
+        let new_key = snapshot_key.replace(
+            &self.constants.available_snapshot_prefix,
+            &self.constants.used_snapshot_prefix,
+        );
+        match self
+            .s3_client
+            .copy_object()
+            .copy_source(format!("{}/{}", self.config.bucket, snapshot_key))
+            .bucket(self.config.bucket.clone())
+            .key(new_key.clone())
+            .send()
+            .await
+        {
+            Ok(_) => Ok(new_key),
+            Err(_) => bail!("Failed to move snapshot to use."),
+        }
+    }
+
     pub async fn deploy_node(&self) -> anyhow::Result<HydraDoomNode> {
         // List available snapshots.
-        // Try move from available to used dir.
-        // If successful, start new node.
-        // If anything fails, at any point, deploy offline node.
+        let spec = match self.get_snapshot().await {
+            Some(snapshot_key) => {
+                // Try move from available to used dir.
+                match self.use_snapshot(&snapshot_key).await {
+                    Ok(new_snapshot_key) => HydraDoomNodeSpec {
+                        offline: Some(false),
+                        asleep: None,
+                        network_id: None,
+                        start_chain_from: None,
+                        resources: None,
+                        snapshot: Some(new_snapshot_key),
+                    },
+                    Err(e) => {
+                        warn!(err = e.to_string(), "Failed to mark snapshot as used");
+                        HydraDoomNodeSpec::default()
+                    }
+                }
+            }
+            None => HydraDoomNodeSpec::default(),
+        };
 
         let api: Api<HydraDoomNode> = Api::default_namespaced(self.client.clone());
         let name = format!(
             "{}{}{}",
             self.config.autoscaler_region_prefix,
-            "0", // 1 for online, 0 for offline
+            if spec.offline.unwrap_or(false) {
+                "0"
+            } else {
+                "1"
+            }, // 1 for online, 0 for offline
             random_name().to_lowercase()
         );
         info!("Deploying new node: {}", name);
         let new_node = HydraDoomNode {
-            spec: HydraDoomNodeSpec::default(),
+            spec,
             status: None,
             metadata: kube::api::ObjectMeta {
                 name: Some(name.clone()),

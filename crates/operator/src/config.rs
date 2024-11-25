@@ -29,6 +29,7 @@ pub struct Config {
     pub dmtr_api_key: String,
     pub dmtr_port_name: String,
     pub bucket: String,
+    pub bucket_region: String,
     pub init_aws_access_key_id: String,
     pub init_aws_secret_access_key: String,
     // Autoscaler
@@ -62,6 +63,7 @@ impl Config {
             dmtr_port_name: env::var("DMTR_PORT_NAME").expect("Missing DMTR_PORT_NAME env var."),
             init_image: env::var("INIT_IMAGE").expect("Missing INIT_IMAGE env var."),
             bucket: env::var("BUCKET").expect("Missing BUCKET env var."),
+            bucket_region: env::var("BUCKET_REGION").expect("Missing BUCKET_REGION env var."),
             init_aws_access_key_id: env::var("INIT_AWS_ACCESS_KEY_ID")
                 .expect("Missing INIT_AWS_ACCESS_KEY_ID env var."),
             init_aws_secret_access_key: env::var("INIT_AWS_SECRET_ACCESS_KEY")
