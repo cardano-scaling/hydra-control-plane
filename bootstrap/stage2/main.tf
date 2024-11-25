@@ -144,6 +144,10 @@ variable "autoscaler_high_watermark" {
   default = 5
 }
 
+variable "autoscaler_max_batch" {
+  type = number
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string

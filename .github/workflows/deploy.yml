@@ -137,14 +137,17 @@ jobs:
             region_prefix: a
             autoscaler_high_watermark: 5
             autoscaler_low_watermark: 1
+            autoscaler_max_batch: 2
           - region: eu-central-1
             region_prefix: b
             autoscaler_high_watermark: 5
             autoscaler_low_watermark: 1
+            autoscaler_max_batch: 2
           - region: us-west-2
             region_prefix: c
             autoscaler_high_watermark: 5
             autoscaler_low_watermark: 1
+            autoscaler_max_batch: 2
 
     env:
       # Secrets
@@ -169,6 +172,7 @@ jobs:
       TF_VAR_autoscaler_high_watermark: ${{ matrix.autoscaler_high_watermark }}
       TF_VAR_autoscaler_low_watermark: ${{ matrix.autoscaler_low_watermark }}
       TF_VAR_autoscaler_region_prefix: ${{ matrix.region_prefix }}
+      TF_VAR_autoscaler_max_batch: ${{ matrix.autoscaler_max_batch }}
 
     steps:
       - name: Filter regions

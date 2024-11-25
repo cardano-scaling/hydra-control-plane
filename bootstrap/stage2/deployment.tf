@@ -166,6 +166,11 @@ resource "kubernetes_deployment_v1" "operator" {
             value = var.autoscaler_region_prefix
           }
 
+          env {
+            name  = "AUTOSCALER_MAX_BATCH"
+            value = var.autoscaler_max_batch
+          }
+
           resources {
             limits = {
               cpu    = var.resources.limits.cpu
