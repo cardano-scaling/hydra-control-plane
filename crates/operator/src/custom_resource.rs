@@ -152,6 +152,7 @@ impl HydraDoomNode {
             api_version: HydraDoomNode::api_version(&()).to_string(),
             kind: HydraDoomNode::kind(&()).to_string(),
             name: self.name_any(),
+            uid: self.uid().unwrap(),
             ..Default::default()
         }]
     }
