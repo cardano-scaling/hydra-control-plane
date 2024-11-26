@@ -45,8 +45,8 @@ resource "kubernetes_deployment_v1" "frontend" {
             name  = "VITE_API_KEY"
             value = "067d20be-8baa-49cb-b501-e004af358870"
           }
-
-env {          name = "VITE_NETWORK_ID"
+          env {
+            name  = "VITE_NETWORK_ID"
             value = var.network_id
           }
 
