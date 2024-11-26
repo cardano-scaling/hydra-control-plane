@@ -3,10 +3,10 @@ use rocket::{http::Status, post, State};
 use rocket_errors::anyhow::Result;
 use tracing::error;
 
-use crate::{guards::api_key::ApiKey, LocalState};
+use crate::LocalState;
 
 #[post("/game/start_game")]
-pub async fn start_game(_api_key: ApiKey, state: &State<LocalState>) -> Result<(), Status> {
+pub async fn start_game(state: &State<LocalState>) -> Result<(), Status> {
     let client = NodeClient::new(ConnectionInfo::local(), state.admin_key.clone());
 
     client

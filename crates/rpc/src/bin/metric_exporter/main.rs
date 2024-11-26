@@ -17,7 +17,6 @@ use std::{fs::File, sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{info, warn};
 
-mod guards;
 mod metrics;
 mod routes;
 use metrics::{Metrics, NodeState};

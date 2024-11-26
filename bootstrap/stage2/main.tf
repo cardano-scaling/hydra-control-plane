@@ -126,9 +126,6 @@ variable "init_aws_secret_access_key" {
   type = string
 }
 
-variable "api_key" {
-  type = string
-}
 
 variable "autoscaler_region_prefix" {
   type = string

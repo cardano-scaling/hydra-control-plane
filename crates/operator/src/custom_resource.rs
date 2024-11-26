@@ -306,11 +306,7 @@ impl HydraDoomNode {
                     protocol: Some("TCP".to_string()),
                     ..Default::default()
                 }]),
-                env: Some(vec![EnvVar {
-                    name: "API_KEY".to_string(),
-                    value: Some(config.api_key.clone()),
-                    value_from: None,
-                }]),
+
                 ..Default::default()
             },
             Container {
@@ -320,11 +316,6 @@ impl HydraDoomNode {
                     EnvVar {
                         name: "ADMIN_KEY_FILE".to_string(),
                         value: Some(format!("{}/admin.sk", constants.secret_dir)),
-                        value_from: None,
-                    },
-                    EnvVar {
-                        name: "API_KEY".to_string(),
-                        value: Some(config.api_key.clone()),
                         value_from: None,
                     },
                     EnvVar {
