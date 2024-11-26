@@ -147,7 +147,7 @@ jobs:
             region_prefix: c
             autoscaler_high_watermark: 100
             autoscaler_low_watermark: 20
-            autoscaler_max_batch: 2
+            autoscaler_max_batch: 10
 
     env:
       # Secrets
