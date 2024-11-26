@@ -22,7 +22,11 @@ pub async fn add_player(
         _ => Err(Status::BadRequest),
     }?;
 
-    let client = NodeClient::new(ConnectionInfo::local(), state.admin_key.clone());
+    let client = NodeClient::new(
+        ConnectionInfo::local(),
+        state.admin_key.clone(),
+        state.network,
+    );
 
     let tx_hash = client
         .add_player(pkh.into())

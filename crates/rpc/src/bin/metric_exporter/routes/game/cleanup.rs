@@ -6,7 +6,11 @@ use crate::LocalState;
 
 #[post("/game/cleanup")]
 pub async fn cleanup(state: &State<LocalState>) -> Result<(), Status> {
-    let client = NodeClient::new(ConnectionInfo::local(), state.admin_key.clone());
+    let client = NodeClient::new(
+        ConnectionInfo::local(),
+        state.admin_key.clone(),
+        state.network,
+    );
 
     client
         .cleanup_game()

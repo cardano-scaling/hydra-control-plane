@@ -61,10 +61,10 @@ impl TryInto<Vec<u8>> for KeyEnvelope {
 }
 
 impl NodeClient {
-    pub fn new(connection: ConnectionInfo, admin_key: SecretKey) -> Self {
+    pub fn new(connection: ConnectionInfo, admin_key: SecretKey, network: Network) -> Self {
         Self {
             connection,
-            tx_builder: TxBuilder::new(admin_key),
+            tx_builder: TxBuilder::new(admin_key, network),
         }
     }
 
