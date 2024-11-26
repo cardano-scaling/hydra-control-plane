@@ -7,7 +7,11 @@ use crate::LocalState;
 
 #[post("/game/start_game")]
 pub async fn start_game(state: &State<LocalState>) -> Result<(), Status> {
-    let client = NodeClient::new(ConnectionInfo::local(), state.admin_key.clone());
+    let client = NodeClient::new(
+        ConnectionInfo::local(),
+        state.admin_key.clone(),
+        state.network,
+    );
 
     client
         .start_game()

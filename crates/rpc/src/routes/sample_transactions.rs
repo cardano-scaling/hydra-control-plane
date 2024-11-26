@@ -38,6 +38,7 @@ pub async fn sample_transactions(
     let client = NodeClient::new(
         if state.remote { remote } else { local },
         state.admin_sk.clone(),
+        state.network,
     );
 
     let transactions = client

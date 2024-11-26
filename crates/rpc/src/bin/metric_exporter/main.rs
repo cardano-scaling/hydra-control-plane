@@ -7,15 +7,15 @@ use hydra_control_plane_rpc::model::{
         hydra_socket::HydraSocket,
     },
 };
-use pallas::crypto::key::ed25519::SecretKey;
+use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
 use rocket::{get, post, routes, State};
 use routes::game::{
     add_player::add_player, cleanup::cleanup, end_game::end_game as node_end_game,
     new_game::new_game, start_game::start_game as node_start_game,
 };
-use std::{fs::File, sync::Arc, time::Duration};
+use std::{env, fs::File, sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 mod metrics;
 mod routes;
@@ -35,6 +35,7 @@ struct Args {
 }
 
 pub struct LocalState {
+    network: Network,
     admin_key: SecretKey,
     metrics: Arc<Metrics>,
 }
@@ -63,6 +64,17 @@ async fn main() -> Result<()> {
         .try_into()
         .context("Failed to get secret key from file")?;
 
+    let network: Network = env::var("NETWORK_ID")
+        .map(|network_str| {
+            network_str
+                .parse::<u8>()
+                .inspect_err(|_| error!("Invalid NETWORK_ID value, defaulting to 0"))
+                .unwrap_or_default()
+        })
+        .inspect_err(|_| error!("Missing NETWORK_ID env var, defaulting to zero"))
+        .unwrap_or_default()
+        .into();
+
     let socket = Arc::new(HydraSocket::new(
         connection_info.to_websocket_url().as_str(),
         &connection_info.to_authority(),
@@ -79,7 +91,11 @@ async fn main() -> Result<()> {
     tokio::spawn(update(metrics.clone(), rx));
 
     let _ = rocket::build()
-        .manage(LocalState { admin_key, metrics })
+        .manage(LocalState {
+            admin_key,
+            metrics,
+            network,
+        })
         .mount(
             "/",
             routes![

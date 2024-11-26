@@ -78,7 +78,7 @@ pub async fn fetch_metric<T: FromStr + Default>(query: &str) -> Result<T> {
         let parsed = body.data.result[0].value.1.parse::<T>();
         match parsed {
             Ok(v) => Ok(v),
-            Err(e) => {
+            Err(_) => {
                 println!(
                     "Invalid stats value for {}: {}",
                     query, body.data.result[0].value.1
