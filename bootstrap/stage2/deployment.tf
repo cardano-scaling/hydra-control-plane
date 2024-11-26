@@ -171,6 +171,11 @@ resource "kubernetes_deployment_v1" "operator" {
             value = var.autoscaler_max_batch
           }
 
+          env {
+            name = "NETWORK_ID"
+            value = var.network_id
+          }
+
           resources {
             limits = {
               cpu    = var.resources.limits.cpu
