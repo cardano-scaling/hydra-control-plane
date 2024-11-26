@@ -29,7 +29,12 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
     let (external_url, local_url): (String, String) = node
         .status
         .as_ref()
-        .map(|status| (status.external_url.clone(), status.local_url.clone()))
+        .map(|status| {
+            (
+                status.external_url.clone().replace("ws://", "https://"),
+                status.local_url.clone().replace("ws://", "https://"),
+            )
+        })
         .unwrap_or_default();
 
     let url = local_url + "/game/new_game?address=" + address;
