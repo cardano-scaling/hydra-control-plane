@@ -297,7 +297,7 @@ impl HydraDoomNode {
                     "localhost".to_string(),
                     "--port".to_string(),
                     constants.port.to_string(),
-                    "--admin_key_file".to_string(),
+                    "--admin-key-file".to_string(),
                     format!("{}/admin.sk", constants.secret_dir),
                 ]),
                 ports: Some(vec![ContainerPort {
