@@ -1,8 +1,7 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
 use serde::Serialize;
-use serde_json::Value;
 use tracing::info;
 
 use crate::model::cluster::{shared::NewGameLocalResponse, ClusterState};
@@ -15,10 +14,25 @@ pub struct NewGameResponse {
     admin_pkh: String,
 }
 
-#[get("/new_game?<address>")]
-pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json<NewGameResponse>> {
+#[get("/new_game?<address>&<player_count>&<bot_count>")]
+pub async fn new_game(
+    address: &str,
+    player_count: Option<u64>,
+    bot_count: Option<u64>,
+    state: &State<ClusterState>,
+) -> Result<Json<NewGameResponse>> {
     info!("Creating a new game for {}", address);
+    if player_count.is_some_and(|c| c > 4) {
+        return Result::Err(anyhow!("Can request a maximum of 4 players").into());
+    }
 
+    if bot_count.is_some_and(|c| c > 4) {
+        return Result::Err(anyhow!("Can request a maximum of 4 bots").into());
+    }
+
+    if player_count.is_some_and(|c| bot_count.is_some_and(|b| c + b > 4)) {
+        return Result::Err(anyhow!("cannot have more than 4 players and bots").into());
+    }
     let node = state
         .select_node_for_new_game()
         .context("error getting warm node")?;
@@ -40,7 +54,12 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
         })
         .unwrap_or_default();
 
-    let url = local_url + "/game/new_game?address=" + address;
+    let url = format!(
+        "{local_url}/game/new_game?address={address}&player_count={}&bot_count={}",
+        player_count.unwrap_or(1),
+        bot_count.unwrap_or(3)
+    );
+
     let response = reqwest::get(url)
         .await
         .context("failed to hit new_game metrics server endpoint")?;

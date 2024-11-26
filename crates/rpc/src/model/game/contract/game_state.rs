@@ -25,6 +25,8 @@ pub enum State {
 #[derive(Debug)]
 pub struct GameState {
     referee: PaymentCredential,
+    player_count: u64,
+    bot_count: u64,
     pub players: Vec<PaymentCredential>,
     state: State,
     winner: Option<PaymentCredential>,
@@ -32,9 +34,11 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(referee: PaymentCredential) -> Self {
+    pub fn new(referee: PaymentCredential, player_count: u64, bot_count: u64) -> Self {
         Self {
             referee,
+            player_count,
+            bot_count,
             players: Vec::new(),
             state: State::Lobby,
             winner: None,
@@ -108,6 +112,8 @@ impl From<GameState> for PlutusData {
             any_constructor: None,
             fields: alonzo::MaybeIndefArray::Indef(vec![
                 value.referee.into(),
+                PlutusData::BigInt(alonzo::BigInt::Int((value.player_count as i64).into())),
+                PlutusData::BigInt(alonzo::BigInt::Int((value.bot_count as i64).into())),
                 players,
                 value.state.into(),
                 winner,
@@ -138,14 +144,24 @@ impl TryFrom<PlutusData> for GameState {
                     bail!("Invalid constructor tag for GameState.");
                 }
 
-                if constr.fields.len() != 5 {
+                if constr.fields.len() != 7 {
                     bail!("Invalid number of fields for GameState.");
                 }
 
                 let referee: PaymentCredential =
                     constr.fields[0].clone().try_into().context("referee")?;
 
-                let players: Vec<PaymentCredential> = match constr.fields[1].clone() {
+                let player_count = match constr.fields[1].clone() {
+                    PlutusData::BigInt(alonzo::BigInt::Int(int)) => u64::try_from(int.0)?,
+                    _ => bail!("invalid player_count"),
+                };
+
+                let bot_count = match constr.fields[2].clone() {
+                    PlutusData::BigInt(alonzo::BigInt::Int(int)) => u64::try_from(int.0)?,
+                    _ => bail!("invalid bot_count"),
+                };
+
+                let players: Vec<PaymentCredential> = match constr.fields[3].clone() {
                     PlutusData::Array(array) => {
                         let mut players = Vec::new();
                         for player in array.to_vec() {
@@ -157,9 +173,9 @@ impl TryFrom<PlutusData> for GameState {
                     _ => bail!("Invalid data type for players"),
                 };
 
-                let state: State = constr.fields[2].clone().try_into().context("state")?;
+                let state: State = constr.fields[4].clone().try_into().context("state")?;
 
-                let winner: Option<PaymentCredential> = match constr.fields[3].clone() {
+                let winner: Option<PaymentCredential> = match constr.fields[5].clone() {
                     PlutusData::Constr(constr) => {
                         if Some(0) == constr.any_constructor {
                             if constr.fields.len() != 1 {
@@ -182,7 +198,7 @@ impl TryFrom<PlutusData> for GameState {
                     _ => bail!("Invalid data type for winner"),
                 };
 
-                let cheater: Option<PaymentCredential> = match constr.fields[4].clone() {
+                let cheater: Option<PaymentCredential> = match constr.fields[6].clone() {
                     PlutusData::Constr(constr) => {
                         if Some(0) == constr.any_constructor {
                             if constr.fields.len() != 1 {
@@ -207,6 +223,8 @@ impl TryFrom<PlutusData> for GameState {
 
                 Ok(GameState {
                     referee,
+                    player_count,
+                    bot_count,
                     players,
                     state,
                     winner,

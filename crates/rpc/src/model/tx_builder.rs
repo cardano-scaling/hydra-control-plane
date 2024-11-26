@@ -43,7 +43,13 @@ impl TxBuilder {
         }
     }
 
-    pub fn new_game(&self, player: Player, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
+    pub fn new_game(
+        &self,
+        player: Player,
+        utxos: Vec<UTxO>,
+        player_count: u64,
+        bot_count: u64,
+    ) -> Result<BuiltTransaction> {
         let admin_utxos = self.find_admin_utxos(utxos);
 
         if admin_utxos.is_empty() {
@@ -69,7 +75,7 @@ impl TxBuilder {
         );
         let admin_address = Address::from_bytes(admin_address_bytes.as_slice())?;
 
-        let game_state: PlutusData = GameState::new(self.admin_pkh.into())
+        let game_state: PlutusData = GameState::new(self.admin_pkh.into(), player_count, bot_count)
             .add_player(player.signing_key.into())
             .into();
         let mut datum: Vec<u8> = Vec::new();
@@ -538,7 +544,7 @@ mod tests {
         }];
 
         let tx = tx_builder
-            .new_game(player.into(), utxos)
+            .new_game(player.into(), utxos, 1, 3)
             .expect("Failed to build tx");
 
         debug!("{}", hex::encode(tx.tx_bytes));

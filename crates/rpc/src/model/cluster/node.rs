@@ -68,7 +68,12 @@ impl NodeClient {
         }
     }
 
-    pub async fn new_game(&self, player: Player) -> Result<Vec<u8>> {
+    pub async fn new_game(
+        &self,
+        player: Player,
+        player_count: u64,
+        bot_count: u64,
+    ) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
         // Removing for now, to make iterative development easier
         // if utxos
@@ -80,7 +85,7 @@ impl NodeClient {
 
         let new_game_tx = self
             .tx_builder
-            .new_game(player, utxos)
+            .new_game(player, utxos, player_count, bot_count)
             .context("failed to build transaction")?; // TODO: pass in network
         debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 

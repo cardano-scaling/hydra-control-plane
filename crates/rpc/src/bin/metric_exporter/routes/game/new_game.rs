@@ -9,9 +9,11 @@ use tracing::info;
 
 use crate::LocalState;
 
-#[get("/game/new_game?<address>")]
+#[get("/game/new_game?<address>&<player_count>&<bot_count>")]
 pub async fn new_game(
     address: &str,
+    player_count: u64,
+    bot_count: u64,
     state: &State<LocalState>,
 ) -> Result<Json<NewGameLocalResponse>> {
     info!("Creating a new game for {}", address);
@@ -28,7 +30,7 @@ pub async fn new_game(
     );
 
     let tx_hash = client
-        .new_game(pkh.into())
+        .new_game(pkh.into(), player_count, bot_count)
         .await
         .context("error creating new game")?;
 
