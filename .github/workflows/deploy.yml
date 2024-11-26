@@ -145,8 +145,8 @@ jobs:
             autoscaler_max_batch: 10
           - region: us-west-2
             region_prefix: c
-            autoscaler_high_watermark: 5
-            autoscaler_low_watermark: 1
+            autoscaler_high_watermark: 100
+            autoscaler_low_watermark: 20
             autoscaler_max_batch: 2
 
     env:
