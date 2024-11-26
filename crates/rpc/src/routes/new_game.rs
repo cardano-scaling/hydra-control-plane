@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
 use anyhow::Context;
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
 use serde::Serialize;
 use tracing::info;
 
-use crate::model::cluster::ClusterState;
+use crate::model::cluster::{shared::NewGameLocalResponse, ClusterState};
 
 #[derive(Serialize)]
 pub struct NewGameResponse {
@@ -41,21 +39,16 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
     let response = reqwest::get(url)
         .await
         .context("failed to hit new_game metrics server endpoint")?;
+
     let body = response
-        .json::<HashMap<String, String>>()
+        .json::<NewGameLocalResponse>()
         .await
         .context("http error")?;
 
     Ok(Json(NewGameResponse {
         game_id: node_id,
         ip: external_url,
-        player_state: body
-            .get("player_state")
-            .context("missing player_state in response")?
-            .to_owned(),
-        admin_pkh: body
-            .get("admin_pkh")
-            .context("missing admin_pkh in response")?
-            .to_owned(),
+        player_state: body.player_state,
+        admin_pkh: body.admin_pkh,
     }))
 }

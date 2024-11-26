@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use rocket::{get, http::Status, serde::json::Json, State};
 use serde::Serialize;
 
-use crate::model::cluster::ClusterState;
+use crate::model::cluster::{shared::AddPlayerLocalResponse, ClusterState};
 
 #[derive(Serialize)]
 pub struct AddPlayerResponse {
@@ -35,19 +33,13 @@ pub async fn add_player(
     let response = reqwest::get(url).await.map_err(|_| Status::BadGateway)?;
 
     let body = response
-        .json::<HashMap<String, String>>()
+        .json::<AddPlayerLocalResponse>()
         .await
         .map_err(|_| Status::InternalServerError)?;
 
     Ok(Json(AddPlayerResponse {
         ip: external_url,
-        player_state: body
-            .get("player_state")
-            .ok_or(Status::InternalServerError)?
-            .to_owned(),
-        admin_pkh: body
-            .get("admin_pkh")
-            .ok_or(Status::InternalServerError)?
-            .to_owned(),
+        player_state: body.player_state,
+        admin_pkh: body.admin_pkh,
     }))
 }

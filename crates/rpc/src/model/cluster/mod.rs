@@ -12,6 +12,7 @@ use serde::Deserialize;
 
 mod crd;
 mod node;
+pub mod shared;
 
 pub use crd::*;
 pub use node::*;
@@ -68,7 +69,11 @@ impl ClusterState {
         let watcher_handle = tokio::spawn(async move {
             let infinite_watch = rf.applied_objects().for_each(|node| {
                 if let Ok(node) = node {
-                    if node.status.as_ref().is_some_and(|n| n.game_state != "Waiting") {
+                    if node
+                        .status
+                        .as_ref()
+                        .is_some_and(|n| n.game_state != "Waiting")
+                    {
                         let id = node.metadata.name.as_ref().unwrap();
                         let mut claims = claims.lock().unwrap();
                         if claims.remove(id).is_some() {
@@ -93,15 +98,26 @@ impl ClusterState {
 
     pub fn select_node_for_new_game(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
         let mut claimed = self.recently_claimed.lock().unwrap();
-        let node = self.store
+        let node = self
+            .store
             .state()
             .iter()
             .filter(|n| {
                 let id = n.metadata.name.as_ref().unwrap();
                 let recently_claimed = claimed.get(id).unwrap_or(&false);
-                info!("checking node {}, recently claimed: {}, status: {}", id, recently_claimed, n.status.as_ref().map(|s| s.game_state.as_str()).unwrap_or("unknown"));
+                info!(
+                    "checking node {}, recently claimed: {}, status: {}",
+                    id,
+                    recently_claimed,
+                    n.status
+                        .as_ref()
+                        .map(|s| s.game_state.as_str())
+                        .unwrap_or("unknown")
+                );
                 if let Some(status) = n.status.as_ref() {
-                    !recently_claimed && status.node_state == "HeadIsOpen" && status.game_state == "Waiting"
+                    !recently_claimed
+                        && status.node_state == "HeadIsOpen"
+                        && status.game_state == "Waiting"
                 } else {
                     false
                 }
@@ -109,7 +125,9 @@ impl ClusterState {
             .max_by_key(|n| n.metadata.creation_timestamp.clone())
             .cloned()
             .ok_or(anyhow::anyhow!("no available nodes found"))?;
-        claimed.entry(node.metadata.name.clone().expect("node without a name")).or_insert(true);
+        claimed
+            .entry(node.metadata.name.clone().expect("node without a name"))
+            .or_insert(true);
         Ok(node)
     }
 
