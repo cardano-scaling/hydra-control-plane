@@ -167,7 +167,7 @@ jobs:
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-6681b33
-      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-6681b33 # latest?
+      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-716decb # latest?
       TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-6681b33 # latest?
       TF_VAR_autoscaler_high_watermark: ${{ matrix.autoscaler_high_watermark }}
       TF_VAR_autoscaler_low_watermark: ${{ matrix.autoscaler_low_watermark }}
