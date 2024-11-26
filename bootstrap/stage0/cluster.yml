@@ -5,8 +5,8 @@ kind: ClusterConfig
 metadata:
   name: hydra-doom-dev-cluster
   # region: us-east-1
-  # region: eu-central-1
-  region: us-west-2
+  region: eu-central-1
+  # region: us-west-2
   tags: 
     sundae-labs:cost-allocation:Service: hydra-doom
 
@@ -29,12 +29,29 @@ managedNodeGroups:
     instanceTypes: [ t3a.medium, t3.medium ]
     minSize: 0
     maxSize: 3
-    desiredCapacity: 3
+    desiredCapacity: 0
     spot: true
     availabilityZones:
       # - us-east-1b
-      # - eu-central-1b
-      - us-west-2b
+      - eu-central-1b
+      # - us-west-2b
+  - name: co-adm-x86-az1
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    labels:
+      hydra.doom/availability-sla: consistent
+      hydra.doom/compute-profile: admin
+      hydra.doom/compute-arch: x86
+      hydra.doom/availability-zone: az1
+    instanceTypes: [ t3a.medium, t3.medium ]
+    minSize: 0
+    maxSize: 3
+    desiredCapacity: 3
+    spot: false
+    availabilityZones:
+      # - us-east-1b
+      - eu-central-1b
+      # - us-west-2b
 
 fargateProfiles:
   - name: fp-default
