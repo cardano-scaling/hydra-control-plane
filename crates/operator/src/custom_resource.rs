@@ -300,13 +300,17 @@ impl HydraDoomNode {
                     "--admin-key-file".to_string(),
                     format!("{}/admin.sk", constants.secret_dir),
                 ]),
+                volume_mounts: Some(vec![VolumeMount {
+                    name: "secret".to_string(),
+                    mount_path: constants.secret_dir.clone(),
+                    ..Default::default()
+                }]),
                 ports: Some(vec![ContainerPort {
                     name: Some("metrics".to_string()),
                     container_port: constants.metrics_port,
                     protocol: Some("TCP".to_string()),
                     ..Default::default()
                 }]),
-
                 ..Default::default()
             },
             Container {
