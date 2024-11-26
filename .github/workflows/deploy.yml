@@ -135,7 +135,7 @@ jobs:
         include:
           - region: us-east-1
             region_prefix: a
-            autoscaler_high_watermark: 100
+            autoscaler_high_watermark: 10
             autoscaler_low_watermark: 1
             autoscaler_max_batch: 1
           - region: eu-central-1
