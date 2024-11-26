@@ -96,6 +96,10 @@ variable "frontend_image" {
   type = string
 }
 
+variable "network_id" {
+  type = number
+}
+
 variable "frontend_replicas" {
   type    = number
   default = 1
@@ -165,6 +169,7 @@ module "stage2" {
   autoscaler_low_watermark   = var.autoscaler_low_watermark
   autoscaler_region_prefix   = var.autoscaler_region_prefix
   autoscaler_max_batch       = var.autoscaler_max_batch
+  network_id                 = var.network_id
   resources = {
     requests = {
       cpu    = "500m"
