@@ -238,13 +238,6 @@ impl NodeClient {
 }
 
 impl ConnectionInfo {
-    pub fn local() -> Self {
-        Self {
-            host: "localhost".to_string(),
-            port: 4001,
-            secure: false,
-        }
-    }
     pub fn from_resource(resource: &super::crd::HydraDoomNodeStatus) -> Result<(Self, Self)> {
         Ok((
             ConnectionInfo::from_url(&resource.local_url)?,

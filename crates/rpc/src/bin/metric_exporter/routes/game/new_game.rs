@@ -1,7 +1,5 @@
 use anyhow::{anyhow, Context};
-use hydra_control_plane_rpc::model::cluster::{
-    shared::NewGameLocalResponse, ConnectionInfo, NodeClient,
-};
+use hydra_control_plane_rpc::model::cluster::{shared::NewGameLocalResponse, NodeClient};
 use pallas::ledger::addresses::Address;
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
@@ -23,11 +21,7 @@ pub async fn new_game(
         _ => return Result::Err(anyhow!("unsupported address type").into()),
     };
 
-    let client = NodeClient::new(
-        ConnectionInfo::local(),
-        state.admin_key.clone(),
-        state.network,
-    );
+    let client = NodeClient::new(state.hydra.clone(), state.admin_key.clone(), state.network);
 
     let tx_hash = client
         .new_game(pkh.into(), player_count, bot_count)

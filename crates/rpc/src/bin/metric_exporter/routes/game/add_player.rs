@@ -1,6 +1,4 @@
-use hydra_control_plane_rpc::model::cluster::{
-    shared::AddPlayerLocalResponse, ConnectionInfo, NodeClient,
-};
+use hydra_control_plane_rpc::model::cluster::{shared::AddPlayerLocalResponse, NodeClient};
 use pallas::ledger::addresses::Address;
 use rocket::{get, http::Status, serde::json::Json, State};
 use tracing::error;
@@ -17,11 +15,7 @@ pub async fn add_player(
         _ => Err(Status::BadRequest),
     }?;
 
-    let client = NodeClient::new(
-        ConnectionInfo::local(),
-        state.admin_key.clone(),
-        state.network,
-    );
+    let client = NodeClient::new(state.hydra.clone(), state.admin_key.clone(), state.network);
 
     let tx_hash = client
         .add_player(pkh.into())

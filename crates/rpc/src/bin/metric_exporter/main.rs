@@ -36,6 +36,7 @@ struct Args {
 
 pub struct LocalState {
     network: Network,
+    hydra: ConnectionInfo,
     admin_key: SecretKey,
     metrics: Arc<Metrics>,
 }
@@ -93,6 +94,7 @@ async fn main() -> Result<()> {
     let _ = rocket::build()
         .manage(LocalState {
             admin_key,
+            hydra: connection_info,
             metrics,
             network,
         })
