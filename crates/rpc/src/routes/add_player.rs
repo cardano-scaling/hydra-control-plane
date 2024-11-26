@@ -24,7 +24,11 @@ pub async fn add_player(
         .map(|status| {
             (
                 status.external_url.clone(),
-                status.local_url.clone().replace("ws://", "http://"),
+                status
+                    .local_url
+                    .clone()
+                    .replace("ws://", "http://")
+                    .replace("4001", "8000"),
             )
         })
         .unwrap_or_default();

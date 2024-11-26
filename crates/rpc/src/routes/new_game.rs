@@ -31,7 +31,11 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
         .map(|status| {
             (
                 status.external_url.clone(),
-                status.local_url.clone().replace("ws://", "http://"),
+                status
+                    .local_url
+                    .clone()
+                    .replace("ws://", "http://")
+                    .replace("4001", "8000"),
             )
         })
         .unwrap_or_default();
