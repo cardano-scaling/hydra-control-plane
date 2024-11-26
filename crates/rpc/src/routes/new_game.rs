@@ -2,6 +2,7 @@ use anyhow::Context;
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
 use serde::Serialize;
+use serde_json::Value;
 use tracing::info;
 
 use crate::model::cluster::{shared::NewGameLocalResponse, ClusterState};
@@ -36,19 +37,26 @@ pub async fn new_game(address: &str, state: &State<ClusterState>) -> Result<Json
         .unwrap_or_default();
 
     let url = local_url + "/game/new_game?address=" + address;
+    println!("{}", url);
     let response = reqwest::get(url)
         .await
         .context("failed to hit new_game metrics server endpoint")?;
 
-    let body = response
-        .json::<NewGameLocalResponse>()
-        .await
-        .context("http error")?;
+    println!(
+        "respons status {:?} | body: {:?}",
+        response.status(),
+        response.json::<Value>().await
+    );
+
+    // let body = response
+    //     .json::<NewGameLocalResponse>()
+    //     .await
+    //     .context("http error")?;
 
     Ok(Json(NewGameResponse {
         game_id: node_id,
         ip: external_url,
-        player_state: body.player_state,
-        admin_pkh: body.admin_pkh,
+        player_state: "".to_string(),
+        admin_pkh: "".to_string(),
     }))
 }
