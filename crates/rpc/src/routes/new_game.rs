@@ -57,7 +57,7 @@ pub async fn new_game(
     let url = format!(
         "{local_url}/game/new_game?address={address}&player_count={}&bot_count={}",
         player_count.unwrap_or(1),
-        bot_count.unwrap_or(3)
+        bot_count.unwrap_or(2)
     );
 
     let response = reqwest::get(url)
