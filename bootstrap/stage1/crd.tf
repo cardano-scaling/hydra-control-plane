@@ -1,7 +1,7 @@
 resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_doom" {
   manifest = {
     "apiVersion" = "apiextensions.k8s.io/v1"
-    "kind" = "CustomResourceDefinition"
+    "kind"       = "CustomResourceDefinition"
     "metadata" = {
       "name" = "hydradoomnodes.hydra.doom"
     }
@@ -11,7 +11,7 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
         "categories" = [
           "hydradoom",
         ]
-        "kind" = "HydraDoomNode"
+        "kind"   = "HydraDoomNode"
         "plural" = "hydradoomnodes"
         "shortNames" = [
           "hydradoomnode",
@@ -24,28 +24,28 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
           "additionalPrinterColumns" = [
             {
               "jsonPath" = ".status.nodeState"
-              "name" = "Node State"
-              "type" = "string"
+              "name"     = "Node State"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".status.gameState"
-              "name" = "Game State"
-              "type" = "string"
+              "name"     = "Game State"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".status.transactions"
-              "name" = "Transactions"
-              "type" = "string"
+              "name"     = "Transactions"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".status.localUrl"
-              "name" = "Local URI"
-              "type" = "string"
+              "name"     = "Local URI"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".status.externalUrl"
-              "name" = "External URI"
-              "type" = "string"
+              "name"     = "External URI"
+              "type"     = "string"
             },
           ]
           "name" = "v1alpha1"
@@ -57,23 +57,17 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                   "properties" = {
                     "asleep" = {
                       "nullable" = true
-                      "type" = "boolean"
-                    }
-                    "commitInputs" = {
-                      "items" = {
-                        "type" = "string"
-                      }
-                      "type" = "array"
+                      "type"     = "boolean"
                     }
                     "networkId" = {
-                      "format" = "uint8"
-                      "minimum" = 0
+                      "format"   = "uint8"
+                      "minimum"  = 0
                       "nullable" = true
-                      "type" = "integer"
+                      "type"     = "integer"
                     }
                     "offline" = {
                       "nullable" = true
-                      "type" = "boolean"
+                      "type"     = "boolean"
                     }
                     "resources" = {
                       "nullable" = true
@@ -115,18 +109,15 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       ]
                       "type" = "object"
                     }
-                    "seedInput" = {
-                      "type" = "string"
+                    "snapshot" = {
+                      "nullable" = true
+                      "type"     = "string"
                     }
                     "startChainFrom" = {
                       "nullable" = true
-                      "type" = "string"
+                      "type"     = "string"
                     }
                   }
-                  "required" = [
-                    "commitInputs",
-                    "seedInput",
-                  ]
                   "type" = "object"
                 }
                 "status" = {
@@ -146,7 +137,7 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                     }
                     "transactions" = {
                       "format" = "int64"
-                      "type" = "integer"
+                      "type"   = "integer"
                     }
                   }
                   "required" = [
@@ -163,10 +154,10 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                 "spec",
               ]
               "title" = "HydraDoomNode"
-              "type" = "object"
+              "type"  = "object"
             }
           }
-          "served" = true
+          "served"  = true
           "storage" = true
           "subresources" = {
             "status" = {}

@@ -118,6 +118,11 @@ variable "bucket" {
   default = "hydradoomsnapshots"
 }
 
+variable "bucket_region" {
+  type    = string
+  default = "us-east-1"
+}
+
 variable "init_aws_access_key_id" {
   type = string
 }
@@ -147,6 +152,11 @@ variable "autoscaler_max_batch" {
 
 variable "network_id" {
   type = number
+}
+
+variable "available_snapshot_prefix" {
+  type    = string
+  default = "snapshots"
 }
 
 variable "tolerations" {

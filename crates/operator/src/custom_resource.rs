@@ -87,8 +87,7 @@ impl From<Resources> for ResourceRequirements {
 pub struct HydraDoomNodeSpec {
     pub offline: Option<bool>,
     pub network_id: Option<u8>,
-    pub seed_input: String,
-    pub commit_inputs: Vec<String>,
+    pub snapshot: Option<String>,
     pub start_chain_from: Option<String>,
     pub asleep: Option<bool>,
     pub resources: Option<Resources>,
@@ -99,8 +98,7 @@ impl Default for HydraDoomNodeSpec {
         Self {
             offline: Some(true),
             network_id: None,
-            seed_input: "_".to_string(),
-            commit_inputs: vec![],
+            snapshot: None,
             start_chain_from: None,
             asleep: None,
             resources: None,
@@ -372,6 +370,41 @@ impl HydraDoomNode {
             })
         }
 
+        let mut init_container_env_vars = vec![
+            EnvVar {
+                name: "BUCKET".to_string(),
+                value: Some(config.bucket.clone()),
+                ..Default::default()
+            },
+            EnvVar {
+                name: "DATA_DIR".to_string(),
+                value: Some(constants.data_dir.clone()),
+                ..Default::default()
+            },
+            EnvVar {
+                name: "AWS_REGION".to_string(),
+                value: Some(config.bucket_region.clone()),
+                ..Default::default()
+            },
+            EnvVar {
+                name: "AWS_ACCESS_KEY_ID".to_string(),
+                value: Some(config.init_aws_access_key_id.clone()),
+                ..Default::default()
+            },
+            EnvVar {
+                name: "AWS_SECRET_ACCESS_KEY".to_string(),
+                value: Some(config.init_aws_secret_access_key.clone()),
+                ..Default::default()
+            },
+        ];
+        if let Some(key) = &self.spec.snapshot {
+            init_container_env_vars.push(EnvVar {
+                name: "KEY".to_string(),
+                value: Some(key.clone()),
+                ..Default::default()
+            });
+        }
+
         Deployment {
             metadata: ObjectMeta {
                 name: Some(name.clone()),
@@ -398,33 +431,7 @@ impl HydraDoomNode {
                         init_containers: Some(vec![Container {
                             name: "init".to_string(),
                             image: Some(config.init_image.clone()),
-                            env: Some(vec![
-                                EnvVar {
-                                    name: "BUCKET".to_string(),
-                                    value: Some(config.bucket.clone()),
-                                    ..Default::default()
-                                },
-                                EnvVar {
-                                    name: "KEY".to_string(),
-                                    value: Some(format!("{}.tar.gz", self.name_any())),
-                                    ..Default::default()
-                                },
-                                EnvVar {
-                                    name: "DATA_DIR".to_string(),
-                                    value: Some(constants.data_dir.clone()),
-                                    ..Default::default()
-                                },
-                                EnvVar {
-                                    name: "AWS_ACCESS_KEY_ID".to_string(),
-                                    value: Some(config.init_aws_access_key_id.clone()),
-                                    ..Default::default()
-                                },
-                                EnvVar {
-                                    name: "AWS_SECRET_ACCESS_KEY".to_string(),
-                                    value: Some(config.init_aws_secret_access_key.clone()),
-                                    ..Default::default()
-                                },
-                            ]),
+                            env: Some(init_container_env_vars),
                             volume_mounts: Some(vec![VolumeMount {
                                 name: "data".to_string(),
                                 mount_path: constants.data_dir.clone(),

@@ -188,6 +188,8 @@ jobs:
       TF_VAR_autoscaler_low_watermark: ${{ matrix.autoscaler_low_watermark }}
       TF_VAR_autoscaler_region_prefix: ${{ matrix.region_prefix }}
       TF_VAR_autoscaler_max_batch: ${{ matrix.autoscaler_max_batch }}
+      TF_VAR_available_snapshot_prefix: snapshots
+      TF_VAR_init_image: ghcr.io/cardano-scaling/hydra-control-plane-init:eca9dc5f3541a8d71573ca5b86456299ab5c6ef9
 
     steps:
       - name: Filter regions

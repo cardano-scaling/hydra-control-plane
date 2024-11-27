@@ -132,6 +132,11 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
+            name  = "BUCKET_REGION"
+            value = var.bucket_region
+          }
+
+          env {
             name  = "INIT_AWS_ACCESS_KEY_ID"
             value = var.init_aws_access_key_id
           }
@@ -167,7 +172,12 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name = "NETWORK_ID"
+            name  = "AVAILABLE_SNAPSHOT_PREFIX"
+            value = var.available_snapshot_prefix
+          }
+
+          env {
+            name  = "NETWORK_ID"
             value = var.network_id
           }
 

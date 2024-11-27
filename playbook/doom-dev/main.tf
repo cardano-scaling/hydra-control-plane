@@ -46,6 +46,10 @@ variable "image" {
   type = string
 }
 
+variable "init_image" {
+  type = string
+}
+
 variable "hydra_node_image" {
   type        = string
   description = "The Docker image to use for the Hydra node component."
@@ -120,6 +124,11 @@ variable "autoscaler_max_batch" {
   default = 2
 }
 
+variable "available_snapshot_prefix" {
+  type    = string
+  default = "snapshots"
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -157,7 +166,7 @@ module "stage2" {
   hydra_scripts_tx_id        = var.hydra_scripts_tx_id
   init_aws_access_key_id     = var.snapshot_aws_access_key_id
   init_aws_secret_access_key = var.snapshot_aws_secret_access_key
-  init_image                 = "ghcr.io/demeter-run/doom-patrol-init:b7b4fc499b5274cd71b6b72f93ab4ba8199437fe"
+  init_image                 = var.init_image
   frontend_image             = var.frontend_image
   frontend_replicas          = var.frontend_replicas
   autoscaler_high_watermark  = var.autoscaler_high_watermark
@@ -165,6 +174,7 @@ module "stage2" {
   autoscaler_region_prefix   = var.autoscaler_region_prefix
   autoscaler_max_batch       = var.autoscaler_max_batch
   network_id                 = var.network_id
+  available_snapshot_prefix  = var.available_snapshot_prefix
   resources = {
     requests = {
       cpu    = "500m"
