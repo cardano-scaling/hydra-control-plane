@@ -131,9 +131,6 @@ variable "init_aws_secret_access_key" {
   type = string
 }
 
-variable "api_key" {
-  type = string
-}
 
 variable "autoscaler_region_prefix" {
   type = string
@@ -150,6 +147,10 @@ variable "autoscaler_high_watermark" {
 }
 
 variable "autoscaler_max_batch" {
+  type = number
+}
+
+variable "network_id" {
   type = number
 }
 

@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use hex::FromHex;
 use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use tracing::debug;
 
 use crate::model::{
@@ -18,12 +18,8 @@ use crate::model::{
 
 use crate::model::hydra::utxo::UTxO;
 
-use super::crd::HydraDoomNode;
-
 #[derive(Clone, Serialize, Debug)]
 pub struct NodeClient {
-    pub resource: Arc<HydraDoomNode>,
-
     #[serde(skip)]
     pub connection: ConnectionInfo,
 
@@ -65,25 +61,19 @@ impl TryInto<Vec<u8>> for KeyEnvelope {
 }
 
 impl NodeClient {
-    pub fn new(resource: Arc<HydraDoomNode>, admin_key: SecretKey, remote: bool) -> Result<Self> {
-        let status = resource.status.as_ref().ok_or(anyhow!("no status found"))?;
-
-        let (local_connection, remote_connection) = ConnectionInfo::from_resource(status)?;
-
-        let node = Self {
-            resource,
-            connection: if remote {
-                remote_connection
-            } else {
-                local_connection
-            },
-            tx_builder: TxBuilder::new(admin_key),
-        };
-
-        Ok(node)
+    pub fn new(connection: ConnectionInfo, admin_key: SecretKey, network: Network) -> Self {
+        Self {
+            connection,
+            tx_builder: TxBuilder::new(admin_key, network),
+        }
     }
 
-    pub async fn new_game(&self, player: Player) -> Result<Vec<u8>> {
+    pub async fn new_game(
+        &self,
+        player: Player,
+        player_count: u64,
+        bot_count: u64,
+    ) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
         // Removing for now, to make iterative development easier
         // if utxos
@@ -95,7 +85,7 @@ impl NodeClient {
 
         let new_game_tx = self
             .tx_builder
-            .new_game(player, utxos, Network::Testnet)
+            .new_game(player, utxos, player_count, bot_count)
             .context("failed to build transaction")?; // TODO: pass in network
         debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
@@ -113,13 +103,12 @@ impl NodeClient {
         Ok(tx_hash)
     }
 
-    //TODO: don't hardcode network
     pub async fn start_game(&self) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
         let start_game_tx = self
             .tx_builder
-            .start_game(utxos, Network::Testnet)
+            .start_game(utxos)
             .context("failed to build transaction")?;
 
         debug!("start game tx: {}", hex::encode(&start_game_tx.tx_bytes));
@@ -138,13 +127,12 @@ impl NodeClient {
         Ok(tx_hash)
     }
 
-    //TODO: don't hardcode network
     pub async fn add_player(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
 
         let add_player_tx = self
             .tx_builder
-            .add_player(player, utxos, Network::Testnet)
+            .add_player(player, utxos)
             .context("failed to build transaction")?;
 
         debug!("add player tx: {}", hex::encode(&add_player_tx.tx_bytes));
@@ -169,7 +157,7 @@ impl NodeClient {
 
         let cleanup_tx = self
             .tx_builder
-            .cleanup_game(utxos, Network::Testnet)
+            .cleanup_game(utxos)
             .context("failed to build transaction")?;
 
         debug!("cleanup tx: {}", hex::encode(&cleanup_tx.tx_bytes));
@@ -195,7 +183,7 @@ impl NodeClient {
 
         let end_game_tx = self
             .tx_builder
-            .end_game(None, utxos, Network::Testnet)
+            .end_game(None, utxos)
             .context("failed to build transaction")?;
 
         debug!("end_game_tx tx: {}", hex::encode(&end_game_tx.tx_bytes));
@@ -250,14 +238,14 @@ impl NodeClient {
 }
 
 impl ConnectionInfo {
-    fn from_resource(resource: &super::crd::HydraDoomNodeStatus) -> Result<(Self, Self)> {
+    pub fn from_resource(resource: &super::crd::HydraDoomNodeStatus) -> Result<(Self, Self)> {
         Ok((
             ConnectionInfo::from_url(&resource.local_url)?,
             ConnectionInfo::from_url(&resource.external_url)?,
         ))
     }
 
-    fn from_url(value: &str) -> Result<Self> {
+    pub fn from_url(value: &str) -> Result<Self> {
         // default to secure connection if no schema provided
         let url = Url::parse(value)?;
 

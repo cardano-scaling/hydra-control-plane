@@ -30,6 +30,12 @@ jobs:
             ssl_cert_arn: arn:aws:acm:eu-central-1:509399595051:certificate/f69f5c80-9eb9-41fc-9133-5d72ecb223d3
           - region: us-west-2
             ssl_cert_arn: arn:aws:acm:us-west-2:509399595051:certificate/2587017b-119b-41ae-8d76-c4b1a20d53e5
+          - region: ap-southeast-1
+            ssl_cert_arn: arn:aws:acm:ap-southeast-1:509399595051:certificate/0e596d0c-ec2d-4b94-bc49-9460798a2734
+          - region: sa-east-1
+            ssl_cert_arn: arn:aws:acm:sa-east-1:509399595051:certificate/d5fc1098-bf1b-4e88-916d-ce4c4dd5942b
+          - region: af-south-1
+            ssl_cert_arn: arn:aws:acm:af-south-1:509399595051:certificate/349c46d7-ad77-43c0-8a88-a5712ef5d653
 
     env:
       TF_VAR_cluster_name: ${{ matrix.region }}

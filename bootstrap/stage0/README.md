@@ -19,40 +19,7 @@
    ```
    eksctl create cluster -f cluster.yml
    ```
-2. Create service account for albc (ALBC is not an addon, so service account
-   must be created and linked).
-    ```
-    eksctl create iamserviceaccount \    
-    --cluster=YOUR_CLUSTER_NAME \  
-    --namespace=kube-system \  
-    --name=aws-load-balancer-controller \  
-    --attach-policy-arn=arn:aws:iam::YOUR_ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy \  
-    --override-existing-serviceaccounts \  
-    --approve
-    ```
-3. Create service account for EBS:
-   ```
-   eksctl create iamserviceaccount \
-        --name ebs-csi-controller-sa \
-        --namespace kube-system \
-        --cluster YOUR_CLUSTER_NAME \
-        --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
-        --override-existing-serviceaccounts \
-        --approve
-   ```
-4. Create service account for Hydra Doom Nodes (tipically
-   `HYDRA_DOOM_NODE_SERVICE_ACCOUNT=hydra-doom-node`,
-   `HYDRA_DOOM_NAMESPACE=hydra-doom`):
-   ```
-   eksctl create iamserviceaccount \
-        --name HYDRA_DOOM_NODE_SERVICE_ACCOUNT \
-        --namespace HYDRA_DOOM_NAMESPACE \
-        --cluster YOUR_CLUSTER_NAME \
-        --attach-policy-arn arn:aws:iam::509399595051:policy/hydra-doom-kinesis-writer \
-        --override-existing-serviceaccounts \
-        --approve
-   ```
-5. Install ALBC via helm.
+2. Install ALBC via helm.
 
    ```
    helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -63,7 +30,7 @@
        --set serviceAccount.name=aws-load-balancer-controller \
        -n kube-system
    ```
-6. Create SSL cert on the corresponding region using AWS Cert Manager (you will
+3. Create SSL cert on the corresponding region using AWS Cert Manager (you will
    need the ARN to set up the ingress controller on `stage1`).
 
    1. Go to Cert manager (in the corresponding region).

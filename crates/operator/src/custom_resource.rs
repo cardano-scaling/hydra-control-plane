@@ -77,10 +77,10 @@ impl From<Resources> for ResourceRequirements {
 )]
 #[kube(status = "HydraDoomNodeStatus")]
 #[kube(printcolumn = r#"
-        {"name": "Node State", "jsonPath":".status.nodeState", "type": "string"}, 
-        {"name": "Game State", "jsonPath":".status.gameState", "type": "string"}, 
-        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"}, 
-        {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"}, 
+        {"name": "Node State", "jsonPath":".status.nodeState", "type": "string"},
+        {"name": "Game State", "jsonPath":".status.gameState", "type": "string"},
+        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"},
+        {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"},
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
 #[serde(rename_all = "camelCase")]
@@ -295,7 +295,14 @@ impl HydraDoomNode {
                     "localhost".to_string(),
                     "--port".to_string(),
                     constants.port.to_string(),
+                    "--admin-key-file".to_string(),
+                    format!("{}/admin.sk", constants.secret_dir),
                 ]),
+                volume_mounts: Some(vec![VolumeMount {
+                    name: "secret".to_string(),
+                    mount_path: constants.secret_dir.clone(),
+                    ..Default::default()
+                }]),
                 ports: Some(vec![ContainerPort {
                     name: Some("metrics".to_string()),
                     container_port: constants.metrics_port,
@@ -314,8 +321,8 @@ impl HydraDoomNode {
                         value_from: None,
                     },
                     EnvVar {
-                        name: "API_KEY".to_string(),
-                        value: Some(config.api_key.clone()),
+                        name: "NETWORK_ID".to_string(),
+                        value: Some(config.network_id.clone()),
                         value_from: None,
                     },
                 ]),
@@ -329,6 +336,11 @@ impl HydraDoomNode {
             Container {
                 name: "ai-1".to_string(),
                 image: Some(config.ai_image.clone()),
+                env: Some(vec![EnvVar {
+                    name: "NETWORK_ID".to_string(),
+                    value: Some(config.network_id.clone()),
+                    value_from: None,
+                }]),
                 ..Default::default()
             },
         ];

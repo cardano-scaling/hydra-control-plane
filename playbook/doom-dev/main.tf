@@ -88,12 +88,12 @@ variable "snapshot_aws_secret_access_key" {
   type = string
 }
 
-variable "api_key" {
+variable "frontend_image" {
   type = string
 }
 
-variable "frontend_image" {
-  type = string
+variable "network_id" {
+  type = number
 }
 
 variable "frontend_replicas" {
@@ -151,7 +151,6 @@ module "stage2" {
   ai_image                   = var.ai_image
   blockfrost_key             = var.blockfrost_key
   admin_addr                 = var.admin_addr
-  api_key                    = var.api_key
   dmtr_project_id            = var.dmtr_project_id
   dmtr_api_key               = var.dmtr_api_key
   dmtr_port_name             = var.dmtr_port_name
@@ -165,4 +164,15 @@ module "stage2" {
   autoscaler_low_watermark   = var.autoscaler_low_watermark
   autoscaler_region_prefix   = var.autoscaler_region_prefix
   autoscaler_max_batch       = var.autoscaler_max_batch
+  network_id                 = var.network_id
+  resources = {
+    requests = {
+      cpu    = "500m"
+      memory = "2Gi"
+    }
+    limits = {
+      cpu    = "2"
+      memory = "2Gi"
+    }
+  }
 }

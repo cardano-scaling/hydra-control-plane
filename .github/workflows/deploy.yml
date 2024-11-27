@@ -135,19 +135,34 @@ jobs:
         include:
           - region: us-east-1
             region_prefix: a
-            autoscaler_high_watermark: 5
+            autoscaler_high_watermark: 10
             autoscaler_low_watermark: 1
-            autoscaler_max_batch: 2
+            autoscaler_max_batch: 1
           - region: eu-central-1
             region_prefix: b
-            autoscaler_high_watermark: 5
+            autoscaler_high_watermark: 10
             autoscaler_low_watermark: 1
-            autoscaler_max_batch: 2
+            autoscaler_max_batch: 1
           - region: us-west-2
             region_prefix: c
-            autoscaler_high_watermark: 5
+            autoscaler_high_watermark: 10
             autoscaler_low_watermark: 1
-            autoscaler_max_batch: 2
+            autoscaler_max_batch: 1
+          - region: ap-southeast-1
+            region_prefix: d
+            autoscaler_high_watermark: 2
+            autoscaler_low_watermark: 1
+            autoscaler_max_batch: 1
+          - region: sa-east-1
+            region_prefix: e
+            autoscaler_high_watermark: 2
+            autoscaler_low_watermark: 1
+            autoscaler_max_batch: 1
+          - region: af-south-1
+            region_prefix: f
+            autoscaler_high_watermark: 2
+            autoscaler_low_watermark: 1
+            autoscaler_max_batch: 1
 
     env:
       # Secrets
@@ -156,9 +171,9 @@ jobs:
       TF_VAR_admin_key: ${{ secrets.DEV_HYDRA_ADMIN_KEY }}
       TF_VAR_snapshot_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       TF_VAR_snapshot_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
-      TF_VAR_api_key: ${{ secrets.API_KEY }}
 
       # Vars
+      TF_VAR_network_id: 0
       TF_VAR_dmtr_port_name: preprod-4raar2
       TF_VAR_dmtr_project_id: b55545f5-31e7-4e6b-81d6-22f4e6b5a144
       TF_VAR_external_domain: ${{ matrix.region }}.hydra-doom.sundae.fi
@@ -166,9 +181,9 @@ jobs:
       TF_VAR_eks_cluster_arn: arn:aws:eks:${{ matrix.region }}:509399595051:cluster/hydra-doom-dev-cluster
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
-      TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-a786f53
-      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-f68f1d4 # latest?
-      TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-f68f1d4 # latest?
+      TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-4b245f4
+      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-4b245f4 # latest?
+      TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-4b245f4 # latest?
       TF_VAR_autoscaler_high_watermark: ${{ matrix.autoscaler_high_watermark }}
       TF_VAR_autoscaler_low_watermark: ${{ matrix.autoscaler_low_watermark }}
       TF_VAR_autoscaler_region_prefix: ${{ matrix.region_prefix }}
