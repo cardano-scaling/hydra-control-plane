@@ -39,7 +39,7 @@ jobs:
 
     env:
       TF_VAR_cluster_name: ${{ matrix.region }}
-      TF_VAR_ssl_cert_arn: ${{ matrix.region }}
+      TF_VAR_ssl_cert_arn: ${{ matrix.ssl_cert_arn }}
       TF_VAR_eks_cluster_arn: arn:aws:eks:${{ matrix.region }}:509399595051:cluster/hydra-doom-dev-cluster
 
     steps:
