@@ -10,7 +10,7 @@ on:
         options:
           - "true"
           - "false"
-    regions:
+      regions:
         type: string
         required: false
         default: "all"
