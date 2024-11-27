@@ -1,19 +1,24 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{arg, Parser};
 use hydra_control_plane_rpc::model::{
-    cluster::ConnectionInfo,
+    cluster::{ConnectionInfo, KeyEnvelope},
     hydra::{
         hydra_message::{HydraData, HydraEventMessage},
         hydra_socket::HydraSocket,
     },
 };
+use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
 use rocket::{get, post, routes, State};
-use std::{sync::Arc, time::Duration};
+use routes::game::{
+    add_player::add_player, cleanup::cleanup, end_game::end_game as node_end_game,
+    new_game::new_game, start_game::start_game as node_start_game,
+};
+use std::{env, fs::File, sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 mod metrics;
-
+mod routes;
 use metrics::{Metrics, NodeState};
 
 #[derive(Parser, Debug)]
@@ -25,6 +30,15 @@ struct Args {
     port: u32,
     #[arg(long, action)]
     secure: bool,
+    #[arg(long)]
+    admin_key_file: String,
+}
+
+pub struct LocalState {
+    network: Network,
+    hydra: ConnectionInfo,
+    admin_key: SecretKey,
+    metrics: Arc<Metrics>,
 }
 
 #[rocket::main]
@@ -42,6 +56,26 @@ async fn main() -> Result<()> {
         port: args.port,
         secure: args.secure,
     };
+
+    let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
+        File::open(args.admin_key_file).context("unable to open key file")?,
+    )?;
+
+    let admin_key: SecretKey = admin_key_envelope
+        .try_into()
+        .context("Failed to get secret key from file")?;
+
+    let network: Network = env::var("NETWORK_ID")
+        .map(|network_str| {
+            network_str
+                .parse::<u8>()
+                .inspect_err(|_| error!("Invalid NETWORK_ID value, defaulting to 0"))
+                .unwrap_or_default()
+        })
+        .inspect_err(|_| error!("Missing NETWORK_ID env var, defaulting to zero"))
+        .unwrap_or_default()
+        .into();
+
     let socket = Arc::new(HydraSocket::new(
         connection_info.to_websocket_url().as_str(),
         &connection_info.to_authority(),
@@ -58,7 +92,12 @@ async fn main() -> Result<()> {
     tokio::spawn(update(metrics.clone(), rx));
 
     let _ = rocket::build()
-        .manage(metrics)
+        .manage(LocalState {
+            admin_key,
+            hydra: connection_info,
+            metrics,
+            network,
+        })
         .mount(
             "/",
             routes![
@@ -70,6 +109,11 @@ async fn main() -> Result<()> {
                 player_left,
                 player_killed,
                 player_suicided,
+                new_game,
+                add_player,
+                node_start_game,
+                node_end_game,
+                cleanup,
             ],
         )
         .launch()
@@ -79,43 +123,43 @@ async fn main() -> Result<()> {
 }
 
 #[get("/metrics")]
-fn metrics_endpoint(metrics: &State<Arc<Metrics>>) -> String {
-    metrics.gather()
+fn metrics_endpoint(state: &State<LocalState>) -> String {
+    state.metrics.gather()
 }
 
 #[post("/start_server")]
-fn start_server(metrics: &State<Arc<Metrics>>) {
-    metrics.start_server();
+fn start_server(state: &State<LocalState>) {
+    state.metrics.start_server();
 }
 
 #[post("/start_game")]
-fn start_game(metrics: &State<Arc<Metrics>>) {
-    metrics.start_game();
+fn start_game(state: &State<LocalState>) {
+    state.metrics.start_game();
 }
 
 #[post("/end_game")]
-fn end_game(metrics: &State<Arc<Metrics>>) {
-    metrics.end_game();
+fn end_game(state: &State<LocalState>) {
+    state.metrics.end_game();
 }
 
 #[post("/player_joined")]
-fn player_joined(metrics: &State<Arc<Metrics>>) {
-    metrics.player_joined();
+fn player_joined(state: &State<LocalState>) {
+    state.metrics.player_joined();
 }
 
 #[post("/player_left")]
-fn player_left(metrics: &State<Arc<Metrics>>) {
-    metrics.player_left();
+fn player_left(state: &State<LocalState>) {
+    state.metrics.player_left();
 }
 
 #[post("/player_killed")]
-fn player_killed(metrics: &State<Arc<Metrics>>) {
-    metrics.player_killed();
+fn player_killed(state: &State<LocalState>) {
+    state.metrics.player_killed();
 }
 
 #[post("/player_suicided")]
-fn player_suicided(metrics: &State<Arc<Metrics>>) {
-    metrics.player_suicided();
+fn player_suicided(state: &State<LocalState>) {
+    state.metrics.player_suicided();
 }
 
 async fn update_connection_state(metrics: Arc<Metrics>, socket: Arc<HydraSocket>) {

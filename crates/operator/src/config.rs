@@ -18,7 +18,6 @@ pub struct Config {
     pub ai_image: String,
     pub configmap: String,
     pub secret: String,
-    pub api_key: String,
     pub blockfrost_key: String,
     pub external_domain: String,
     pub external_port: String,
@@ -31,6 +30,7 @@ pub struct Config {
     pub bucket: String,
     pub init_aws_access_key_id: String,
     pub init_aws_secret_access_key: String,
+    pub network_id: String,
     // Autoscaler
     pub autoscaler_delay: Duration,
     pub autoscaler_low_watermark: usize,
@@ -48,7 +48,6 @@ impl Config {
             ai_image: env::var("AI_IMAGE").expect("Missing AI_IMAGE env var"),
             configmap: env::var("CONFIGMAP").expect("Missing CONFIGMAP env var"),
             secret: env::var("SECRET").expect("Missing SECRET env var"),
-            api_key: env::var("API_KEY").expect("Missing API_KEY env var"),
             blockfrost_key: env::var("BLOCKFROST_KEY").expect("Missing BLOCKFROST_KEY env var"),
             external_domain: env::var("EXTERNAL_DOMAIN").expect("Missing EXTERNAL_DOMAIN env var."),
             external_port: env::var("EXTERNAL_PORT").expect("Missing EXTERNAL_PORT env var."),
@@ -85,6 +84,7 @@ impl Config {
             autoscaler_max_batch: env::var("AUTOSCALER_MAX_BATCH")
                 .map(|x| x.parse().expect("Failed to parse AUTOSCALER_MAX_BATCH"))
                 .expect("Missing AUTOSCALER_MAX_BATCH env var."),
+            network_id: env::var("NETWORK_ID").expect("Missing NETWORK_ID env var."),
         }
     }
 }

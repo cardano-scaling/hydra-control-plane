@@ -77,11 +77,6 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name  = "API_KEY"
-            value = var.api_key
-          }
-
-          env {
             name  = "BLOCKFROST_KEY"
             value = var.blockfrost_key
           }
@@ -169,6 +164,11 @@ resource "kubernetes_deployment_v1" "operator" {
           env {
             name  = "AUTOSCALER_MAX_BATCH"
             value = var.autoscaler_max_batch
+          }
+
+          env {
+            name = "NETWORK_ID"
+            value = var.network_id
           }
 
           resources {

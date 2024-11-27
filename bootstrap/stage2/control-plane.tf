@@ -68,9 +68,10 @@ resource "kubernetes_deployment_v1" "control_plane" {
             value = "${local.secret_mount_path}/admin.sk"
           }
 
+
           env {
-            name  = "API_KEY"
-            value = var.api_key
+            name  = "NETWORK_ID"
+            value = var.network_id
           }
 
           env {

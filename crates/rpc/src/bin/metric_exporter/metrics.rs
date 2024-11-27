@@ -158,7 +158,7 @@ impl Metrics {
     }
 
     pub fn start_game(&self) {
-        self.games_current.inc();
+        self.games_current.set(1);
         self.game_state.set(GameState::Running.into());
         let mut guard = self.game_timer.lock().unwrap();
         if let Some(prev) = guard.take() {
@@ -170,7 +170,7 @@ impl Metrics {
 
     pub fn end_game(&self) {
         self.players_current.set(0);
-        self.games_current.dec();
+        self.games_current.set(0);
         self.game_state.set(GameState::Done.into());
         let mut guard = self.game_timer.lock().unwrap();
         if let Some(timer) = guard.take() {
