@@ -7,5 +7,5 @@ RUN unzip -d bin hydra-x86_64-linux-0.19.0.zip
 RUN cp /var/hydra-node/bin/hydra-node /hydra-node
 RUN chmod +x /hydra-node
 
-COPY docker/entrypoint.sh /entrypoint.sh
+COPY .github/images/init/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["sh", "/entrypoint.sh"]
