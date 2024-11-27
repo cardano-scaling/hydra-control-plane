@@ -37,18 +37,17 @@ pub struct Resources {
 )]
 #[kube(status = "HydraDoomNodeStatus")]
 #[kube(printcolumn = r#"
-        {"name": "Node State", "jsonPath":".status.node_state", "type": "string"}, 
-        {"name": "Game State", "jsonPath":".status.game_state", "type": "string"}, 
-        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"}, 
-        {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"}, 
+        {"name": "Node State", "jsonPath":".status.nodeState", "type": "string"},
+        {"name": "Game State", "jsonPath":".status.gameState", "type": "string"},
+        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"},
+        {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"},
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeSpec {
     pub offline: Option<bool>,
     pub network_id: Option<u8>,
-    pub seed_input: String,
-    pub commit_inputs: Vec<String>,
+    pub snapshot: Option<String>,
     pub start_chain_from: Option<String>,
     pub asleep: Option<bool>,
     pub resources: Option<Resources>,
