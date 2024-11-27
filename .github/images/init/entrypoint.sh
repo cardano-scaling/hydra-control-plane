@@ -1,5 +1,5 @@
 #!/bin/sh
-if [[ -z "${URI}" ]]; then
+if [[ -z "${KEY}" ]]; then
   echo "Snapshot does not exist, generating keys..."
   mkdir "$DATA_DIR/keys"
   /hydra-node gen-hydra-key --output-file "$DATA_DIR/keys/hydra"
