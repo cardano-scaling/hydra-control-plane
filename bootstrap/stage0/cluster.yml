@@ -5,13 +5,32 @@ kind: ClusterConfig
 metadata:
   name: hydra-doom-dev-cluster
   # region: us-east-1
-  region: eu-central-1
+  # region: eu-central-1
   # region: us-west-2
+  # region: ap-southeast-1
+  # region: sa-east-1
+  region: af-south-1
   tags: 
     sundae-labs:cost-allocation:Service: hydra-doom
 
 iam:
   withOIDC: true
+  serviceAccounts:
+  - metadata:
+      name: aws-load-balancer-controller
+      namespace: kube-system
+    attachPolicyARNs:
+    - "arn:aws:iam::509399595051:policy/AWSLoadBalancerControllerIAMPolicy"
+  - metadata:
+      name: ebs-csi-controller-sa
+      namespace: kube-system
+    attachPolicyARNs:
+    - "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  - metadata:
+      name: hydra-doom-node
+      namespace: hydra-doom
+    attachPolicyARNs:
+    - "arn:aws:iam::509399595051:policy/hydra-doom-kinesis-writer"
 
 accessConfig:
   authenticationMode: API_AND_CONFIG_MAP
@@ -38,15 +57,18 @@ managedNodeGroups:
       hydra.doom/compute-profile: admin
       hydra.doom/compute-arch: x86
       hydra.doom/availability-zone: az1
-    instanceTypes: [ t3a.medium, t3.medium ]
+    instanceTypes: [ t3.medium ]
     minSize: 0
     maxSize: 3
     desiredCapacity: 0
     spot: true
     availabilityZones:
       # - us-east-1b
-      - eu-central-1b
+      # - eu-central-1b
       # - us-west-2b
+      # - ap-southeast-1a
+      # - sa-east-1a
+      - af-south-1a
   - name: co-adm-x86-az1
     tags: 
       sundae-labs:cost-allocation:Service: hydra-doom
@@ -55,15 +77,18 @@ managedNodeGroups:
       hydra.doom/compute-profile: admin
       hydra.doom/compute-arch: x86
       hydra.doom/availability-zone: az1
-    instanceTypes: [ t3a.medium, t3.medium ]
+    instanceTypes: [ t3.medium ]
     minSize: 0
     maxSize: 3
     desiredCapacity: 3
     spot: false
     availabilityZones:
       # - us-east-1b
-      - eu-central-1b
+      # - eu-central-1b
       # - us-west-2b
+      # - ap-southeast-1a
+      # - sa-east-1a
+      - af-south-1a
 
 fargateProfiles:
   - name: fp-default

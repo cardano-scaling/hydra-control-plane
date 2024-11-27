@@ -148,6 +148,21 @@ jobs:
             autoscaler_high_watermark: 10
             autoscaler_low_watermark: 1
             autoscaler_max_batch: 1
+          - region: ap-southeast-1
+            region_prefix: d
+            autoscaler_high_watermark: 2
+            autoscaler_low_watermark: 1
+            autoscaler_max_batch: 1
+          - region: sa-east-1
+            region_prefix: e
+            autoscaler_high_watermark: 2
+            autoscaler_low_watermark: 1
+            autoscaler_max_batch: 1
+          - region: af-south-1
+            region_prefix: f
+            autoscaler_high_watermark: 2
+            autoscaler_low_watermark: 1
+            autoscaler_max_batch: 1
 
     env:
       # Secrets
