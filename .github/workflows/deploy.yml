@@ -188,6 +188,7 @@ jobs:
       TF_VAR_autoscaler_low_watermark: ${{ matrix.autoscaler_low_watermark }}
       TF_VAR_autoscaler_region_prefix: ${{ matrix.region_prefix }}
       TF_VAR_autoscaler_max_batch: ${{ matrix.autoscaler_max_batch }}
+      TF_VAR_available_snapshot_prefix: snapshots
 
     steps:
       - name: Filter regions

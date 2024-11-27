@@ -32,6 +32,8 @@ pub struct Config {
     pub init_aws_access_key_id: String,
     pub init_aws_secret_access_key: String,
     pub network_id: String,
+    pub available_snapshot_prefix: String,
+
     // Autoscaler
     pub autoscaler_delay: Duration,
     pub autoscaler_low_watermark: usize,
@@ -67,6 +69,9 @@ impl Config {
                 .expect("Missing INIT_AWS_ACCESS_KEY_ID env var."),
             init_aws_secret_access_key: env::var("INIT_AWS_SECRET_ACCESS_KEY")
                 .expect("Missing INIT_AWS_SECRET_ACCESS_KEY env var."),
+            available_snapshot_prefix: env::var("AVAILABLE_SNAPSHOT_PREFIX")
+                .unwrap_or("snapshots".to_string()),
+
             autoscaler_delay: env::var("AUTOSCALER_DELAY")
                 .map(|duration| {
                     Duration::from_secs(duration.parse().expect("Failed to parse AUTOSCALER_DELAY"))

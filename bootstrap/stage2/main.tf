@@ -154,6 +154,11 @@ variable "network_id" {
   type = number
 }
 
+variable "available_snapshot_prefix" {
+  type    = string
+  default = "snapshots"
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string

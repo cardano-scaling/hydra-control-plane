@@ -111,13 +111,11 @@ pub struct K8sConstants {
     pub dmtrctl_image: String,
     pub storage_class_name: String,
     pub service_account_name: String,
-    pub available_snapshot_prefix: String,
     pub used_snapshot_prefix: String,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
         Self {
-            available_snapshot_prefix: "snapshots".to_string(),
             used_snapshot_prefix: "used".to_string(),
             storage_class_name: "efs-sc".to_string(),
             config_dir: "/etc/config".to_string(),
@@ -413,7 +411,7 @@ impl K8sContext {
             .s3_client
             .list_objects_v2()
             .bucket(self.config.bucket.clone())
-            .prefix(self.constants.available_snapshot_prefix.clone())
+            .prefix(self.config.available_snapshot_prefix.clone())
             .max_keys(100)
             .into_paginator()
             .send();
@@ -434,7 +432,7 @@ impl K8sContext {
 
     async fn use_snapshot(&self, snapshot_key: &str) -> anyhow::Result<String> {
         let new_key = snapshot_key.replace(
-            &self.constants.available_snapshot_prefix,
+            &self.config.available_snapshot_prefix,
             &self.constants.used_snapshot_prefix,
         );
 

@@ -120,6 +120,11 @@ variable "autoscaler_max_batch" {
   default = 2
 }
 
+variable "available_snapshot_prefix" {
+  type    = string
+  default = "snapshots"
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -165,6 +170,7 @@ module "stage2" {
   autoscaler_region_prefix   = var.autoscaler_region_prefix
   autoscaler_max_batch       = var.autoscaler_max_batch
   network_id                 = var.network_id
+  available_snapshot_prefix  = var.available_snapshot_prefix
   resources = {
     requests = {
       cpu    = "500m"
