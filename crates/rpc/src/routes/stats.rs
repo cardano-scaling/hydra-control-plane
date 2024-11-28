@@ -21,6 +21,7 @@ pub struct GlobalStats {
     as_of: time::SystemTime,
     total_txs: u64,
     txs_per_second: f64,
+    peak_txs_per_second: f64,
     total_bytes: u64,
     bytes_per_second: f64,
 
@@ -38,6 +39,7 @@ pub struct GlobalStats {
 
 const TOTAL_TRANSACTIONS: &str = "sum(last_over_time(hydra_doom_node_transactions[1y]))";
 const TRANSACTIONS_PER_SECOND: &str = "sum(irate(hydra_doom_node_transactions[1m])>0)";
+const PEAK_TRANSACTIONS_PER_SECOND: &str = "max_over_time(sum(irate(hydra_doom_node_transactions[1m]))[1w:])";
 const TOTAL_BYTES: &str = "sum(last_over_time(hydra_doom_node_bytes[1y]))";
 const BYTES_PER_SECOND: &str = "sum(irate(hydra_doom_node_bytes[1m])>0)";
 const TOTAL_GAMES: &str = "sum(last_over_time(hydra_doom_games_seconds_count[1y]))";
@@ -93,6 +95,7 @@ pub async fn refresh_stats() -> Result<GlobalStats> {
     let (
         total_txs,
         txs_per_second,
+        peak_txs_per_second,
         total_bytes,
         bytes_per_second,
         total_games,
@@ -104,6 +107,7 @@ pub async fn refresh_stats() -> Result<GlobalStats> {
     ) = try_join!(
         fetch_metric(TOTAL_TRANSACTIONS),
         fetch_metric(TRANSACTIONS_PER_SECOND),
+        fetch_metric(PEAK_TRANSACTIONS_PER_SECOND),
         fetch_metric(TOTAL_BYTES),
         fetch_metric(BYTES_PER_SECOND),
         fetch_metric(TOTAL_GAMES),
@@ -117,6 +121,7 @@ pub async fn refresh_stats() -> Result<GlobalStats> {
         as_of: time::SystemTime::now(),
         total_txs,
         txs_per_second,
+        peak_txs_per_second,
         total_bytes,
         bytes_per_second,
         total_games,
