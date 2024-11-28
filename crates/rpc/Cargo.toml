@@ -8,6 +8,10 @@ name = "open-head"
 path = "src/bin/open_head.rs"
 
 [[bin]]
+name = "deploy-contracts"
+path = "src/bin/deploy_contracts.rs"
+
+[[bin]]
 name = "metrics-exporter"
 path = "src/bin/metric_exporter/main.rs"
 
