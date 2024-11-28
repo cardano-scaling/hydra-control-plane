@@ -68,22 +68,22 @@ async fn main() {
         .map_err(|e| tracing::error!(err = e.to_string(), "Failed to fetch seed input"))
         .unwrap();
 
-    let initial_output = Output::new(destination.clone(), 20_000_000)
+    let initial_output = Output::new(destination.clone(), 12386940)
         .set_inline_script(ScriptKind::PlutusV2, HydraValidator::VInitial.into());
-    let commit_output = Output::new(destination.clone(), 20_000_000)
+    let commit_output = Output::new(destination.clone(), 3866070)
         .set_inline_script(ScriptKind::PlutusV2, HydraValidator::VCommit.into());
-    let head_output = Output::new(destination, 20_000_000)
+    let head_output = Output::new(destination, 55292990)
         .set_inline_script(ScriptKind::PlutusV2, HydraValidator::VHead.into());
 
     let transaction = StagingTransaction::new()
-        .fee(1_000_000)
+        .fee(873549)
         .input(seed_input.into())
         .output(initial_output)
         .output(commit_output)
         .output(head_output)
         .output(Output::new(
             seed_input_output.address.0,
-            seed_input_output.lovelace - 20_000_000 * 3 - 1,
+            seed_input_output.lovelace - (12386940 + 3866070 + 55292990) - 873549,
         ))
         .build_conway_raw()
         .inspect_err(|e| println!("Transaction build failed: {}", e))
