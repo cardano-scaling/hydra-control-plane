@@ -40,7 +40,7 @@ data:
     echo "---"
 
     # Open head
-    /bin/open-head -- \
+    /hcp/open-head \
       --network-id 0 \
       --seed-input $SEED_INPUT \
       --participant $ADDRESS \

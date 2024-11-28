@@ -43,7 +43,7 @@ spec:
           restartPolicy: "Always"
           args:
             - "--node-id"
-            - var.id
+            - "{id}"
             - "--persistence-dir"
             - "/var/data/{id}/persistence"
             - "--cardano-signing-key"

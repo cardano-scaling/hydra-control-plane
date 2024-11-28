@@ -1,3 +1,8 @@
+if [[ -z "${ID}" ]]; then
+  echo "Missing ID env var."
+  exit 1
+fi
+
 if [[ -z "${BLOCKFROST_KEY}" ]]; then
   echo "Missing BLOCKFROST_KEY env var."
   exit 1
@@ -8,10 +13,9 @@ if [[ -z "${DMTR_API_KEY}" ]]; then
   exit 1
 fi
 
-ID=testonlinenewscript
 HYDRA_NODE_IMAGE=ghcr.io/demeter-run/hydra-node:patch2
-HYDRA_SCRIPTS_TX_ID=af8c6a99c26277621b36b8aa4dd97a2f03316bd9aae804ba26f17d7cbea85197
-START_CHAIN_FROM=77141816.c7f5806dfd978474ab23941fcf2c552e7fca13749b7791fd0b3aa83dc1bcd173
+HYDRA_SCRIPTS_TX_ID=f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93
+START_CHAIN_FROM=77149305.7cff4a56346c7aa75b9f92bd4e860a0d9af2d83205f5c080fc94466cbe6054cc
 PVC_NAME=open-head-volume
 
 cat job.yml \
