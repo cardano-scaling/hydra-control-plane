@@ -181,9 +181,9 @@ jobs:
       TF_VAR_eks_cluster_arn: arn:aws:eks:${{ matrix.region }}:509399595051:cluster/hydra-doom-dev-cluster
       TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
-      TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-2c65eb8
-      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-2c65eb8 # latest?
-      TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-2c65eb8 # latest?
+      TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-d5dae4c
+      TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-d5dae4c # latest?
+      TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-d5dae4c # latest?
       TF_VAR_autoscaler_high_watermark: ${{ matrix.autoscaler_high_watermark }}
       TF_VAR_autoscaler_low_watermark: ${{ matrix.autoscaler_low_watermark }}
       TF_VAR_autoscaler_region_prefix: ${{ matrix.region_prefix }}
