@@ -336,10 +336,81 @@ impl HydraDoomNode {
             Container {
                 name: "ai-1".to_string(),
                 image: Some(config.ai_image.clone()),
-                env: Some(vec![EnvVar {
-                    name: "NETWORK_ID".to_string(),
-                    value: Some(config.network_id.clone()),
-                    value_from: None,
+                env: Some(vec![
+                    EnvVar {
+                        name: "NETWORK_ID".to_string(),
+                        value: Some(config.network_id.clone()),
+                        value_from: None,
+                    },
+                    EnvVar {
+                        name: "ADMIN_KEY_FILE".to_string(),
+                        value: Some(format!("{}/admin.sk", constants.secret_dir)),
+                        value_from: None,
+                    },
+                    EnvVar {
+                        name: "BOT_INDEX".to_string(),
+                        value: Some("1".to_string()),
+                        value_from: None,
+                    },
+                ]),
+                volume_mounts: Some(vec![VolumeMount {
+                    name: "secret".to_string(),
+                    mount_path: constants.secret_dir.clone(),
+                    ..Default::default()
+                }]),
+                ..Default::default()
+            },
+            Container {
+                name: "ai-2".to_string(),
+                image: Some(config.ai_image.clone()),
+                env: Some(vec![
+                    EnvVar {
+                        name: "NETWORK_ID".to_string(),
+                        value: Some(config.network_id.clone()),
+                        value_from: None,
+                    },
+                    EnvVar {
+                        name: "ADMIN_KEY_FILE".to_string(),
+                        value: Some(format!("{}/admin.sk", constants.secret_dir)),
+                        value_from: None,
+                    },
+                    EnvVar {
+                        name: "BOT_INDEX".to_string(),
+                        value: Some("2".to_string()),
+                        value_from: None,
+                    },
+                ]),
+                volume_mounts: Some(vec![VolumeMount {
+                    name: "secret".to_string(),
+                    mount_path: constants.secret_dir.clone(),
+                    ..Default::default()
+                }]),
+                ..Default::default()
+            },
+            Container {
+                name: "ai-3".to_string(),
+                image: Some(config.ai_image.clone()),
+                env: Some(vec![
+                    EnvVar {
+                        name: "NETWORK_ID".to_string(),
+                        value: Some(config.network_id.clone()),
+                        value_from: None,
+                    },
+                    EnvVar {
+                        name: "ADMIN_KEY_FILE".to_string(),
+                        value: Some(format!("{}/admin.sk", constants.secret_dir)),
+                        value_from: None,
+                    },
+                    EnvVar {
+                        name: "BOT_INDEX".to_string(),
+                        value: Some("3".to_string()),
+                        value_from: None,
+                    },
+                ]),
+                volume_mounts: Some(vec![VolumeMount {
+                    name: "secret".to_string(),
+                    mount_path: constants.secret_dir.clone(),
+                    ..Default::default()
                 }]),
                 ..Default::default()
             },
