@@ -17,7 +17,7 @@ use pallas::{
     ledger::addresses::Address,
     txbuilder::{Input, Output},
 };
-use tracing::debug;
+use tracing::info;
 
 // CLI to open a Hydra Head
 #[derive(Parser, Debug)]
@@ -60,6 +60,7 @@ struct Args {
 async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
+        .with_writer(std::io::stderr)
         .init();
 
     let args = Args::parse();
@@ -89,7 +90,7 @@ async fn main() {
         .try_into()
         .expect("Failed to get party verification key from file");
 
-    debug!("Building init transaction...");
+    info!("Building init transaction...");
 
     let participant_hash = match Address::from_bech32(args.participant.as_str())
         .expect("Failed to parse bech32 participant address")
@@ -125,13 +126,13 @@ async fn main() {
         ))
         .expect("Failed to build tx");
 
-    debug!("Tx bytes: {}", hex::encode(built_init_tx.tx_bytes.clone()));
+    info!("Tx bytes: {}", hex::encode(built_init_tx.tx_bytes.clone()));
 
     let built_init_tx = built_init_tx
         .sign(admin_key.clone().into())
         .expect("Failed to sign tx");
 
-    debug!(
+    info!(
         "Submitting init tx: {}",
         hex::encode(built_init_tx.tx_bytes.clone().0)
     );
@@ -141,8 +142,8 @@ async fn main() {
         .await
         .expect("Failed to submit init tx");
 
-    debug!("Submitted init tx: {}", init_tx_id);
-    debug!("Committing funds...");
+    info!("Submitted init tx: {}", init_tx_id);
+    info!("Committing funds...");
 
     let commit_inputs: Vec<(InputWrapper, OutputWrapper)> = join_all(args.commit_inputs.into_iter().map(|input| async {
         let input: InputWrapper = input.try_into().expect("Failed to parse commit input. Please make sure it uses the following format: {tx_hash}#{index}");
@@ -196,7 +197,7 @@ async fn main() {
         .sign(admin_key.into())
         .expect("Failed to sign commit tx");
 
-    debug!(
+    info!(
         "Signed commit tx: {}",
         hex::encode(built_commit_tx.tx_bytes.clone())
     );
@@ -205,5 +206,5 @@ async fn main() {
         .submit_transaction(built_commit_tx)
         .await
         .expect("Failed to submit commit tx");
-    debug!("Submitted commit tx: {}", commit_tx_id);
+    info!("Submitted commit tx: {}", commit_tx_id);
 }
