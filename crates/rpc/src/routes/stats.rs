@@ -2,17 +2,23 @@ use futures_util::try_join;
 use rocket::{get, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::{str::FromStr, sync::RwLock, time};
+use std::{str::FromStr, sync::{Arc, RwLock}, time};
 
+#[derive(Clone)]
 pub struct StatsState {
-    latest_stats: RwLock<GlobalStats>,
+    latest_stats: Arc<RwLock<GlobalStats>>,
 }
 
 impl StatsState {
     pub fn new(stats: GlobalStats) -> Self {
         Self {
-            latest_stats: RwLock::new(stats),
+            latest_stats: Arc::new(RwLock::new(stats)),
         }
+    }
+
+    pub fn update(&self, stats: GlobalStats) {
+        let mut latest_stats = self.latest_stats.write().unwrap();
+        *latest_stats = stats;
     }
 }
 
@@ -58,12 +64,14 @@ struct ThanosResult {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct ThanosData {
+    #[expect(dead_code)]
     pub result_type: String,
     pub result: Vec<ThanosResult>,
 }
 #[derive(Deserialize, Debug)]
 struct ThanosResponse {
     pub status: String,
+    #[expect(dead_code)]
     pub data: ThanosData,
 }
 pub async fn fetch_metric<T: FromStr + Default>(query: &str) -> Result<T> {
@@ -139,16 +147,6 @@ pub async fn refresh_stats() -> Result<GlobalStats> {
 
 #[get("/global_stats")]
 pub async fn global_stats(state: &State<StatsState>) -> Result<Json<GlobalStats>> {
-    let elapsed = { state.latest_stats.read().unwrap().as_of.elapsed()? };
-    if elapsed > time::Duration::from_secs(5) {
-        // Careful not to hold a lock over an async point!
-        let new_stats = refresh_stats().await?;
-
-        let mut stats = state.latest_stats.write().unwrap();
-        *stats = new_stats;
-        Ok(Json(stats.clone()))
-    } else {
-        let stats = state.latest_stats.read().unwrap();
-        Ok(Json(stats.clone()))
-    }
+    let stats = state.latest_stats.read().unwrap();
+    Ok(Json(stats.clone()))
 }

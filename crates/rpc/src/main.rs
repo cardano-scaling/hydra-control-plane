@@ -52,6 +52,21 @@ async fn main() -> Result<()> {
             .expect("failed to fetch initial stats"),
     );
 
+    let bg_stats = stats.clone();
+
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            let new_stats = refresh_stats().await;
+            match new_stats {
+                Ok(stats) => bg_stats.update(stats),
+                Err(err) => {
+                    println!("Failed to fetch stats: {:?}", err);
+                },
+            }
+        }
+    });
+
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
         .allowed_methods(
