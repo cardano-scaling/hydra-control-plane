@@ -8,6 +8,8 @@ use futures_util::StreamExt as _;
 use kube::runtime::{reflector::ObjectRef, WatchStreamExt as _};
 use pallas::crypto::key::ed25519::SecretKey;
 use pallas::ledger::addresses::Network;
+use rand::seq::IteratorRandom;
+use rand::thread_rng;
 use serde::Deserialize;
 
 mod crd;
@@ -129,6 +131,22 @@ impl ClusterState {
             .entry(node.metadata.name.clone().expect("node without a name"))
             .or_insert(true);
         Ok(node)
+    }
+
+    pub fn select_random_node_with_active_game(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
+        Ok(self
+            .store
+            .state()
+            .iter()
+            .filter(|n| {
+                n.status
+                    .as_ref()
+                    .and_then(|status| Some(status.game_state == "Running"))
+                    .unwrap_or(false)
+            })
+            .choose(&mut thread_rng())
+            .cloned()
+            .ok_or(anyhow::anyhow!("no available nodes found"))?)
     }
 
     pub fn get_all_nodes(&self) -> Vec<Arc<crd::HydraDoomNode>> {

@@ -25,10 +25,8 @@ pub async fn sample_transactions(
     let node = match id {
         Some(id) => state.get_node_by_id(id).ok_or(Status::NotFound)?,
         None => state
-            .get_all_nodes()
-            .choose(&mut thread_rng())
-            .ok_or(Status::NotFound)?
-            .to_owned(),
+            .select_random_node_with_active_game()
+            .map_err(|_| Status::NotFound)?,
     };
 
     let (local, remote) =
