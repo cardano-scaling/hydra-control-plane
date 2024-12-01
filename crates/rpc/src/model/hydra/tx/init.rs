@@ -15,7 +15,11 @@ use crate::model::hydra::{
     tx::head_parameters::HeadParameters,
 };
 
-use super::{cost_models::COST_MODEL_PLUTUS_V3, input::InputWrapper, void_redeemer};
+use super::{
+    cost_models::{COST_MODEL_PLUTUS_V3, PREPROD_COST_MODEL_PLUTUS_V3},
+    input::InputWrapper,
+    void_redeemer,
+};
 
 #[allow(dead_code)]
 pub struct InitTx {
@@ -43,7 +47,14 @@ impl InitTx {
 
         let mut tx_builder = Some(
             StagingTransaction::new()
-                .language_view(ScriptKind::PlutusV3, COST_MODEL_PLUTUS_V3.clone())
+                .language_view(
+                    ScriptKind::PlutusV3,
+                    if self.network_id == 0 {
+                        PREPROD_COST_MODEL_PLUTUS_V3.clone()
+                    } else {
+                        COST_MODEL_PLUTUS_V3.clone()
+                    },
+                )
                 .network_id(self.network_id)
                 .input(self.seed_input.clone().into())
                 .collateral_input(self.seed_input.clone().into())

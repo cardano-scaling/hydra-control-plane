@@ -12,7 +12,9 @@ use pallas::{
 use crate::model::hydra::contract::hydra_validator::HydraValidator;
 
 use super::{
-    cost_models::COST_MODEL_PLUTUS_V3, input::InputWrapper, output::OutputWrapper,
+    cost_models::{COST_MODEL_PLUTUS_V3, PREPROD_COST_MODEL_PLUTUS_V3},
+    input::InputWrapper,
+    output::OutputWrapper,
     script_registry::ScriptRegistry,
 };
 
@@ -73,7 +75,11 @@ impl CommitTx {
                 .disclosed_signer(self.initial_input.2)
                 .language_view(
                     pallas::txbuilder::ScriptKind::PlutusV3,
-                    COST_MODEL_PLUTUS_V3.clone(),
+                    if self.network_id == 0 {
+                        PREPROD_COST_MODEL_PLUTUS_V3.clone()
+                    } else {
+                        COST_MODEL_PLUTUS_V3.clone()
+                    },
                 ),
         );
         for (input, _) in self.commit_inputs.clone() {
