@@ -54,3 +54,20 @@ impl From<HydraValidator> for Vec<u8> {
         hex::decode(value.cbor()).expect("invalid script cbor hex string")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use pallas::ledger::traverse::ComputeHash;
+
+    use super::HydraValidator;
+
+    #[test]
+    fn hashes() {
+        let initial_hash = HydraValidator::VInitial.to_plutus().compute_hash();
+        let head_hash = HydraValidator::VHead.to_plutus().compute_hash();
+        let mint_hash = HydraValidator::MHead.to_plutus().compute_hash();
+        println!("{}", hex::encode(initial_hash));
+        println!("{}", hex::encode(head_hash));
+        println!("{}", hex::encode(mint_hash));
+    }
+}
