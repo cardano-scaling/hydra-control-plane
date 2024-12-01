@@ -3,8 +3,8 @@ use k8s_openapi::{
         apps::v1::{Deployment, DeploymentSpec},
         core::v1::{
             ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource,
-            EnvVar, PodSpec, PodTemplateSpec, ResourceRequirements, SecretVolumeSource, Service,
-            ServicePort, ServiceSpec, Volume, VolumeMount,
+            EnvVar, PodSpec, PodTemplateSpec, Probe, ResourceRequirements, SecretVolumeSource,
+            Service, ServicePort, ServiceSpec, Volume, VolumeMount,
         },
         networking::v1::{
             HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
@@ -256,6 +256,17 @@ impl HydraDoomNode {
                     protocol: Some("TCP".to_string()),
                     ..Default::default()
                 }]),
+                readiness_probe: Some(Probe {
+                    tcp_socket: Some(k8s_openapi::api::core::v1::TCPSocketAction {
+                        port: k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                            constants.port,
+                        ),
+                        ..Default::default()
+                    }),
+                    initial_delay_seconds: Some(15),
+                    period_seconds: Some(10),
+                    ..Default::default()
+                }),
                 volume_mounts: Some(vec![
                     VolumeMount {
                         name: "initialutxo".to_string(),

@@ -1,5 +1,16 @@
 controller:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 2
+      memory: 512Mi
+    limits:
+      cpu: 4
+      memory: 512Mi
   service:
+    targetPorts:
+      http: http
+      https: http
     annotations:
       meta.helm.sh/release-name: ingress-nginx
       meta.helm.sh/release-namespace: ingress-nginx
