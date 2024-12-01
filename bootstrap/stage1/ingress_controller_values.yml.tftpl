@@ -1,12 +1,16 @@
 controller:
-  replicaCount: 2
+  admissionWebhooks:
+    timeoutSeconds: 30
+  config:
+    worker-shutdown-timeout: 20s
+  replicaCount: 3
   resources:
     requests:
       cpu: 2
-      memory: 2Gi
+      memory: 6Gi
     limits:
-      cpu: 4
-      memory: 2Gi
+      cpu: 6
+      memory: 6Gi
   service:
     targetPorts:
       http: http
