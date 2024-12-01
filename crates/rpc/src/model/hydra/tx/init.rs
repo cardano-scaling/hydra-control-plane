@@ -30,7 +30,7 @@ impl InitTx {
     pub fn get_head_id(&self) -> Result<Vec<u8>> {
         Ok(self.get_minting_validator()?.1.to_vec())
     }
-    fn get_minting_validator(&self) -> Result<(PlutusScript<2>, Hash<28>)> {
+    fn get_minting_validator(&self) -> Result<(PlutusScript<3>, Hash<28>)> {
         let script =
             make_head_token_script(&self.seed_input).context("Failed to make head token script")?;
         let script_hash = script.compute_hash();
