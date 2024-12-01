@@ -69,11 +69,11 @@ async fn main() {
         .unwrap();
 
     let initial_output = Output::new(destination.clone(), 12386940)
-        .set_inline_script(ScriptKind::PlutusV2, HydraValidator::VInitial.into());
+        .set_inline_script(ScriptKind::PlutusV3, HydraValidator::VInitial.into());
     let commit_output = Output::new(destination.clone(), 3866070)
-        .set_inline_script(ScriptKind::PlutusV2, HydraValidator::VCommit.into());
+        .set_inline_script(ScriptKind::PlutusV3, HydraValidator::VCommit.into());
     let head_output = Output::new(destination, 55292990)
-        .set_inline_script(ScriptKind::PlutusV2, HydraValidator::VHead.into());
+        .set_inline_script(ScriptKind::PlutusV3, HydraValidator::VHead.into());
 
     let transaction = StagingTransaction::new()
         .fee(873549)

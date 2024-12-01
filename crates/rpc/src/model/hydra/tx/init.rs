@@ -15,7 +15,7 @@ use crate::model::hydra::{
     tx::head_parameters::HeadParameters,
 };
 
-use super::{cost_models::COST_MODEL_PLUTUS_V2, input::InputWrapper, void_redeemer};
+use super::{cost_models::COST_MODEL_PLUTUS_V3, input::InputWrapper, void_redeemer};
 
 #[allow(dead_code)]
 pub struct InitTx {
@@ -43,7 +43,7 @@ impl InitTx {
 
         let mut tx_builder = Some(
             StagingTransaction::new()
-                .language_view(ScriptKind::PlutusV2, COST_MODEL_PLUTUS_V2.clone())
+                .language_view(ScriptKind::PlutusV3, COST_MODEL_PLUTUS_V3.clone())
                 .network_id(self.network_id)
                 .input(self.seed_input.clone().into())
                 .collateral_input(self.seed_input.clone().into())
@@ -57,7 +57,7 @@ impl InitTx {
                         steps: 300000000,
                     }),
                 )
-                .script(ScriptKind::PlutusV2, script.as_ref().to_vec())
+                .script(ScriptKind::PlutusV3, script.as_ref().to_vec())
                 .output(self.make_head_output_initial(script_hash))
                 .fee(5000000),
         );

@@ -12,11 +12,11 @@ spec:
         - name: "keys"
           image: "ghcr.io/cardano-scaling/hydra-control-plane-init:6f21e1f60bc695df4ce97e3fd9159906dd7d617e"
           command:
-          - "sh"
-          - "/etc/scripts/create-keys.sh"
+            - "sh"
+            - "/etc/scripts/create-keys.sh"
           env:
-          - name: ID
-            value: {id}
+            - name: ID
+              value: {id}
           volumeMounts:
             - name: "data"
               mountPath: "/var/data"
@@ -79,7 +79,7 @@ spec:
               mountPath: "/ipc"
       containers:
         - name: "open-head"
-          image: "ghcr.io/demeter-run/hydra-control-plane-open-head:rc1"
+          image: "ghcr.io/cardano-scaling/hydra-control-plane:sha-61a5ed3"
           command: ["sh", "/etc/script/open-head.sh"]
           env:
             - name: BLOCKFROST_KEY
