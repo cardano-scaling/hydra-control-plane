@@ -66,6 +66,7 @@ jobs:
             rpc-${{ matrix.release_for }}
             metrics-exporter-${{ matrix.release_for }}
             open-head-${{ matrix.release_for }}
+            proxy-${{ matrix.release_for }}
 
   docker:
     runs-on: ubuntu-latest
