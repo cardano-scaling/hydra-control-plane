@@ -33,11 +33,6 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
               "type"     = "string"
             },
             {
-              "jsonPath" = ".status.transactions"
-              "name"     = "Transactions"
-              "type"     = "string"
-            },
-            {
               "jsonPath" = ".status.localUrl"
               "name"     = "Local URI"
               "type"     = "string"
@@ -135,17 +130,12 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                     "nodeState" = {
                       "type" = "string"
                     }
-                    "transactions" = {
-                      "format" = "int64"
-                      "type"   = "integer"
-                    }
                   }
                   "required" = [
                     "externalUrl",
                     "gameState",
                     "localUrl",
                     "nodeState",
-                    "transactions",
                   ]
                   "type" = "object"
                 }
