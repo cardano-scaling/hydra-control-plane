@@ -1901,6 +1901,7 @@ dependencies = [
  "derivative",
  "futures-util",
  "hex",
+ "hydra-control-plane-operator",
  "itertools 0.13.0",
  "k8s-openapi",
  "kube",

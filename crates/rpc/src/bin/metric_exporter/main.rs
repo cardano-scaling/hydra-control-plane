@@ -1,5 +1,10 @@
 use anyhow::{Context, Result};
 use clap::{arg, Parser};
+use config::Config;
+use hydra_control_plane_operator::{
+    controller::{HydraDoomGameState, HydraDoomNodeState},
+    HydraDoomNode,
+};
 use hydra_control_plane_rpc::model::{
     cluster::{ConnectionInfo, KeyEnvelope},
     hydra::{
@@ -7,19 +12,25 @@ use hydra_control_plane_rpc::model::{
         hydra_socket::HydraSocket,
     },
 };
+use kube::{
+    api::{Patch, PatchParams},
+    Api, Client,
+};
 use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
 use rocket::{get, post, routes, State};
 use routes::game::{
     add_player::add_player, cleanup::cleanup, end_game::end_game as node_end_game,
     new_game::new_game, start_game::start_game as node_start_game,
 };
+use serde_json::json;
 use std::{env, fs::File, sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, warn};
 
+mod config;
 mod metrics;
 mod routes;
-use metrics::{Metrics, NodeState};
+use metrics::{GameState, Metrics, NodeState};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -41,10 +52,20 @@ pub struct LocalState {
     metrics: Arc<Metrics>,
 }
 
+enum HydraState {
+    Node(NodeState),
+    Game(GameState),
+}
+
 #[rocket::main]
 async fn main() -> Result<()> {
     let (tx, rx): (UnboundedSender<HydraData>, UnboundedReceiver<HydraData>) =
         mpsc::unbounded_channel();
+
+    let (tx_status, rx_status): (UnboundedSender<HydraState>, UnboundedReceiver<HydraState>) =
+        mpsc::unbounded_channel();
+
+    let config = Arc::new(Config::new());
 
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -81,7 +102,7 @@ async fn main() -> Result<()> {
         &connection_info.to_authority(),
         &tx,
     ));
-    let metrics = Arc::new(Metrics::try_new().expect("Failed to register metrics."));
+    let metrics = Arc::new(Metrics::try_new(tx_status).expect("Failed to register metrics."));
 
     // Initialize websocket.
     socket.listen();
@@ -90,6 +111,8 @@ async fn main() -> Result<()> {
     tokio::spawn(update_connection_state(metrics.clone(), socket.clone()));
     // Listen and update metrics.
     tokio::spawn(update(metrics.clone(), rx));
+    // Listen and update hydra status
+    tokio::spawn(update_hydra_status(rx_status, config.clone()));
 
     let _ = rocket::build()
         .manage(LocalState {
@@ -213,4 +236,53 @@ async fn update(metrics: Arc<Metrics>, mut rx: UnboundedReceiver<HydraData>) {
             }
         }
     }
+}
+
+async fn update_hydra_status(
+    mut rx: UnboundedReceiver<HydraState>,
+    config: Arc<Config>,
+) -> anyhow::Result<()> {
+    let client = Client::try_default().await?;
+
+    let api: Api<HydraDoomNode> = Api::default_namespaced(client.clone());
+    let crd = api.get(&config.hydra_pod_name).await?;
+
+    loop {
+        match rx.recv().await {
+            Some(state) => {
+                if let Some(mut status) = crd.status.clone() {
+                    match state {
+                        HydraState::Node(node_state) => {
+                            let node_state: HydraDoomNodeState = node_state.into();
+                            status.node_state = node_state.into();
+                        }
+                        HydraState::Game(game_state) => {
+                            let game_state: HydraDoomGameState = game_state.into();
+                            status.game_state = game_state.into();
+                        }
+                    };
+
+                    if let Err(err) = api
+                        .patch_status(
+                            &config.hydra_pod_name,
+                            &PatchParams::default(),
+                            &Patch::Merge(json!({ "status": status })),
+                        )
+                        .await
+                    {
+                        warn!(
+                            err = err.to_string(),
+                            "Failed to update status for CRD {}.", config.hydra_pod_name
+                        );
+                    };
+                }
+            }
+            None => {
+                warn!("mpsc disconnected");
+                break;
+            }
+        }
+    }
+
+    Ok(())
 }
