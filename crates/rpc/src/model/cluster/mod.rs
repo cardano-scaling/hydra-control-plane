@@ -124,7 +124,8 @@ impl ClusterState {
                     false
                 }
             })
-            .ok_or(anyhow::anyhow!("no available nodes found"))?;
+            .ok_or(anyhow::anyhow!("no available nodes found"))?
+            .clone();
         claimed
             .entry(node.metadata.name.clone().expect("node without a name"))
             .or_insert(true);
