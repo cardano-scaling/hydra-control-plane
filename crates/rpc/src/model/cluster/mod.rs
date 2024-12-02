@@ -133,6 +133,11 @@ impl ClusterState {
         Ok(node)
     }
 
+    pub fn release_node(&self, id: &str) {
+        let mut claimed = self.recently_claimed.lock().unwrap();
+        claimed.remove(id);
+    }
+
     pub fn select_random_node_with_active_game(&self) -> anyhow::Result<Arc<HydraDoomNode>> {
         Ok(self
             .store
