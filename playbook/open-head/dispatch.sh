@@ -25,5 +25,5 @@ cat job.yml \
   | sed -E 's@\{hydra_scripts_tx_id\}@'"$HYDRA_SCRIPTS_TX_ID"'@g' \
   | sed -E 's@\{start_chain_from\}@'"$START_CHAIN_FROM"'@g' \
   | sed -E 's@\{dmtr_api_key\}@'"$DMTR_API_KEY"'@g' \
-  | sed -E 's@\{pvc_name\}@'"$PVC_NAME"'@g' \
+  | sed -E 's@\{ pvc_name \}@'"$PVC_NAME"'@g' \
   | kubectl apply -f -

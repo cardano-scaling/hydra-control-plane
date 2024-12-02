@@ -9,6 +9,7 @@ spec:
     spec:
       restartPolicy: OnFailure
       initContainers:
+<<<<<<< Updated upstream
         - name: "keys"
           image: "ghcr.io/cardano-scaling/hydra-control-plane-init:6f21e1f60bc695df4ce97e3fd9159906dd7d617e"
           command:
@@ -76,9 +77,11 @@ spec:
               mountPath: "/etc/secret"
             - name: "socket"
               mountPath: "/ipc"
+=======
+>>>>>>> Stashed changes
       containers:
         - name: "open-head"
-          image: "ghcr.io/cardano-scaling/hydra-control-plane:sha-4ac6121"  
+          image: "ghcr.io/demeter-run/hydra-control-plane-open-head:rc2"
           command: ["sh", "/etc/script/open-head.sh"]
           env:
             - name: BLOCKFROST_KEY
@@ -87,8 +90,6 @@ spec:
               value: "addr1v9gcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqcpg5xa"
             - name: ADMIN_SIGNING_KEY_FILE
               value: "/etc/secret/admin.sk"
-            - name: HYDRA_VERIFICATION_KEY_FILE
-              value: "/var/data/{id}/keys/hydra.vk"
           volumeMounts:
             - name: "data"
               mountPath: "/var/data"
@@ -99,7 +100,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {pvc_name}
+            claimName: { pvc_name }
         - name: config
           configMap:
             name: hydra-pod-config
