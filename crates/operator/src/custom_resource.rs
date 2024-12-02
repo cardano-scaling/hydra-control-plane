@@ -232,8 +232,6 @@ impl HydraDoomNode {
                 format!("{}/admin.sk", constants.secret_dir),
                 "--hydra-scripts-tx-id".to_string(),
                 config.hydra_scripts_tx_id.clone(),
-                "--testnet-magic".to_string(),
-                "1".to_string(), // TODO: Hardcoded preprod.
                 "--node-socket".to_string(),
                 constants.socket_path.clone(),
             ];
@@ -241,6 +239,14 @@ impl HydraDoomNode {
             if let Some(start_chain_from) = &self.spec.start_chain_from {
                 aux.push("--start-chain-from".to_string());
                 aux.push(start_chain_from.clone());
+            }
+
+            if config.network_id == "0" {
+                aux.push("--testnet-magic".to_string());
+                aux.push("1".to_string());
+            } else {
+                // Assume mainnet in any other case.
+                aux.push("--mainnet".to_string())
             }
             aux
         };

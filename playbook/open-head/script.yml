@@ -20,13 +20,13 @@ data:
     SEED_INPUT=$(
       curl \
         -H "project_id: $BLOCKFROST_KEY" \
-        "https://cardano-preprod.blockfrost.io/api/v0/addresses/$ADDRESS/utxos" \
+        "https://cardano-mainnet.blockfrost.io/api/v0/addresses/$ADDRESS/utxos" \
         | jq -r '.[0] | "\(.tx_hash)#\(.tx_index)"' 
     )
     COMMIT_INPUT=$(
       curl \
         -H "project_id: $BLOCKFROST_KEY" \
-        "https://cardano-preprod.blockfrost.io/api/v0/addresses/$ADDRESS/utxos" \
+        "https://cardano-mainnet.blockfrost.io/api/v0/addresses/$ADDRESS/utxos" \
         | jq -r '.[-1] | "\(.tx_hash)#\(.tx_index)"' 
     )
 
@@ -41,7 +41,7 @@ data:
 
     # Open head
     /hcp/open-head \
-      --network-id 0 \
+      --network-id 1 \
       --seed-input $SEED_INPUT \
       --participant $ADDRESS \
       --party-verification-file $HYDRA_VERIFICATION_KEY_FILE \

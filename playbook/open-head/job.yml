@@ -32,7 +32,7 @@ spec:
             - "{dmtr_api_key}"
             - "ports"
             - "tunnel"
-            - "preprod-4raar2"
+            - "mainnet-mqgv9w"
             - "--socket"
             - "/ipc/socket"
           volumeMounts:
@@ -54,8 +54,7 @@ spec:
             - "{hydra_scripts_tx_id}"
             - "--ledger-protocol-parameters"
             - "/etc/config/protocol-parameters.json"
-            - "--testnet-magic"
-            - "1"
+            - "--mainnet"
             - "--node-socket"
             - "/ipc/socket"
             - "--api-port"
@@ -85,7 +84,7 @@ spec:
             - name: BLOCKFROST_KEY
               value: "{blockfrost_key}"
             - name: ADDRESS
-              value: "addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc"
+              value: "addr1v9gcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqcpg5xa"
             - name: ADMIN_SIGNING_KEY_FILE
               value: "/etc/secret/admin.sk"
             - name: HYDRA_VERIFICATION_KEY_FILE
