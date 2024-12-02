@@ -180,12 +180,20 @@ async fn main() {
                 2,
             )
             .into(),
-            Output::new(
-                Address::from_bech32(args.participant.as_str())
-                    .expect("failed to parse participant address"),
-                seed_input_output.lovelace - 9000000 - 1875229,
-            )
-            .into(),
+            vec![
+                Output::new(
+                    Address::from_bech32(args.participant.as_str())
+                        .expect("failed to parse participant address"),
+                    seed_input_output.lovelace - 9_000_000 - 5_000_000 - 1_875_229,
+                )
+                .into(),
+                Output::new(
+                    Address::from_bech32(args.participant.as_str())
+                        .expect("failed to parse participant address"),
+                    5_000_000,
+                )
+                .into(),
+            ],
         )],
         fee: 1875229,
         commit_inputs,
@@ -207,4 +215,6 @@ async fn main() {
         .await
         .expect("Failed to submit commit tx");
     info!("Submitted commit tx: {}", commit_tx_id);
+
+    println!("{}", commit_tx_id);
 }

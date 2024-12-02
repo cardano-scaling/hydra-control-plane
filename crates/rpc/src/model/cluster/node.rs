@@ -204,15 +204,12 @@ impl NodeClient {
 
     pub async fn fetch_utxos(&self) -> Result<Vec<UTxO>> {
         let request_url = self.connection.to_http_url() + "/snapshot/utxo";
-        println!("Getting UTxos from: {:?}", request_url);
         let response = reqwest::get(&request_url).await.context("http error")?;
 
         let body = response
             .json::<HashMap<String, Value>>()
             .await
             .context("http error")?;
-
-        println!("fetched utxos and converted to hashmap");
 
         let utxos = body
             .iter()
@@ -252,11 +249,7 @@ impl ConnectionInfo {
         let secure = url.scheme() == "https" || url.scheme() == "wss";
         let port = url.port().unwrap_or(if secure { 443 } else { 80 }) as u32;
 
-        Ok(ConnectionInfo {
-            host,
-            secure,
-            port,
-        })
+        Ok(ConnectionInfo { host, secure, port })
     }
 
     pub fn to_websocket_url(&self) -> String {

@@ -10,6 +10,7 @@ use pallas::{
     txbuilder::Input,
 };
 
+#[derive(Debug)]
 pub struct InputWrapper {
     pub inner: Input,
 }
