@@ -248,11 +248,14 @@ impl ConnectionInfo {
     pub fn from_url(value: &str) -> Result<Self> {
         // default to secure connection if no schema provided
         let url = Url::parse(value)?;
+        let host = url.host_str().context("expected a host")?.to_string();
+        let secure = url.scheme() == "https" || url.scheme() == "wss";
+        let port = url.port().unwrap_or(if secure { 443 } else { 80 }) as u32;
 
         Ok(ConnectionInfo {
-            host: url.host_str().context("expected a host")?.to_string(),
-            port: url.port().unwrap_or(80) as u32,
-            secure: url.scheme() == "https" || url.scheme() == "wss",
+            host,
+            secure,
+            port,
         })
     }
 
