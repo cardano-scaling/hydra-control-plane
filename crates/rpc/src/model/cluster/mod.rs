@@ -104,7 +104,7 @@ impl ClusterState {
             .store
             .state()
             .iter()
-            .filter(|n| {
+            .find(|n| {
                 let id = n.metadata.name.as_ref().unwrap();
                 let recently_claimed = claimed.get(id).unwrap_or(&false);
                 info!(
@@ -124,8 +124,6 @@ impl ClusterState {
                     false
                 }
             })
-            .max_by_key(|n| n.metadata.creation_timestamp.clone())
-            .cloned()
             .ok_or(anyhow::anyhow!("no available nodes found"))?;
         claimed
             .entry(node.metadata.name.clone().expect("node without a name"))
