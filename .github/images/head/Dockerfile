@@ -1,4 +1,4 @@
-FROM ghcr.io/cardano-scaling/hydra-control-plane:sha-e2e9dfa
+FROM ghcr.io/cardano-scaling/hydra-control-plane:sha-a9c3b67
 
 RUN apt-get update && apt-get install -y curl jq unzip
 
