@@ -30,7 +30,11 @@ resource "kubernetes_manifest" "prometheus" {
       }
       "resources" = {
         "requests" = {
-          "memory" = "400Mi"
+          "cpu"    = "1"
+          "memory" = "8Gi"
+        }
+        "limits" = {
+          "memory" = "8Gi"
         }
       }
       "retention"             = "30d"
