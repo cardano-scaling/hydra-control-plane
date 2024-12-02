@@ -6,10 +6,6 @@ use k8s_openapi::{
             EnvVar, PodSpec, PodTemplateSpec, Probe, ResourceRequirements, SecretVolumeSource,
             Service, ServicePort, ServiceSpec, Volume, VolumeMount,
         },
-        networking::v1::{
-            HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
-            IngressServiceBackend, IngressSpec, ServiceBackendPort,
-        },
     },
     apimachinery::pkg::{api::resource::Quantity, apis::meta::v1::OwnerReference},
 };
@@ -79,7 +75,6 @@ impl From<Resources> for ResourceRequirements {
 #[kube(printcolumn = r#"
         {"name": "Node State", "jsonPath":".status.nodeState", "type": "string"},
         {"name": "Game State", "jsonPath":".status.gameState", "type": "string"},
-        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"},
         {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"},
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
@@ -113,14 +108,12 @@ pub struct HydraDoomNodeStatus {
     pub external_url: String,
     pub node_state: String,
     pub game_state: String,
-    pub transactions: i64,
 }
 impl HydraDoomNodeStatus {
     pub fn offline(crd: &HydraDoomNode, config: &Config, constants: &K8sConstants) -> Self {
         Self {
             node_state: "Offline".to_string(),
             game_state: "Done".to_string(),
-            transactions: 0,
             local_url: format!("ws://{}:{}", crd.internal_host(), constants.port),
             external_url: format!(
                 "{}://{}:{}",
@@ -609,42 +602,6 @@ impl HydraDoomNode {
                     },
                 ]),
                 type_: Some("ClusterIP".to_string()),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }
-    }
-
-    pub fn ingress(&self, config: &Config, constants: &K8sConstants) -> Ingress {
-        let name = self.internal_name();
-        Ingress {
-            metadata: ObjectMeta {
-                name: Some(name.clone()),
-                owner_references: Some(self.owner_references()),
-                annotations: Some(constants.ingress_annotations.clone()),
-                ..Default::default()
-            },
-            spec: Some(IngressSpec {
-                ingress_class_name: Some(constants.ingress_class_name.clone()),
-                rules: Some(vec![IngressRule {
-                    host: Some(self.external_host(config, constants)),
-                    http: Some(HTTPIngressRuleValue {
-                        paths: vec![HTTPIngressPath {
-                            path: Some("/".to_string()),
-                            path_type: "Prefix".to_string(),
-                            backend: IngressBackend {
-                                service: Some(IngressServiceBackend {
-                                    name: name.clone(),
-                                    port: Some(ServiceBackendPort {
-                                        number: Some(constants.port),
-                                        ..Default::default()
-                                    }),
-                                }),
-                                ..Default::default()
-                            },
-                        }],
-                    }),
-                }]),
                 ..Default::default()
             }),
             ..Default::default()

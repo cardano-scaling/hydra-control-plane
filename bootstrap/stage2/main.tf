@@ -7,6 +7,9 @@ locals {
   control_plane_host      = "${var.control_plane_prefix}.${var.external_domain}"
   frontend_component      = "frontend"
   frontend_port           = 3000
+
+  proxy_port = 8000
+  proxy_addr = "0.0.0.0:${local.proxy_port}"
 }
 
 variable "namespace" {
@@ -159,6 +162,15 @@ variable "available_snapshot_prefix" {
   default = "snapshots"
 }
 
+variable "proxy_replicas" {
+  type    = number
+  default = 2
+}
+
+variable "proxy_image" {
+  type = string
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string
@@ -229,6 +241,29 @@ variable "frontend_resources" {
   default = {
     requests = {
       cpu    = "500m"
+      memory = "512Mi"
+    }
+    limits = {
+      cpu    = "2"
+      memory = "512Mi"
+    }
+  }
+}
+
+variable "proxy_resources" {
+  type = object({
+    limits = object({
+      cpu    = optional(string)
+      memory = string
+    })
+    requests = object({
+      cpu    = string
+      memory = string
+    })
+  })
+  default = {
+    requests = {
+      cpu    = "1"
       memory = "512Mi"
     }
     limits = {

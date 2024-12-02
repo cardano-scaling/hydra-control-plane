@@ -19,7 +19,19 @@ resource "kubernetes_manifest" "pod_monitors" {
       podMetricsEndpoints = [
         {
           port = "metrics",
-          path = "/metrics"
+          path = "/metrics",
+          relabelings = [
+            {
+              action = "labeldrop"
+              regex  = "(container|endpoint|instance|job|namespace|prometheus|prometheus_replica)"
+            }
+          ],
+          metricRelabelings = [
+            {
+              action = "labeldrop"
+              regex  = "(container|endpoint|instance|job|namespace|prometheus|prometheus_replica)"
+            }
+          ]
         }
       ]
     }

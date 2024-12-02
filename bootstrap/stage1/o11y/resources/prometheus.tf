@@ -31,15 +31,16 @@ resource "kubernetes_manifest" "prometheus" {
       "resources" = {
         "requests" = {
           "cpu"    = "1"
-          "memory" = "8Gi"
+          "memory" = "14Gi"
         }
         "limits" = {
-          "memory" = "8Gi"
+          "memory" = "14Gi"
         }
       }
       "retention"             = "30d"
       "ruleNamespaceSelector" = {}
       "ruleSelector"          = {}
+      "scrapeInterval"        = "30s"
       "securityContext" = {
         "fsGroup" = 65534
       }

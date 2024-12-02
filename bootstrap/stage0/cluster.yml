@@ -6,10 +6,10 @@ metadata:
   name: hydra-doom-dev-cluster
   # region: us-east-1
   # region: eu-central-1
-  # region: us-west-2
+  region: us-west-2
   # region: ap-southeast-1
   # region: sa-east-1
-  region: af-south-1
+  # region: af-south-1
   tags: 
     sundae-labs:cost-allocation:Service: hydra-doom
 
@@ -31,6 +31,11 @@ iam:
       namespace: hydra-doom
     attachPolicyARNs:
     - "arn:aws:iam::509399595051:policy/hydra-doom-kinesis-writer"
+  - metadata:
+      name: default
+      namespace: hydra-doom
+    attachPolicyARNs:
+    - "arn:aws:iam::509399595051:policy/hydra-doom-operator-s3-access"
 
 accessConfig:
   authenticationMode: API_AND_CONFIG_MAP
@@ -65,10 +70,10 @@ managedNodeGroups:
     availabilityZones:
       # - us-east-1b
       # - eu-central-1b
-      # - us-west-2b
+      - us-west-2b
       # - ap-southeast-1a
       # - sa-east-1a
-      - af-south-1a
+      # - af-south-1a
   - name: co-adm-x86-az1
     tags: 
       sundae-labs:cost-allocation:Service: hydra-doom
@@ -77,18 +82,18 @@ managedNodeGroups:
       hydra.doom/compute-profile: admin
       hydra.doom/compute-arch: x86
       hydra.doom/availability-zone: az1
-    instanceTypes: [ t3.medium ]
+    instanceTypes: [ m7i.xlarge ]
     minSize: 0
-    maxSize: 3
-    desiredCapacity: 3
+    maxSize: 4
+    desiredCapacity: 4
     spot: false
     availabilityZones:
       # - us-east-1b
       # - eu-central-1b
-      # - us-west-2b
+      - us-west-2b
       # - ap-southeast-1a
       # - sa-east-1a
-      - af-south-1a
+      # - af-south-1a
 
 fargateProfiles:
   - name: fp-default

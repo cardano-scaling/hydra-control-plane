@@ -2,7 +2,6 @@ use anyhow::bail;
 use k8s_openapi::api::{
     apps::v1::Deployment,
     core::v1::{ConfigMap, Service},
-    networking::v1::Ingress,
 };
 use kube::{
     api::{DeleteParams, ListParams, Patch, PatchParams},
@@ -13,7 +12,6 @@ use rand::{distributions::Alphanumeric, seq::SliceRandom, thread_rng, Rng};
 use serde_json::json;
 use std::{
     cmp::{min, Ordering},
-    collections::BTreeMap,
     sync::Arc,
     time::Duration,
 };
@@ -101,8 +99,6 @@ pub struct K8sConstants {
     pub persistence_dir: String,
     pub node_port: i32,
     pub port: i32,
-    pub ingress_class_name: String,
-    pub ingress_annotations: BTreeMap<String, String>,
     pub metrics_port: i32,
     pub metrics_endpoint: String,
     pub node_state_metric: String,
@@ -133,33 +129,7 @@ impl Default for K8sConstants {
             node_state_metric: "hydra_doom_node_state".to_string(),
             game_state_metric: "hydra_doom_game_state".to_string(),
             transactions_metric: "hydra_doom_node_transactions".to_string(),
-            ingress_class_name: "nginx".to_string(),
             service_account_name: "hydra-doom-node".to_string(),
-            ingress_annotations: [
-                (
-                    "nginx.ingress.kubernetes.io/proxy-read-timeout".to_string(),
-                    "3600".to_string(),
-                ),
-                (
-                    "nginx.ingress.kubernetes.io/proxy-send-timeout".to_string(),
-                    "3600".to_string(),
-                ),
-                (
-                    "nginx.ingress.kubernetes.io/server-snippets".to_string(),
-                    "location / {\n\
-                      proxy_set_header Upgrade $http_upgrade;\n\
-                      proxy_http_version 1.1;\n\
-                      proxy_set_header X-Forwarded-Host $http_host;\n\
-                      proxy_set_header X-Forwarded-Proto $scheme;\n\
-                      proxy_set_header X-Forwarded-For $remote_addr;\n\
-                      proxy_set_header Host $host;\n\
-                      proxy_set_header Connection \"upgrade\";\n\
-                      proxy_cache_bypass $http_upgrade;\n\
-                    }\n"
-                    .to_string(),
-                ),
-            ]
-            .into(),
         }
     }
 }
@@ -186,10 +156,9 @@ impl K8sContext {
         match tokio::join!(
             self.patch_deployment(crd),
             self.patch_service(crd),
-            self.patch_ingress(crd),
             self.patch_configmap(crd),
         ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_)) => (),
+            (Ok(_), Ok(_), Ok(_)) => (),
             _ => bail!("Failed to apply patch for components."),
         };
 
@@ -245,21 +214,6 @@ impl K8sContext {
             })
     }
 
-    async fn patch_ingress(&self, crd: &HydraDoomNode) -> anyhow::Result<Ingress> {
-        // Apply the service to the cluster
-        let api: Api<Ingress> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-        api.patch(
-            &crd.internal_name(),
-            &PatchParams::apply("hydra-doom-pod-controller"),
-            &Patch::Apply(&crd.ingress(&self.config, &self.constants)),
-        )
-        .await
-        .map_err(|err| {
-            error!(err = err.to_string(), "Failed to create ingress.");
-            err.into()
-        })
-    }
-
     fn get_internal_url(&self, crd: &HydraDoomNode) -> String {
         format!("ws://{}:{}", crd.internal_host(), self.constants.port)
     }
@@ -285,7 +239,6 @@ impl K8sContext {
             return HydraDoomNodeStatus {
                 node_state: HydraDoomNodeState::Sleeping.into(),
                 game_state: HydraDoomGameState::Done.into(),
-                transactions: 0,
                 local_url: self.get_internal_url(crd),
                 external_url: self.get_external_url(crd),
             };
@@ -322,26 +275,13 @@ impl K8sContext {
                                     _ => HydraDoomGameState::Done,
                                 });
 
-                            let transactions = metrics
-                                .clone()
-                                .samples
-                                .into_iter()
-                                .find(|sample| sample.metric == self.constants.transactions_metric)
-                                .map(|sample| match sample.value {
-                                    prometheus_parse::Value::Counter(count) => count.round() as i64,
-                                    _ => 0,
-                                });
-
-                            match (node_state, game_state, transactions) {
-                                (Some(node_state), Some(game_state), Some(transactions)) => {
-                                    HydraDoomNodeStatus {
-                                        transactions,
-                                        node_state: node_state.into(),
-                                        game_state: game_state.into(),
-                                        local_url: self.get_internal_url(crd),
-                                        external_url: self.get_external_url(crd),
-                                    }
-                                }
+                            match (node_state, game_state) {
+                                (Some(node_state), Some(game_state)) => HydraDoomNodeStatus {
+                                    node_state: node_state.into(),
+                                    game_state: game_state.into(),
+                                    local_url: self.get_internal_url(crd),
+                                    external_url: self.get_external_url(crd),
+                                },
                                 _ => default,
                             }
                         }
