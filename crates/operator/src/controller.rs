@@ -285,7 +285,6 @@ impl K8sContext {
             return HydraDoomNodeStatus {
                 node_state: HydraDoomNodeState::Sleeping.into(),
                 game_state: HydraDoomGameState::Done.into(),
-                transactions: 0,
                 local_url: self.get_internal_url(crd),
                 external_url: self.get_external_url(crd),
             };
@@ -322,26 +321,13 @@ impl K8sContext {
                                     _ => HydraDoomGameState::Done,
                                 });
 
-                            let transactions = metrics
-                                .clone()
-                                .samples
-                                .into_iter()
-                                .find(|sample| sample.metric == self.constants.transactions_metric)
-                                .map(|sample| match sample.value {
-                                    prometheus_parse::Value::Counter(count) => count.round() as i64,
-                                    _ => 0,
-                                });
-
-                            match (node_state, game_state, transactions) {
-                                (Some(node_state), Some(game_state), Some(transactions)) => {
-                                    HydraDoomNodeStatus {
-                                        transactions,
-                                        node_state: node_state.into(),
-                                        game_state: game_state.into(),
-                                        local_url: self.get_internal_url(crd),
-                                        external_url: self.get_external_url(crd),
-                                    }
-                                }
+                            match (node_state, game_state) {
+                                (Some(node_state), Some(game_state)) => HydraDoomNodeStatus {
+                                    node_state: node_state.into(),
+                                    game_state: game_state.into(),
+                                    local_url: self.get_internal_url(crd),
+                                    external_url: self.get_external_url(crd),
+                                },
                                 _ => default,
                             }
                         }
