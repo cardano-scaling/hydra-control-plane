@@ -148,31 +148,3 @@ resource "kubernetes_service_v1" "control_plane_service" {
     }
   }
 }
-
-resource "kubernetes_ingress_v1" "control_plane_ingress" {
-  metadata {
-    name      = local.control_plane_component
-    namespace = var.namespace
-  }
-
-  spec {
-    ingress_class_name = "nginx"
-    rule {
-      host = local.control_plane_host
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = local.control_plane_component
-              port {
-                number = 8000
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}

@@ -12,6 +12,7 @@ RUN curl -L -o cardano-cli.tar.gz https://github.com/IntersectMBO/cardano-cli/re
     rm -rf cardano-cli.tar.gz cardano-cli-x86_64-linux
 
 ARG TARGETARCH
+COPY bin/proxy-Linux-${TARGETARCH} /hcp/proxy
 COPY bin/operator-Linux-${TARGETARCH} /hcp/operator
 COPY bin/rpc-Linux-${TARGETARCH} /hcp/rpc
 COPY bin/metrics-exporter-Linux-${TARGETARCH} /hcp/metrics-exporter
