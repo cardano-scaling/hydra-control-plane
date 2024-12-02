@@ -181,7 +181,7 @@ jobs:
       TF_VAR_external_domain: ${{ matrix.region }}.hydra-doom.sundae.fi
       TF_VAR_hydra_node_image: ghcr.io/demeter-run/hydra-node:patch2
       TF_VAR_eks_cluster_arn: arn:aws:eks:${{ matrix.region }}:509399595051:cluster/hydra-doom-dev-cluster
-      TF_VAR_hydra_scripts_tx_id: 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a
+      TF_VAR_hydra_scripts_tx_id: f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93
       TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-4a395ee
       TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-4a395ee # latest?
