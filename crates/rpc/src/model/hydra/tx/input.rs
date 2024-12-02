@@ -53,13 +53,9 @@ impl From<InputWrapper> for PlutusData {
             tag: 121,
             any_constructor: None,
             fields: MaybeIndefArray::Indef(vec![
-                PlutusData::Constr(Constr {
-                    tag: 121,
-                    any_constructor: None,
-                    fields: MaybeIndefArray::Indef(vec![PlutusData::BoundedBytes(
-                        alonzo::BoundedBytes::from(value.inner.tx_hash.0.to_vec()),
-                    )]),
-                }),
+                PlutusData::BoundedBytes(alonzo::BoundedBytes::from(
+                    value.inner.tx_hash.0.to_vec(),
+                )),
                 PlutusData::BigInt(alonzo::BigInt::Int((value.inner.txo_index as i64).into())),
             ]),
         })
