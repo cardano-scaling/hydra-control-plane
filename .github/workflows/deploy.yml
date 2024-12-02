@@ -176,14 +176,14 @@ jobs:
       TF_VAR_snapshot_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
 
       # Vars
-      TF_VAR_network_id: 0
-      TF_VAR_dmtr_port_name: preprod-4raar2
+      TF_VAR_network_id: 1
+      TF_VAR_dmtr_port_name: mainnet-mqgv9w
       TF_VAR_dmtr_project_id: b55545f5-31e7-4e6b-81d6-22f4e6b5a144
       TF_VAR_external_domain: ${{ matrix.region }}.hydra-doom.sundae.fi
       TF_VAR_hydra_node_image: ghcr.io/demeter-run/hydra-node:patch2
       TF_VAR_eks_cluster_arn: arn:aws:eks:${{ matrix.region }}:509399595051:cluster/hydra-doom-dev-cluster
-      TF_VAR_hydra_scripts_tx_id: f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93
-      TF_VAR_admin_addr: addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc
+      TF_VAR_hydra_scripts_tx_id: f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93  # TODO: Mainnet transaction id
+      TF_VAR_admin_addr: addr1v9gcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqcpg5xa
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-854e16a
       TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-854e16a # latest?
       TF_VAR_ai_image: ghcr.io/cardano-scaling/hydra-doom-ai:sha-854e16a # latest?
@@ -191,7 +191,7 @@ jobs:
       TF_VAR_autoscaler_low_watermark: ${{ matrix.autoscaler_low_watermark }}
       TF_VAR_autoscaler_region_prefix: ${{ matrix.region_prefix }}
       TF_VAR_autoscaler_max_batch: ${{ matrix.autoscaler_max_batch }}
-      TF_VAR_available_snapshot_prefix: snapshots
+      TF_VAR_available_snapshot_prefix: mainnet/snapshots
       TF_VAR_init_image: ghcr.io/cardano-scaling/hydra-control-plane-init:6f21e1f60bc695df4ce97e3fd9159906dd7d617e
       TF_VAR_proxy_replicas: "2"
 
