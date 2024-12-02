@@ -2,7 +2,6 @@ use futures_util::future::select;
 use futures_util::SinkExt;
 use futures_util::StreamExt;
 use http_body_util::{combinators::BoxBody, BodyExt};
-use hydra_control_plane_operator::custom_resource::HydraDoomNode;
 use hyper::body::Incoming;
 use hyper::client::conn::http1 as http1_client;
 use hyper::header::{
@@ -12,7 +11,6 @@ use hyper::service::service_fn;
 use hyper::{Method, Request, Response, StatusCode};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto::Builder;
-use kube::ResourceExt;
 use std::fmt::Display;
 use std::net::SocketAddr;
 use std::str::FromStr;
@@ -134,6 +132,7 @@ async fn handle_websocket(
 
     let proxy_req = proxy_req.clone();
 
+    info!("Spawning connection to {}", proxy_req.instance);
     tokio::task::spawn(async move {
         match hyper::upgrade::on(&mut hyper_req).await {
             Ok(upgraded) => {
@@ -176,7 +175,7 @@ async fn handle_websocket(
                 let instance_in = instance_incoming.forward(client_outgoing);
 
                 select(client_in, instance_in).await;
-                info!(node = proxy_req.node.name_any(), "client disconnected");
+                info!(node = proxy_req.instance, "client disconnected");
             }
             Err(err) => {
                 error!(error = err.to_string(), "upgrade error");
@@ -219,7 +218,6 @@ impl Display for Protocol {
 #[derive(Debug, Clone)]
 pub struct ProxyRequest {
     pub instance: String,
-    pub node: HydraDoomNode,
     pub protocol: Protocol,
 }
 impl ProxyRequest {
@@ -242,18 +240,11 @@ impl ProxyRequest {
             .map(|v| v.as_str().to_string())
             .unwrap_or_default();
 
-        let node = state.get_node(&node_id).await?;
         let instance = format!(
             "hydra-doom-node-{}.{}:{}",
-            node.name_any(),
-            state.config.hydra_node_dns,
-            state.config.hydra_node_port
+            node_id, state.config.hydra_node_dns, state.config.hydra_node_port
         );
 
-        Some(Self {
-            instance,
-            node,
-            protocol,
-        })
+        Some(Self { instance, protocol })
     }
 }

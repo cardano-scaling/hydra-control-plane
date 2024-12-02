@@ -11,7 +11,6 @@ use tracing::Level;
 mod config;
 mod proxy;
 mod utils;
-mod watcher;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,13 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     let state = Arc::new(State::try_new()?);
-
-    watcher::start(state.clone());
-
-    let proxy_server = proxy::start(state.clone());
-
-    tokio::join!(proxy_server);
-
+    proxy::start(state.clone()).await;
     Ok(())
 }
 
