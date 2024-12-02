@@ -3,7 +3,7 @@ use pallas::{crypto::hash::Hash, txbuilder::Input};
 use super::input::InputWrapper;
 
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ScriptRegistry {
     pub initial_reference: InputWrapper,
     pub commit_reference: InputWrapper,
@@ -22,7 +22,7 @@ impl From<NetworkScriptRegistry> for ScriptRegistry {
         match value {
             NetworkScriptRegistry::Preprod => {
                 let tx_hash = Hash::from(
-                    hex::decode("03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a")
+                    hex::decode("f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93")
                         .expect("failed to decode prerpod hydra script reference transaction")
                         .as_slice(),
                 );

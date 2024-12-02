@@ -25,7 +25,7 @@ pub struct CommitTx {
     pub head_id: Vec<u8>,
     pub party: Vec<u8>,
     pub initial_input: (InputWrapper, Output, PaymentKeyHash),
-    pub blueprint_tx: Vec<(InputWrapper, OutputWrapper)>,
+    pub blueprint_tx: Vec<(InputWrapper, Vec<OutputWrapper>)>,
     pub fee: u64,
     pub commit_inputs: Vec<(InputWrapper, OutputWrapper)>,
 }
@@ -50,6 +50,7 @@ impl CommitTx {
 
         let mut tx_builder = Some(
             StagingTransaction::new()
+                .network_id(self.network_id)
                 .fee(self.fee)
                 .reference_input(self.script_registry.initial_reference.clone().into())
                 .collateral_input(
@@ -83,19 +84,18 @@ impl CommitTx {
                 ),
         );
         for (input, _) in self.commit_inputs.clone() {
-            if let Some(builder) = tx_builder {
-                tx_builder = Some(builder.input(input.into()));
-            }
+            tx_builder = Some(tx_builder.expect("No tx builder").input(input.into()));
         }
 
-        for (input, output) in self.blueprint_tx.clone() {
-            if let Some(builder) = tx_builder {
-                tx_builder = Some(builder.input(input.into()).output(output.inner));
+        for (input, outputs) in self.blueprint_tx.clone() {
+            tx_builder = Some(tx_builder.expect("No tx builder").input(input.into()));
+            for output in outputs {
+                tx_builder = Some(tx_builder.expect("No tx builder").output(output.inner));
             }
         }
 
         tx_builder
-            .ok_or(anyhow!("no transaction builder "))
+            .ok_or(anyhow!("no transaction builder"))
             .and_then(|builder| builder.build_conway_raw().map_err(|e| anyhow!("{}", e)))
             .map_err(|e| anyhow!("failed to build tx: {}", e))
     }
@@ -269,14 +269,14 @@ mod tests {
                     2,
                 )
                 .into(),
-                Output::new(
+                vec![Output::new(
                     Address::from_bech32(
                         "addr_test1vzdjnh24kw99aqj8whfsxu37s0sgmq7yhfeva2egg92t3gsws2hwn",
                     )
                     .expect("failed to decode bech32 address"),
                     9974285986 - 1875229,
                 )
-                .into(),
+                .into()],
             )],
             fee: 1875229,
             commit_inputs: vec![(
@@ -351,7 +351,7 @@ mod tests {
                 head_id,
                 party,
                 initial_input,
-                blueprint_tx: vec![(Input::new(Hash::from(hex::decode("ef61c1686e77e6004f7e9913d20d0598e8cc5e661a559086a84dfafaafdc7818").expect("failed to decode tx_id").as_slice()), 2).into(), Output::new(Address::from_bech32("addr_test1vz9mxd8sarvg25wk9ke3je0jtdjylcxverfkzdfnuyxk3xszsdn9j").expect("failed to decode bech32 address"), 917935379).into())],
+                blueprint_tx: vec![(Input::new(Hash::from(hex::decode("ef61c1686e77e6004f7e9913d20d0598e8cc5e661a559086a84dfafaafdc7818").expect("failed to decode tx_id").as_slice()), 2).into(), vec![Output::new(Address::from_bech32("addr_test1vz9mxd8sarvg25wk9ke3je0jtdjylcxverfkzdfnuyxk3xszsdn9j").expect("failed to decode bech32 address"), 917935379).into()])],
                 fee: 1822653,
                 commit_inputs: vec![(
                     Input::new(
