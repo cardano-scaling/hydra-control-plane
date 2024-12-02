@@ -6,10 +6,6 @@ use k8s_openapi::{
             EnvVar, PodSpec, PodTemplateSpec, Probe, ResourceRequirements, SecretVolumeSource,
             Service, ServicePort, ServiceSpec, Volume, VolumeMount,
         },
-        networking::v1::{
-            HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
-            IngressServiceBackend, IngressSpec, ServiceBackendPort,
-        },
     },
     apimachinery::pkg::{api::resource::Quantity, apis::meta::v1::OwnerReference},
 };
@@ -600,42 +596,6 @@ impl HydraDoomNode {
                     },
                 ]),
                 type_: Some("ClusterIP".to_string()),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }
-    }
-
-    pub fn ingress(&self, config: &Config, constants: &K8sConstants) -> Ingress {
-        let name = self.internal_name();
-        Ingress {
-            metadata: ObjectMeta {
-                name: Some(name.clone()),
-                owner_references: Some(self.owner_references()),
-                annotations: Some(constants.ingress_annotations.clone()),
-                ..Default::default()
-            },
-            spec: Some(IngressSpec {
-                ingress_class_name: Some(constants.ingress_class_name.clone()),
-                rules: Some(vec![IngressRule {
-                    host: Some(self.external_host(config, constants)),
-                    http: Some(HTTPIngressRuleValue {
-                        paths: vec![HTTPIngressPath {
-                            path: Some("/".to_string()),
-                            path_type: "Prefix".to_string(),
-                            backend: IngressBackend {
-                                service: Some(IngressServiceBackend {
-                                    name: name.clone(),
-                                    port: Some(ServiceBackendPort {
-                                        number: Some(constants.port),
-                                        ..Default::default()
-                                    }),
-                                }),
-                                ..Default::default()
-                            },
-                        }],
-                    }),
-                }]),
                 ..Default::default()
             }),
             ..Default::default()

@@ -55,6 +55,7 @@ jobs:
           mv target/${{ matrix.target }}/release/rpc rpc-${{ matrix.release_for }}
           mv target/${{ matrix.target }}/release/metrics-exporter metrics-exporter-${{ matrix.release_for }}
           mv target/${{ matrix.target }}/release/open-head open-head-${{ matrix.release_for }}
+          mv target/${{ matrix.target }}/release/proxy proxy-${{ matrix.release_for }}
 
       - name: upload artifacts
         uses: actions/upload-artifact@v4
@@ -116,6 +117,7 @@ jobs:
           mv .github/images/hcp/bin/rpc-Linux-x86_64 .github/images/hcp/bin/rpc-Linux-amd64
           mv .github/images/hcp/bin/metrics-exporter-Linux-x86_64 .github/images/hcp/bin/metrics-exporter-Linux-amd64
           mv .github/images/hcp/bin/open-head-Linux-x86_64 .github/images/hcp/bin/open-head-Linux-amd64
+          mv .github/images/hcp/bin/proxy-Linux-x86_64 .github/images/hcp/bin/proxy-Linux-amd64
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -190,6 +192,7 @@ jobs:
       TF_VAR_autoscaler_max_batch: ${{ matrix.autoscaler_max_batch }}
       TF_VAR_available_snapshot_prefix: snapshots
       TF_VAR_init_image: ghcr.io/cardano-scaling/hydra-control-plane-init:6f21e1f60bc695df4ce97e3fd9159906dd7d617e
+      TF_VAR_proxy_replicas: "2"
 
     steps:
       - name: Filter regions

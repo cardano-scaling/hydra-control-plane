@@ -103,31 +103,3 @@ resource "kubernetes_service_v1" "frontend_service" {
     }
   }
 }
-
-resource "kubernetes_ingress_v1" "frontend_ingress" {
-  metadata {
-    name      = local.frontend_component
-    namespace = var.namespace
-  }
-
-  spec {
-    ingress_class_name = "nginx"
-    rule {
-      host = "${var.frontend_prefix}.${var.external_domain}"
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = local.frontend_component
-              port {
-                number = local.frontend_port
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}

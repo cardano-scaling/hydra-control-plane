@@ -129,6 +129,11 @@ variable "available_snapshot_prefix" {
   default = "snapshots"
 }
 
+variable "proxy_replicas" {
+  type    = number
+  default = 2
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -156,6 +161,8 @@ module "stage2" {
   sidecar_image              = var.image
   open_head_image            = var.image
   control_plane_image        = var.image
+  proxy_image                = var.image
+  proxy_replicas             = var.proxy_replicas
   referee_image              = var.referee_image
   ai_image                   = var.ai_image
   blockfrost_key             = var.blockfrost_key
