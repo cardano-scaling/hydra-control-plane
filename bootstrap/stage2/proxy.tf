@@ -27,6 +27,7 @@ resource "kubernetes_deployment_v1" "proxy" {
           name              = "main"
           image             = var.proxy_image
           image_pull_policy = "IfNotPresent"
+          command           = ["proxy"]
 
           resources {
             limits = {
@@ -57,7 +58,7 @@ resource "kubernetes_deployment_v1" "proxy" {
 
           env {
             name  = "HYDRA_NODE_DNS"
-            value = "svc.cluster.local"
+            value = "${var.namespace}.svc.cluster.local"
           }
         }
       }
