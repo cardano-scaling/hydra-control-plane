@@ -64,8 +64,8 @@ impl InitTx {
                     script_hash,
                     void_redeemer(),
                     Some(ExUnits {
-                        mem: 1000000,
-                        steps: 300000000,
+                        mem: 1000000 * 2,
+                        steps: 300000000 * 2,
                     }),
                 )
                 .script(ScriptKind::PlutusV3, script.as_ref().to_vec())

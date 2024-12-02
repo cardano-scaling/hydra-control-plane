@@ -79,7 +79,7 @@ spec:
               mountPath: "/ipc"
       containers:
         - name: "open-head"
-          image: "ghcr.io/cardano-scaling/hydra-control-plane:sha-b04bcb2"  
+          image: "ghcr.io/cardano-scaling/hydra-control-plane:sha-5dd9127"  
           command: ["sh", "/etc/script/open-head.sh"]
           env:
             - name: BLOCKFROST_KEY
