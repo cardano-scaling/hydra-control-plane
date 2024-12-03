@@ -246,11 +246,11 @@ variable "frontend_resources" {
   default = {
     requests = {
       cpu    = "500m"
-      memory = "512Mi"
+      memory = "1Gi"
     }
     limits = {
       cpu    = "2"
-      memory = "512Mi"
+      memory = "1Gi"
     }
   }
 }
