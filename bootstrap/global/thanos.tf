@@ -10,7 +10,7 @@ resource "kubernetes_deployment_v1" "thanos_querier" {
   }
 
   spec {
-    replicas = 1
+    replicas = 2
 
     selector {
       match_labels = {
@@ -43,6 +43,17 @@ resource "kubernetes_deployment_v1" "thanos_querier" {
           port {
             name           = "grpc"
             container_port = 10901
+          }
+
+          resources {
+            limits = {
+              cpu    = "4"
+              memory = "2Gi"
+            }
+            requests = {
+              cpu    = "2"
+              memory = "2Gi"
+            }
           }
 
           liveness_probe {
