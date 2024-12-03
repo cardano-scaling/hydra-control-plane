@@ -91,6 +91,11 @@ variable "protocol_parameters" {
   description = "The protocol parameters in JSON format."
 }
 
+variable "shelley_genesis" {
+  type        = string
+  description = "The shelley genesis in JSON format."
+}
+
 variable "admin_addr" {
   type        = string
   description = "Must be consistent with admin key, calculated using cardano cli."

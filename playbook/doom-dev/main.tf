@@ -151,6 +151,7 @@ module "stage2" {
 
   admin_key           = var.admin_key
   protocol_parameters = file("${path.module}/protocol-parameters.json")
+  shelley_genesis     = file("${path.module}/shelley-genesis.json")
   external_port       = 443
   external_protocol   = "wss"
 
