@@ -17,6 +17,7 @@ resource "kubernetes_manifest" "prometheus" {
           },
         ]
       }
+      "shards"         = 2
       "enableAdminAPI" = false
       "externalLabels" = {
         "cluster" : var.cluster_name
@@ -31,10 +32,10 @@ resource "kubernetes_manifest" "prometheus" {
       "resources" = {
         "requests" = {
           "cpu"    = "1"
-          "memory" = "14Gi"
+          "memory" = "13Gi"
         }
         "limits" = {
-          "memory" = "14Gi"
+          "memory" = "13Gi"
         }
       }
       "retention"             = "30d"
