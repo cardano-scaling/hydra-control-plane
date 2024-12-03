@@ -94,6 +94,11 @@ impl TxBuilder {
                 input_utxo.address.clone(),
                 input_utxo.value.get("lovelace").unwrap_or(&0).to_owned(),
             ))
+            .network_id(match self.network {
+                Network::Testnet => 0,
+                Network::Mainnet => 1,
+                Network::Other(i) => i,
+            })
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
@@ -172,6 +177,11 @@ impl TxBuilder {
                     4, 1293828, 28716, 63, 0, 1, 1006041, 43623, 251, 0, 1,
                 ],
             )
+            .network_id(match self.network {
+                Network::Testnet => 0,
+                Network::Mainnet => 1,
+                Network::Other(i) => i,
+            })
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
@@ -245,6 +255,11 @@ impl TxBuilder {
                 ],
             )
             .disclosed_signer(self.admin_pkh)
+            .network_id(match self.network {
+                Network::Testnet => 0,
+                Network::Mainnet => 1,
+                Network::Other(i) => i,
+            })
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
@@ -346,6 +361,11 @@ impl TxBuilder {
                 ],
             )
             .disclosed_signer(self.admin_pkh)
+            .network_id(match self.network {
+                Network::Testnet => 0,
+                Network::Mainnet => 1,
+                Network::Other(i) => i,
+            })
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
@@ -427,6 +447,11 @@ impl TxBuilder {
                         8310, 4, 1293828, 28716, 63, 0, 1, 1006041, 43623, 251, 0, 1,
                     ],
                 )
+                .network_id(match self.network {
+                    Network::Testnet => 0,
+                    Network::Mainnet => 1,
+                    Network::Other(i) => i,
+                })
                 .fee(0),
         );
 
