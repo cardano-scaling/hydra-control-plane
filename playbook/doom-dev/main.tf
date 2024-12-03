@@ -191,11 +191,11 @@ module "stage2" {
   resources = {
     requests = {
       cpu    = "500m"
-      memory = "2Gi"
+      memory = "4Gi"
     }
     limits = {
       cpu    = "2"
-      memory = "2Gi"
+      memory = "4Gi"
     }
   }
 }
