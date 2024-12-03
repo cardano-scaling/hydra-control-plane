@@ -214,6 +214,8 @@ impl HydraDoomNode {
                 "offline".to_string(),
                 "--initial-utxo".to_string(),
                 format!("{}/utxo.json", constants.initial_utxo_config_dir),
+                "--ledger-genesis".to_string(),
+                format!("{}/shelley-genesis.json", constants.config_dir),
             ];
             aux.extend(main_container_common_args);
             aux
