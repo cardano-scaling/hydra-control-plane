@@ -313,6 +313,11 @@ impl HydraDoomNode {
                     mount_path: constants.secret_dir.clone(),
                     ..Default::default()
                 }]),
+                env: Some(vec![EnvVar {
+                    name: "NETWORK_ID".to_string(),
+                    value: Some(config.network_id.clone()),
+                    value_from: None,
+                }]),
                 ports: Some(vec![ContainerPort {
                     name: Some("metrics".to_string()),
                     container_port: constants.metrics_port,
