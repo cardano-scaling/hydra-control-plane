@@ -107,12 +107,12 @@ variable "frontend_replicas" {
 
 variable "autoscaler_low_watermark" {
   type    = number
-  default = 1
+  default = 200
 }
 
 variable "autoscaler_high_watermark" {
   type    = number
-  default = 5
+  default = 300
 }
 
 variable "autoscaler_region_prefix" {
@@ -121,7 +121,7 @@ variable "autoscaler_region_prefix" {
 
 variable "autoscaler_max_batch" {
   type    = number
-  default = 2
+  default = 25
 }
 
 variable "available_snapshot_prefix" {
@@ -131,7 +131,7 @@ variable "available_snapshot_prefix" {
 
 variable "proxy_replicas" {
   type    = number
-  default = 2
+  default = 3
 }
 
 provider "kubernetes" {
