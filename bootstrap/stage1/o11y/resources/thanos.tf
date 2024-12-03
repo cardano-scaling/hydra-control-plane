@@ -36,7 +36,7 @@ resource "kubernetes_service_v1" "thanos_sidecar" {
 
 resource "kubernetes_service_v1" "thanos_sidecar_1" {
   metadata {
-    name      = "thanos-sidecar"
+    name      = "thanos-sidecar-1"
     namespace = var.namespace
     annotations = {
       "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" : "instance"
