@@ -199,7 +199,7 @@ jobs:
       TF_VAR_autoscaler_max_batch: ${{ matrix.autoscaler_max_batch }}
       TF_VAR_available_snapshot_prefix: mainnet/snapshots
       TF_VAR_init_image: ghcr.io/cardano-scaling/hydra-control-plane-init:6f21e1f60bc695df4ce97e3fd9159906dd7d617e
-      TF_VAR_proxy_replicas: "2"
+      TF_VAR_proxy_replicas: "3"
       TF_VAR_ssl_cert_arn: ${{ matrix.ssl_cert_arn }}
 
     steps:
