@@ -3,7 +3,7 @@ use std::fs::File;
 use std::sync::Mutex;
 use std::{future::ready, sync::Arc};
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use futures_util::StreamExt as _;
 use kube::runtime::{reflector::ObjectRef, WatchStreamExt as _};
 use pallas::crypto::key::ed25519::SecretKey;
@@ -130,6 +130,36 @@ impl ClusterState {
             .entry(node.metadata.name.clone().expect("node without a name"))
             .or_insert(true);
         Ok(node)
+    }
+
+    pub fn get_node_by_id_for_new_game(
+        &self,
+        node_id: String,
+    ) -> anyhow::Result<Arc<HydraDoomNode>> {
+        let mut claimed = self.recently_claimed.lock().unwrap();
+        let node = self
+            .store
+            .state()
+            .iter()
+            .find(|node| node.metadata.name == Some(node_id.clone()))
+            .ok_or(anyhow!("Invalid node ID"))?
+            .clone();
+        let recently_claimed = claimed.get(&node_id).unwrap_or(&false);
+        if let Some(status) = node.status.as_ref() {
+            if !recently_claimed
+                && status.node_state == "HeadIsOpen"
+                && status.game_state == "Waiting"
+            {
+                claimed
+                    .entry(node.metadata.name.clone().expect("node without a name"))
+                    .or_insert(true);
+                Ok(node)
+            } else {
+                Err(anyhow!("Node not available for a new game"))
+            }
+        } else {
+            Err(anyhow!("Could not check node status"))
+        }
     }
 
     pub fn release_node(&self, id: &str) {
