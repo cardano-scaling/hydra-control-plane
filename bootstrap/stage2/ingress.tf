@@ -54,7 +54,7 @@ resource "kubernetes_ingress_v1" "ingress" {
             service {
               name = "proxy"
               port {
-                number = local.proxy_port
+                number = 443
               }
             }
           }

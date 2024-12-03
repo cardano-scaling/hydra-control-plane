@@ -70,10 +70,17 @@ resource "kubernetes_service_v1" "proxy_service" {
   metadata {
     name      = "proxy"
     namespace = var.namespace
+    annotations = {
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol" = "tcp"
+      "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type"  = "ip"
+      "service.beta.kubernetes.io/aws-load-balancer-scheme"           = "internet-facing"
+      "service.beta.kubernetes.io/aws-load-balancer-ssl-cert"         = "${var.ssl_cert_arn}"
+      "service.beta.kubernetes.io/aws-load-balancer-ssl-ports"        = "443"
+    }
   }
 
   spec {
-    type = "ClusterIP"
+    load_balancer_class = "service.k8s.aws/nlb"
 
     selector = {
       role = "proxy"
@@ -81,8 +88,10 @@ resource "kubernetes_service_v1" "proxy_service" {
 
     port {
       name        = "proxy"
-      port        = local.proxy_port
+      port        = 443
       target_port = local.proxy_port
     }
+
+    type = "LoadBalancer"
   }
 }

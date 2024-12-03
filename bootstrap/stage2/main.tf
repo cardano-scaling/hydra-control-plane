@@ -176,6 +176,10 @@ variable "proxy_image" {
   type = string
 }
 
+variable "ssl_cert_arn" {
+  type = string
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string
