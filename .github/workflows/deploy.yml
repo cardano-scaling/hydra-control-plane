@@ -138,39 +138,39 @@ jobs:
         include:
           - region: us-east-1
             region_prefix: a
-            autoscaler_high_watermark: 300
-            autoscaler_low_watermark: 200
-            autoscaler_max_batch: 25
+            autoscaler_high_watermark: 100
+            autoscaler_low_watermark: 50
+            autoscaler_max_batch: 5
             ssl_cert_arn: arn:aws:acm:us-east-1:509399595051:certificate/6ab8319d-1dec-494f-b71c-3a4132e42a5e
           - region: eu-central-1
             region_prefix: b
-            autoscaler_high_watermark: 300
-            autoscaler_low_watermark: 200
-            autoscaler_max_batch: 25
+            autoscaler_high_watermark: 100
+            autoscaler_low_watermark: 50
+            autoscaler_max_batch: 5
             ssl_cert_arn: arn:aws:acm:eu-central-1:509399595051:certificate/f69f5c80-9eb9-41fc-9133-5d72ecb223d3
           - region: us-west-2
             region_prefix: c
-            autoscaler_high_watermark: 300
-            autoscaler_low_watermark: 200
-            autoscaler_max_batch: 25
+            autoscaler_high_watermark: 100
+            autoscaler_low_watermark: 50
+            autoscaler_max_batch: 5
             ssl_cert_arn: arn:aws:acm:us-west-2:509399595051:certificate/2587017b-119b-41ae-8d76-c4b1a20d53e5
           - region: ap-southeast-1
             region_prefix: d
-            autoscaler_high_watermark: 300
-            autoscaler_low_watermark: 200
-            autoscaler_max_batch: 25
+            autoscaler_high_watermark: 100
+            autoscaler_low_watermark: 50
+            autoscaler_max_batch: 5
             ssl_cert_arn: arn:aws:acm:ap-southeast-1:509399595051:certificate/0e596d0c-ec2d-4b94-bc49-9460798a2734
           - region: sa-east-1
             region_prefix: e
-            autoscaler_high_watermark: 300
-            autoscaler_low_watermark: 200
-            autoscaler_max_batch: 25
+            autoscaler_high_watermark: 100
+            autoscaler_low_watermark: 50
+            autoscaler_max_batch: 5
             ssl_cert_arn: arn:aws:acm:sa-east-1:509399595051:certificate/d5fc1098-bf1b-4e88-916d-ce4c4dd5942b
           - region: af-south-1
             region_prefix: f
-            autoscaler_high_watermark: 300
-            autoscaler_low_watermark: 200
-            autoscaler_max_batch: 25
+            autoscaler_high_watermark: 100
+            autoscaler_low_watermark: 50
+            autoscaler_max_batch: 5
             ssl_cert_arn: arn:aws:acm:af-south-1:509399595051:certificate/349c46d7-ad77-43c0-8a88-a5712ef5d653
 
     env:
