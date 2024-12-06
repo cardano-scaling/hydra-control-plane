@@ -23,30 +23,6 @@ data:
          "https://cardano-preprod.blockfrost.io/api/v0/addresses/$ADDRESS/utxos" \
          | jq -r '.[-1] | "\(.tx_hash)#\(.tx_index)"'
      )
-
-<<<<<<< Updated upstream
-    echo "---"
-    echo ""
-    echo "Getting UTxOs to generate init and commit..."
-    echo ""
-    echo "---"
-    SEED_INPUT=$(
-      curl \
-        -H "project_id: $BLOCKFROST_KEY" \
-        "https://cardano-mainnet.blockfrost.io/api/v0/addresses/$ADDRESS/utxos" \
-        | jq -r '.[0] | "\(.tx_hash)#\(.tx_index)"' 
-    )
-    COMMIT_INPUT=$(
-      curl \
-        -H "project_id: $BLOCKFROST_KEY" \
-        "https://cardano-mainnet.blockfrost.io/api/v0/addresses/$ADDRESS/utxos" \
-        | jq -r '.[-1] | "\(.tx_hash)#\(.tx_index)"' 
-    )
-=======
-     echo "* Seed input: $SEED_INPUT"
-     echo "* Commit input: $COMMIT_INPUT"
->>>>>>> Stashed changes
-
      echo "---"
      echo ""
      echo "Opening heads..."
@@ -67,17 +43,6 @@ data:
              | jq -r '"\(.slot).\(.hash)"'
          ) > "/var/data/$NODE_ID/start"
 
-<<<<<<< Updated upstream
-    # Open head
-    /hcp/open-head \
-      --network-id 1 \
-      --seed-input $SEED_INPUT \
-      --participant $ADDRESS \
-      --party-verification-file $HYDRA_VERIFICATION_KEY_FILE \
-      --cardano-key-file $ADMIN_SIGNING_KEY_FILE \
-      --blockfrost-key $BLOCKFROST_KEY \
-      --commit-inputs $COMMIT_INPUT
-=======
          LOGS=$(cargo run --bin open-head -- \
              --network-id 0 \
              --seed-input $SEED_INPUT \
@@ -86,7 +51,6 @@ data:
              --cardano-key-file $ADMIN_SIGNING_KEY_FILE \
              --blockfrost-key $BLOCKFROST_KEY \
              --commit-inputs $COMMIT_INPUT)
->>>>>>> Stashed changes
 
          if [ $? -eq 0 ]; then
              echo $LOGS
