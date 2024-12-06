@@ -8,11 +8,8 @@ pub struct TxValid {
     pub head_id: String,
     pub seq: u64,
     pub transaction: Transaction,
-    pub timestamp: String,
-    pub cbor: Vec<u8>,
-    pub descrption: String,
     pub tx_id: String,
-    pub tx_type: String,
+    pub timestamp: String,
 }
 
 impl TryFrom<Value> for TxValid {
@@ -52,11 +49,8 @@ impl TryFrom<Value> for TxValid {
             head_id: head_id.to_string(),
             seq,
             transaction,
-            timestamp: timestamp.to_string(),
-            cbor,
-            descrption: descrption.to_string(),
             tx_id,
-            tx_type: tx_type.to_string(),
+            timestamp: timestamp.to_string(),
         })
     }
 }

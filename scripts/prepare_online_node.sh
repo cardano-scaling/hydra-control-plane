@@ -144,7 +144,7 @@ hydra-node \
   --persistence-dir persistence \
   --cardano-signing-key $ADMIN_SIGNING_KEY_FILE \
   --hydra-signing-key keys/hydra.sk \
-  --hydra-scripts-tx-id f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93 \
+  --hydra-scripts-tx-id 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a \
   --ledger-protocol-parameters $PROTOCOL_PARAMETERS \
   --testnet-magic 1 \
   --node-socket $CARDANO_NODE_SOCKET \
