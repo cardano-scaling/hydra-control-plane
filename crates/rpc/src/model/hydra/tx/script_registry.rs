@@ -22,7 +22,7 @@ impl From<NetworkScriptRegistry> for ScriptRegistry {
         match value {
             NetworkScriptRegistry::Preprod => {
                 let tx_hash = Hash::from(
-                    hex::decode("f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93")
+                    hex::decode("03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a")
                         .expect("failed to decode prerpod hydra script reference transaction")
                         .as_slice(),
                 );
