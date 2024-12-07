@@ -211,7 +211,7 @@ pub async fn submit_tx_roundtrip(url: &str, tx: NewTx, timeout: Duration) -> Res
             let msg = HydraMessage::try_from(next?).context("failed to parse hydra message")?;
 
             if let HydraMessage::HydraEvent(HydraEventMessage::TxValid(x)) = msg {
-                if x.tx_id == tx_id {
+                if x.transaction.tx_id == tx_id {
                     info!("Tx confirmed: {:?}", x);
                     break anyhow::Result::Ok(());
                 }

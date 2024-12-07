@@ -9,7 +9,6 @@ spec:
     spec:
       restartPolicy: OnFailure
       initContainers:
-<<<<<<< Updated upstream
         - name: "keys"
           image: "ghcr.io/cardano-scaling/hydra-control-plane-init:6f21e1f60bc695df4ce97e3fd9159906dd7d617e"
           command:
@@ -17,7 +16,7 @@ spec:
             - "/etc/scripts/create-keys.sh"
           env:
             - name: ID
-              value: {id}
+              value: { id }
           volumeMounts:
             - name: "data"
               mountPath: "/var/data"
@@ -77,8 +76,6 @@ spec:
               mountPath: "/etc/secret"
             - name: "socket"
               mountPath: "/ipc"
-=======
->>>>>>> Stashed changes
       containers:
         - name: "open-head"
           image: "ghcr.io/demeter-run/hydra-control-plane-open-head:rc2"

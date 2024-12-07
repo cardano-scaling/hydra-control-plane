@@ -11,7 +11,7 @@ pub struct SnapshotConfirmed {
     pub head_id: String,
     pub seq: u64,
     pub signatures: Vec<String>,
-    pub confirmed_transactions: Vec<Transaction>,
+    pub confirmed_transactions: Vec<Vec<u8>>,
     pub snapshot_number: u64,
     pub utxo: Vec<UTxO>,
     pub timestamp: String,
@@ -21,63 +21,41 @@ impl TryFrom<Value> for SnapshotConfirmed {
     type Error = anyhow::Error;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
-        let head_id = value
-            .get("headId")
-            .context("missing headId")?
+        let head_id = value["headId"]
             .as_str()
-            .context("invalid head_id")?
+            .context("Invalid head_id")?
             .to_owned();
-        let seq = value
-            .get("seq")
-            .context("missing seq")?
-            .as_u64()
-            .context("invalid seq")?;
-        let signatures = value
-            .get("signatures")
-            .context("missing signatures")?
+        let seq = value["seq"].as_u64().context("Invalid seq")?;
+        let signatures = value["signatures"]
             .as_object()
-            .context("invalid signatures object")?
-            .get("multiSignature")
-            .context("missing multiSignature")?
+            .context("invalid signatures object")?["multiSignature"]
             .as_array()
-            .context("invalid multiSignature")?
+            .context("Invalid multiSignatures")?
             .iter()
             .map(|s| s.as_str().context("invalid str").map(|s| s.to_string()))
             .collect::<Result<Vec<String>>>()?;
-        let snapshot = value
-            .get("snapshot")
-            .context("missing snapshot")?
-            .as_object()
-            .context("invalid snapshot")?;
+        let snapshot = value["snapshot"].as_object().context("Invalid snapshot")?;
 
-        let confirmed_transactions = snapshot
-            .get("confirmed")
-            .context("missing confirmed")?
+        let confirmed_transactions = snapshot["confirmedTransactions"]
             .as_array()
-            .context("invalid confirmed")?
+            .context("Invalid confirmedTransactions")?
             .iter()
-            .map(|tx| tx.try_into().context("failed to decode transaction"))
-            .collect::<Result<Vec<Transaction>>>()?;
-
-        let snapshot_number = snapshot
-            .get("number")
-            .context("missing number")?
+            .map(|s| {
+                s.as_str()
+                    .context("invalid confirmedTransaction")
+                    .and_then(|s| hex::decode(s).context("failed to hex decode"))
+            })
+            .collect::<Result<Vec<Vec<u8>>>>()?;
+        let snapshot_number = snapshot["snapshotNumber"]
             .as_u64()
-            .context("invalid snapshotNumber")?;
-
-        let utxo = snapshot
-            .get("utxo")
-            .context("missing utxo")?
+            .context("Invalid snapshotNumber")?;
+        let utxo = snapshot["utxo"]
             .as_object()
-            .context("invalid utxo")?
+            .context("Invalid utxo")?
             .iter()
             .map(|(key, value)| UTxO::try_from_value(key, value))
             .collect::<Result<Vec<UTxO>>>()?;
-        let timestamp = value
-            .get("timestamp")
-            .context("missing timestamp")?
-            .as_str()
-            .context("invalid timestamp")?;
+        let timestamp = value["timestamp"].as_str().context("Invalid timestamp")?;
 
         Ok(SnapshotConfirmed {
             head_id: head_id.to_string(),

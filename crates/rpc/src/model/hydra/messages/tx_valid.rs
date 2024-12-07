@@ -9,7 +9,6 @@ pub struct TxValid {
     pub seq: u64,
     pub transaction: Transaction,
     pub timestamp: String,
-    pub tx_id: String,
 }
 
 impl TryFrom<Value> for TxValid {
@@ -32,12 +31,6 @@ impl TryFrom<Value> for TxValid {
             .context("missing timestamp")?
             .as_str()
             .context("Invalid timestamp")?;
-        let tx_id = value
-            .get("transactionId")
-            .context("missing transactionId")?
-            .as_str()
-            .context("Invalid transactionId")?
-            .to_owned();
         let transaction: Transaction = value
             .get("transaction")
             .context("missing transaction")?
@@ -49,7 +42,6 @@ impl TryFrom<Value> for TxValid {
             seq,
             transaction,
             timestamp: timestamp.to_string(),
-            tx_id,
         })
     }
 }

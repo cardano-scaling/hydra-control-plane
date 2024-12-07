@@ -154,7 +154,11 @@ async fn main() {
 
     let commit_tx = CommitTx {
         network_id: args.network_id,
-        script_registry: NetworkScriptRegistry::Preprod.into(),
+        script_registry: if args.network_id == 1 {
+            NetworkScriptRegistry::Mainnet.into()
+        } else {
+            NetworkScriptRegistry::Preprod.into()
+        },
         head_id: head_id.clone(),
         party,
         initial_input: (

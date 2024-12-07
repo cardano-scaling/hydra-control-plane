@@ -16,7 +16,7 @@ use crate::model::hydra::{
 };
 
 use super::{
-    cost_models::{COST_MODEL_PLUTUS_V3, PREPROD_COST_MODEL_PLUTUS_V3},
+    cost_models::{COST_MODEL_PLUTUS_V2, PREPROD_COST_MODEL_PLUTUS_V2},
     input::InputWrapper,
     void_redeemer,
 };
@@ -34,7 +34,7 @@ impl InitTx {
     pub fn get_head_id(&self) -> Result<Vec<u8>> {
         Ok(self.get_minting_validator()?.1.to_vec())
     }
-    fn get_minting_validator(&self) -> Result<(PlutusScript<3>, Hash<28>)> {
+    fn get_minting_validator(&self) -> Result<(PlutusScript<2>, Hash<28>)> {
         let script =
             make_head_token_script(&self.seed_input).context("Failed to make head token script")?;
         let script_hash = script.compute_hash();
@@ -48,11 +48,11 @@ impl InitTx {
         let mut tx_builder = Some(
             StagingTransaction::new()
                 .language_view(
-                    ScriptKind::PlutusV3,
+                    ScriptKind::PlutusV2,
                     if self.network_id == 0 {
-                        PREPROD_COST_MODEL_PLUTUS_V3.clone()
+                        PREPROD_COST_MODEL_PLUTUS_V2.clone()
                     } else {
-                        COST_MODEL_PLUTUS_V3.clone()
+                        COST_MODEL_PLUTUS_V2.clone()
                     },
                 )
                 .network_id(self.network_id)
@@ -68,7 +68,7 @@ impl InitTx {
                         steps: 300000000 * 2,
                     }),
                 )
-                .script(ScriptKind::PlutusV3, script.as_ref().to_vec())
+                .script(ScriptKind::PlutusV2, script.as_ref().to_vec())
                 .output(self.make_head_output_initial(script_hash))
                 .fee(5000000),
         );

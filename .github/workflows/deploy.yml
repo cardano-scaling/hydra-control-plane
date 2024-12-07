@@ -186,9 +186,9 @@ jobs:
       TF_VAR_dmtr_port_name: mainnet-mqgv9w
       TF_VAR_dmtr_project_id: b55545f5-31e7-4e6b-81d6-22f4e6b5a144
       TF_VAR_external_domain: ${{ matrix.region }}.hydra-doom.sundae.fi
-      TF_VAR_hydra_node_image: ghcr.io/demeter-run/hydra-node:patch2
+      TF_VAR_hydra_node_image: ghcr.io/cardano-scaling/hydra-node:0.19.0
       TF_VAR_eks_cluster_arn: arn:aws:eks:${{ matrix.region }}:509399595051:cluster/hydra-doom-dev-cluster
-      TF_VAR_hydra_scripts_tx_id: f41e346809f765fb161f060b3e40fac318c361f1be29bd2b827d46d765195e93 # TODO: Mainnet transaction id
+      TF_VAR_hydra_scripts_tx_id: ab1d9f8cca896bca06b70df74860deecf20774e03d8562aecaed37525f6ebead # TODO: Mainnet transaction id
       TF_VAR_admin_addr: addr1v9gcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqcpg5xa
       TF_VAR_frontend_image: ghcr.io/cardano-scaling/hydra-doom-frontend:sha-664ed46
       TF_VAR_referee_image: ghcr.io/cardano-scaling/hydra-doom-referee:sha-664ed46 # latest?
