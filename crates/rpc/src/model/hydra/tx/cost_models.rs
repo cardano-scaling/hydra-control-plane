@@ -45,6 +45,7 @@ pub static PREPROD_COST_MODEL_PLUTUS_V3: LazyLock<Vec<i64>> = LazyLock::new(|| {
     ]
 });
 
+// TODO: get mainnet v2 cost models
 pub static COST_MODEL_PLUTUS_V2: LazyLock<Vec<i64>> = LazyLock::new(|| {
     vec![
         100788, 420, 1, 1, 1000, 173, 0, 1, 1000, 59957, 4, 1, 11183, 32, 201305, 8356, 4, 16000,
