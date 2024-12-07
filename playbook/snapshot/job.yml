@@ -1,0 +1,90 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prepare-online-head-{id}
+  namespace: hydra-doom
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: "socket"
+          image: "ghcr.io/demeter-run/dmtrctl:sha-3ffefaa"
+          restartPolicy: "Always"
+          args:
+            - "--project-id"
+            - "b55545f5-31e7-4e6b-81d6-22f4e6b5a144"
+            - "--api-key"
+            - "{dmtr_api_key}"
+            - "ports"
+            - "tunnel"
+            - "mainnet-mqgv9w"
+            - "--socket"
+            - "/ipc/socket"
+          volumeMounts:
+            - name: "socket"
+              mountPath: "/ipc"
+        - name: "node"
+          image: "{hydra-node-image}"
+          restartPolicy: "Always"
+          args:
+            - "--node-id"
+            - "{id}"
+            - "--persistence-dir"
+            - "/var/data/{id}/persistence"
+            - "--cardano-signing-key"
+            - "/etc/secret/admin.sk"
+            - "--hydra-signing-key"
+            - "/var/data/{id}/keys/hydra.sk"
+            - "--hydra-scripts-tx-id"
+            - "{hydra_scripts_tx_id}"
+            - "--ledger-protocol-parameters"
+            - "/etc/config/protocol-parameters.json"
+            - "--mainnet"
+            - "--node-socket"
+            - "/ipc/socket"
+            - "--api-port"
+            - "4001"
+            - "--host"
+            - "0.0.0.0"
+            - "--api-host"
+            - "0.0.0.0"
+            - "--port"
+            - "5001"
+            - "--start-chain-from"
+            - "{start_chain_from}"
+          volumeMounts:
+            - name: "data"
+              mountPath: "/var/data"
+            - name: "config"
+              mountPath: "/etc/config"
+            - name: "secret"
+              mountPath: "/etc/secret"
+            - name: "socket"
+              mountPath: "/ipc"
+      containers:
+        - name: "main"
+          # TODO: Connect to websocket and await HeadIsOpen, with a timeout.
+          volumeMounts:
+            - name: "data"
+              mountPath: "/var/data"
+            - name: "script"
+              mountPath: "/etc/script"
+            - name: "secret"
+              mountPath: "/etc/secret"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: { pvc_name }
+        - name: config
+          configMap:
+            name: hydra-pod-config
+        - name: secret
+          secret:
+            secretName: hydra-pod-admin-key
+        - name: socket
+          emptyDir: {}
+        - name: script
+          configMap:
+            name: open-head-script
