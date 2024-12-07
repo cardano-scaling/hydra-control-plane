@@ -102,9 +102,15 @@ echo ""
 echo "Getting UTxOs to generate init and commit..."
 echo ""
 echo "---"
-ADDRESS=$(cardano-cli address build --verification-key-file "$ADMIN_VERIFICATION_KEY_FILE" --testnet-magic 1)
-SEED_INPUT=$(cardano-cli conway query utxo --address $ADDRESS --output-json --testnet-magic 1 --socket-path $CARDANO_NODE_SOCKET | jq -r 'to_entries[0].key')
-COMMIT_INPUT=$(cardano-cli conway query utxo --address $ADDRESS --output-json --testnet-magic 1 --socket-path $CARDANO_NODE_SOCKET | jq -r 'to_entries[-1].key')
+ADDRESS=$(cardano-cli address build --verification-key-file "$ADMIN_VERIFICATION_KEY_FILE" --mainnet)
+COMMIT_INPUT=$(
+  cardano-cli conway query utxo --address $ADDRESS --output-json --mainnet --socket-path $CARDANO_NODE_SOCKET \
+  | jq -r '[to_entries[] | select(all(.value.value.lovelace; . >= 17000000)) | .key][0]'\
+)
+SEED_INPUT=$(
+  cardano-cli conway query utxo --address $ADDRESS --output-json --mainnet --socket-path $CARDANO_NODE_SOCKET \
+  | jq -r '[to_entries[] | select(all(.value.value.lovelace; . >= 10000000)) | .key][-1]'
+)
 
 echo "* Seed input: $SEED_INPUT"
 echo "* Commit input: $COMMIT_INPUT"
@@ -114,7 +120,7 @@ mkdir keys
 hydra-node gen-hydra-key --output-file keys/hydra
 
 # Get current SLOT.HASH
-START_POINT=$(cardano-cli query tip --socket-path socket --testnet-magic 1 | jq -r '"\(.slot).\(.hash)"')
+START_POINT=$(cardano-cli query tip --socket-path socket --mainnet | jq -r '"\(.slot).\(.hash)"')
 
 echo "---"
 echo ""
@@ -123,7 +129,7 @@ echo ""
 echo "---"
 # Open head
 cargo run --bin open-head -- \
-  --network-id 0 \
+  --network-id 1 \
   --seed-input $SEED_INPUT \
   --participant $ADDRESS \
   --party-verification-file keys/hydra.vk \
@@ -144,9 +150,9 @@ hydra-node \
   --persistence-dir persistence \
   --cardano-signing-key $ADMIN_SIGNING_KEY_FILE \
   --hydra-signing-key keys/hydra.sk \
-  --hydra-scripts-tx-id 03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a \
+  --hydra-scripts-tx-id ab1d9f8cca896bca06b70df74860deecf20774e03d8562aecaed37525f6ebead \
   --ledger-protocol-parameters $PROTOCOL_PARAMETERS \
-  --testnet-magic 1 \
+  --mainnet \
   --node-socket $CARDANO_NODE_SOCKET \
   --api-port 4001 \
   --host 0.0.0.0 \
@@ -161,7 +167,7 @@ echo "Uploading tar..."
 echo ""
 echo "---"
 tar -czvf "$NODE_ID.tar.gz" persistence keys
-aws s3 cp "$NODE_ID.tar.gz" s3://hydradoomsnapshots/
+aws s3 cp "$NODE_ID.tar.gz" s3://hydradoomsnapshots/mainnet/
 
 echo "To run online node, apply the following:"
 echo "---"
