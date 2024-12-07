@@ -105,15 +105,21 @@ echo "---"
 ADDRESS=$(cardano-cli address build --verification-key-file "$ADMIN_VERIFICATION_KEY_FILE" --mainnet)
 COMMIT_INPUT=$(
   cardano-cli conway query utxo --address $ADDRESS --output-json --mainnet --socket-path $CARDANO_NODE_SOCKET \
-  | jq -r '[to_entries[] | select(all(.value.value.lovelace; . >= 17000000)) | .key][0]'\
+  | jq -r '[to_entries[] | select(all(.value.value.lovelace; . >= 25000000)) | select(all(.value.value.lovelace; . <= 57000000)) | .key][0]'\
 )
 SEED_INPUT=$(
   cardano-cli conway query utxo --address $ADDRESS --output-json --mainnet --socket-path $CARDANO_NODE_SOCKET \
-  | jq -r '[to_entries[] | select(all(.value.value.lovelace; . >= 10000000)) | .key][-1]'
+  | jq -r '[to_entries[] | select(all(.value.value.lovelace; . >= 25000000)) | select(all(.value.value.lovelace; . <= 57000000)) | .key][-1]'
 )
 
 echo "* Seed input: $SEED_INPUT"
 echo "* Commit input: $COMMIT_INPUT"
+
+# Check for --help flag
+if [ "$SEED_INPUT" == "$COMMIT_INPUT" ]; then
+  echo "Invalid inputs, they should be different."
+  exit 0
+fi
 
 # Generate key pair.
 mkdir keys
@@ -167,7 +173,7 @@ echo "Uploading tar..."
 echo ""
 echo "---"
 tar -czvf "$NODE_ID.tar.gz" persistence keys
-aws s3 cp "$NODE_ID.tar.gz" s3://hydradoomsnapshots/mainnet/
+aws s3 cp "$NODE_ID.tar.gz" s3://hydradoomsnapshots/mainnet/presnapshots/
 
 echo "To run online node, apply the following:"
 echo "---"
