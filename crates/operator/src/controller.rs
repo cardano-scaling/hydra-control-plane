@@ -391,7 +391,7 @@ impl K8sContext {
         self.s3_client
             .delete_object()
             .bucket(self.config.bucket.clone())
-            .key(format!("{}/{}", self.config.bucket, snapshot_key))
+            .key(snapshot_key)
             .send()
             .await?;
 
