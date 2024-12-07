@@ -12,10 +12,7 @@ use pallas::{
 use crate::model::hydra::contract::hydra_validator::HydraValidator;
 
 use super::{
-    cost_models::{
-        COST_MODEL_PLUTUS_V2, COST_MODEL_PLUTUS_V3, PREPROD_COST_MODEL_PLUTUS_V2,
-        PREPROD_COST_MODEL_PLUTUS_V3,
-    },
+    cost_models::{COST_MODEL_PLUTUS_V2, PREPROD_COST_MODEL_PLUTUS_V2},
     input::InputWrapper,
     output::OutputWrapper,
     script_registry::ScriptRegistry,
@@ -72,8 +69,8 @@ impl CommitTx {
                     self.initial_input.0.clone().into(),
                     self.build_redeemer()?,
                     Some(ExUnits {
-                        mem: 1750000,
-                        steps: 350000000,
+                        mem: 1750000 * 2,
+                        steps: 350000000 * 2,
                     }),
                 )
                 .disclosed_signer(self.initial_input.2)

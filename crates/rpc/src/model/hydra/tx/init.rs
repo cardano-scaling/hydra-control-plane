@@ -16,7 +16,7 @@ use crate::model::hydra::{
 };
 
 use super::{
-    cost_models::{COST_MODEL_PLUTUS_V3, PREPROD_COST_MODEL_PLUTUS_V3},
+    cost_models::{COST_MODEL_PLUTUS_V2, PREPROD_COST_MODEL_PLUTUS_V2},
     input::InputWrapper,
     void_redeemer,
 };
@@ -50,9 +50,9 @@ impl InitTx {
                 .language_view(
                     ScriptKind::PlutusV2,
                     if self.network_id == 0 {
-                        PREPROD_COST_MODEL_PLUTUS_V3.clone()
+                        PREPROD_COST_MODEL_PLUTUS_V2.clone()
                     } else {
-                        COST_MODEL_PLUTUS_V3.clone()
+                        COST_MODEL_PLUTUS_V2.clone()
                     },
                 )
                 .network_id(self.network_id)
