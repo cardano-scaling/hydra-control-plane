@@ -33,6 +33,19 @@ impl From<NetworkScriptRegistry> for ScriptRegistry {
                     head_reference: Input::new(tx_hash, 2).into(),
                 }
             }
+            NetworkScriptRegistry::Mainnet => {
+                let tx_hash = Hash::from(
+                    hex::decode("ab1d9f8cca896bca06b70df74860deecf20774e03d8562aecaed37525f6ebead")
+                        .expect("failed to decode prerpod hydra script reference transaction")
+                        .as_slice(),
+                );
+
+                ScriptRegistry {
+                    initial_reference: Input::new(tx_hash, 0).into(),
+                    commit_reference: Input::new(tx_hash, 1).into(),
+                    head_reference: Input::new(tx_hash, 2).into(),
+                }
+            }
             _ => panic!("Unimplemented"),
         }
     }
