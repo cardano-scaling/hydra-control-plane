@@ -4,7 +4,7 @@ use k8s_openapi::{
         core::v1::{
             ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource,
             EnvVar, PodSpec, PodTemplateSpec, Probe, ResourceRequirements, SecretVolumeSource,
-            Service, ServicePort, ServiceSpec, Volume, VolumeMount,
+            SecurityContext, Service, ServicePort, ServiceSpec, Volume, VolumeMount,
         },
     },
     apimachinery::pkg::{api::resource::Quantity, apis::meta::v1::OwnerReference},
@@ -436,27 +436,40 @@ impl HydraDoomNode {
 
         // Offline is optional. If undefined, the node is presumed to be online.
         if !self.spec.offline.unwrap_or(false) {
+            let node_service_name = format!(
+                "node-{}",
+                if config.network_id == "0" {
+                    "preprod"
+                } else {
+                    "mainnet"
+                }
+            );
             containers.push(Container {
-                name: "dmtrctl".to_string(),
-                image: Some(constants.dmtrctl_image.to_string()),
+                name: "socat".to_string(),
+                image: Some("alpine/socat".to_string()),
                 args: Some(vec![
-                    "--project-id".to_string(),
-                    config.dmtr_project_id.clone(),
-                    "--api-key".to_string(),
-                    config.dmtr_api_key.clone(),
-                    "ports".to_string(),
-                    "tunnel".to_string(),
-                    config.dmtr_port_name.clone(),
-                    "--socket".to_string(),
-                    constants.socket_path.clone(),
+                    format!(
+                        "UNIX-LISTEN:{},reuseaddr,fork,unlink-early",
+                        constants.socket_path,
+                    ),
+                    format!(
+                        "TCP-CONNECT:{}.{}.svc.cluster.local:3307",
+                        node_service_name,
+                        self.namespace().unwrap()
+                    ),
                 ]),
+                security_context: Some(SecurityContext {
+                    run_as_user: Some(1000),
+                    run_as_group: Some(1000),
+                    ..Default::default()
+                }),
                 volume_mounts: Some(vec![VolumeMount {
                     name: "ipc".to_string(),
                     mount_path: constants.socket_dir.clone(),
                     ..Default::default()
                 }]),
                 ..Default::default()
-            })
+            });
         }
 
         let mut init_container_env_vars = vec![
