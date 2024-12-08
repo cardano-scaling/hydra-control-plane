@@ -148,7 +148,7 @@ resource "kubernetes_deployment_v1" "operator" {
 
           env {
             name  = "AUTOSCALER_DELAY"
-            value = "60"
+            value = "120"
           }
 
           env {
