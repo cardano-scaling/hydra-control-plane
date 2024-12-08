@@ -75,6 +75,7 @@ impl From<Resources> for ResourceRequirements {
 #[kube(printcolumn = r#"
         {"name": "Node State", "jsonPath":".status.nodeState", "type": "string"},
         {"name": "Game State", "jsonPath":".status.gameState", "type": "string"},
+        {"name": "Snapshot", "jsonPath":".spec.snapshot", "type": "string"},
         {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"},
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
