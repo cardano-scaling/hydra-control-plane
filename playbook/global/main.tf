@@ -21,6 +21,32 @@ variable "ssl_cert_arn" {
   type = string
 }
 
+variable "discord_bot_image" {
+  description = "Docker image for the Discord bot"
+  type        = string
+}
+
+variable "discord_bot_token" {
+  description = "Authentication token for the Discord bot"
+  type        = string
+  sensitive   = true
+}
+
+variable "discord_bot_owner_id" {
+  description = "Discord user ID of the bot owner"
+  type        = string
+}
+
+variable "discord_bot_admin_role_id" {
+  description = "Discord role ID for bot admins"
+  type        = string
+}
+
+variable "discord_bot_channel_id" {
+  description = "Discord channel ID where the bot will operate"
+  type        = string
+}
+
 provider "kubernetes" {
   config_path    = "~/.kube/config"
   config_context = var.eks_cluster_arn
@@ -44,5 +70,12 @@ module "global" {
     "k8s-hydradoo-thanossi-8495a7f68f-8b7ef4358124ac4c.elb.sa-east-1.amazonaws.com:10901",
     "k8s-hydradoo-thanossi-13ead426cd-5339600f2c046547.elb.af-south-1.amazonaws.com:10901",
     "k8s-hydradoo-thanossi-8862e8ccb2-1dd21aee53e595bc.elb.af-south-1.amazonaws.com:10901",
+    "k8s-hydradoo-thanossi-92b13c1342-78cb9e05c5b4240d.elb.us-east-2.amazonaws.com:10901",
+    "k8s-hydradoo-thanossi-41bd9a9c84-4bb2a95644f2ae9f.elb.us-east-2.amazonaws.com:10901"
   ]
+  discord_bot_image         = var.discord_bot_image
+  discord_bot_token         = var.discord_bot_token
+  discord_bot_owner_id      = var.discord_bot_owner_id
+  discord_bot_admin_role_id = var.discord_bot_admin_role_id
+  discord_bot_channel_id    = var.discord_bot_channel_id
 }

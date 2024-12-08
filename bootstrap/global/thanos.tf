@@ -10,7 +10,7 @@ resource "kubernetes_deployment_v1" "thanos_querier" {
   }
 
   spec {
-    replicas = 1
+    replicas = 2
 
     selector {
       match_labels = {
