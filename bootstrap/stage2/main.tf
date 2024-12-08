@@ -281,3 +281,35 @@ variable "proxy_resources" {
     }
   }
 }
+
+variable "node_image" {
+  type    = string
+  default = "ghcr.io/blinklabs-io/cardano-node"
+}
+
+variable "node_image_tag" {
+  type    = string
+  default = "10.1.3"
+}
+
+variable "node_replicas" {
+  type    = number
+  default = 1
+}
+
+variable "node_resources" {
+  type = object({
+    requests = map(string)
+    limits   = map(string)
+  })
+  default = {
+    limits = {
+      "memory" = "22Gi"
+      "cpu"    = "8"
+    }
+    requests = {
+      "memory" = "22Gi"
+      "cpu"    = "2"
+    }
+  }
+}
