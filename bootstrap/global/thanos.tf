@@ -45,6 +45,17 @@ resource "kubernetes_deployment_v1" "thanos_querier" {
             container_port = 10901
           }
 
+          resources {
+            limits = {
+              cpu    = "4"
+              memory = "2Gi"
+            }
+            requests = {
+              cpu    = "2"
+              memory = "2Gi"
+            }
+          }
+
           liveness_probe {
             http_get {
               path = "/-/healthy"
