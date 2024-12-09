@@ -24,17 +24,6 @@ resource "kubernetes_config_map" "node_proxy_config" {
   }
 }
 
-resource "kubernetes_config_map" "node_readiness_config" {
-  metadata {
-    namespace = var.namespace
-    name      = "node-readiness"
-  }
-
-  data = {
-    "readiness.sh" = "${file("${path.module}/node_readiness.sh")}"
-  }
-}
-
 resource "kubernetes_stateful_set_v1" "node" {
   wait_for_rollout = false
 
@@ -94,14 +83,6 @@ resource "kubernetes_stateful_set_v1" "node" {
           }
         }
 
-        volume {
-          name = "node-readiness"
-          config_map {
-            name         = "node-readiness"
-            default_mode = "0500"
-          }
-        }
-
         container {
           image = "${var.node_image}:${var.node_image_tag}"
           name  = "main"
@@ -151,18 +132,6 @@ resource "kubernetes_stateful_set_v1" "node" {
           volume_mount {
             mount_path = "/ipc"
             name       = "ipc"
-          }
-
-          volume_mount {
-            mount_path = "/probes"
-            name       = "node-readiness"
-          }
-
-          readiness_probe {
-            initial_delay_seconds = 20
-            exec {
-              command = ["/probes/readiness.sh"]
-            }
           }
         }
 
