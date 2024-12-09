@@ -413,6 +413,7 @@ impl K8sContext {
                         start_chain_from: None,
                         resources: None,
                         snapshot: Some(new_snapshot_key),
+                        quiet: Some(true),
                     },
                     Err(e) => {
                         warn!(err = e.to_string(), "Failed to mark snapshot as used");

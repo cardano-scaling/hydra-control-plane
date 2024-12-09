@@ -87,6 +87,7 @@ pub struct HydraDoomNodeSpec {
     pub start_chain_from: Option<String>,
     pub asleep: Option<bool>,
     pub resources: Option<Resources>,
+    pub quiet: Option<bool>,
 }
 
 impl Default for HydraDoomNodeSpec {
@@ -98,6 +99,7 @@ impl Default for HydraDoomNodeSpec {
             start_chain_from: None,
             asleep: None,
             resources: None,
+            quiet: Some(true),
         }
     }
 }
@@ -193,7 +195,7 @@ impl HydraDoomNode {
         let labels = self.internal_labels();
 
         // Common deployment parts:
-        let main_container_common_args = vec![
+        let mut main_container_common_args = vec![
             "--host".to_string(),
             "0.0.0.0".to_string(),
             "--api-host".to_string(),
@@ -209,6 +211,9 @@ impl HydraDoomNode {
             "--persistence-dir".to_string(),
             constants.persistence_dir.clone(),
         ];
+        if self.spec.quiet.unwrap_or(true) {
+            main_container_common_args.push("--quiet".to_string());
+        }
 
         let main_container_args = if self.spec.offline.unwrap_or(false) {
             let mut aux = vec![
