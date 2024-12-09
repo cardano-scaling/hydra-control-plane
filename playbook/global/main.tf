@@ -53,8 +53,7 @@ provider "kubernetes" {
 }
 
 module "global" {
-  source = "../../bootstrap/global/"
-
+  source          = "../../bootstrap/global/"
   ssl_cert_arn    = var.ssl_cert_arn
   external_domain = "us-east-1.hydra-doom.sundae.fi"
   thanos_endpoints = [
