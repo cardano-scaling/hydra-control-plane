@@ -446,7 +446,10 @@ impl HydraDoomNode {
                 image: Some(constants.socat_image.to_string()),
                 args: Some(vec![
                     format!("UNIX-LISTEN:{0},fork", constants.socket_path),
-                    format!("TCP:{0}:3307,ignoreeof", node_service),
+                    format!(
+                        "TCP:{0}.hydra-doom-system.svc.cluster.local:3307,ignoreeof",
+                        node_service
+                    ),
                 ]),
                 volume_mounts: Some(vec![VolumeMount {
                     name: "ipc".to_string(),
