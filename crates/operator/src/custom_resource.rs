@@ -41,12 +41,12 @@ impl Default for Resources {
     fn default() -> Self {
         Resources {
             requests: ResourcesInner {
-                cpu: "2".to_string(),
-                memory: "4Gi".to_string(),
+                cpu: "4".to_string(),
+                memory: "6Gi".to_string(),
             },
             limits: ResourcesInner {
-                cpu: "2".to_string(),
-                memory: "4Gi".to_string(),
+                cpu: "4".to_string(),
+                memory: "6Gi".to_string(),
             },
         }
     }
