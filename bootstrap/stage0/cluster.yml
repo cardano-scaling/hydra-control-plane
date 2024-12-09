@@ -6,10 +6,10 @@ metadata:
   name: hydra-doom-dev-cluster
   # region: us-east-1
   # region: eu-central-1
-  region: us-west-2
+  # region: us-west-2
   # region: ap-southeast-1
   # region: sa-east-1
-  # region: af-south-1
+  region: af-south-1
   tags: 
     sundae-labs:cost-allocation:Service: hydra-doom
 
@@ -70,10 +70,10 @@ managedNodeGroups:
     availabilityZones:
       # - us-east-1b
       # - eu-central-1b
-      - us-west-2b
+      # - us-west-2b
       # - ap-southeast-1a
       # - sa-east-1a
-      # - af-south-1a
+      - af-south-1a
   - name: co-adm-x86-az1
     tags: 
       sundae-labs:cost-allocation:Service: hydra-doom
@@ -90,10 +90,31 @@ managedNodeGroups:
     availabilityZones:
       # - us-east-1b
       # - eu-central-1b
-      - us-west-2b
+      # - us-west-2b
       # - ap-southeast-1a
       # - sa-east-1a
-      # - af-south-1a
+      - af-south-1a
+  - name: co-mem-x86-az1
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    labels:
+      hydra.doom/availability-sla: consistent
+      hydra.doom/compute-profile: mem-intensive
+      hydra.doom/compute-arch: x86
+      hydra.doom/availability-zone: az1
+    instanceType: r6i.2xlarge
+    minSize: 0
+    maxSize: 1
+    desiredCapacity: 1
+    availabilityZones:
+      # - us-east-1b
+      # - eu-central-1b
+      # - us-west-2b
+      # - ap-southeast-1a
+      # - sa-east-1a
+      - af-south-1a
+
+
 
 fargateProfiles:
   - name: fp-default
