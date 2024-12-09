@@ -436,19 +436,20 @@ impl HydraDoomNode {
 
         // Offline is optional. If undefined, the node is presumed to be online.
         if !self.spec.offline.unwrap_or(false) {
+            let node_service = match config.network_id.as_str() {
+                "0" => "node-preprod".to_string(),
+                _ => "node-mainnet".to_string(),
+            };
+
             containers.push(Container {
-                name: "dmtrctl".to_string(),
-                image: Some(constants.dmtrctl_image.to_string()),
+                name: "socat".to_string(),
+                image: Some(constants.socat_image.to_string()),
                 args: Some(vec![
-                    "--project-id".to_string(),
-                    config.dmtr_project_id.clone(),
-                    "--api-key".to_string(),
-                    config.dmtr_api_key.clone(),
-                    "ports".to_string(),
-                    "tunnel".to_string(),
-                    config.dmtr_port_name.clone(),
-                    "--socket".to_string(),
-                    constants.socket_path.clone(),
+                    format!("UNIX-LISTEN:{0},fork", constants.socket_path),
+                    format!(
+                        "TCP:{0}.hydra-doom-system.svc.cluster.local:3307,ignoreeof",
+                        node_service
+                    ),
                 ]),
                 volume_mounts: Some(vec![VolumeMount {
                     name: "ipc".to_string(),
