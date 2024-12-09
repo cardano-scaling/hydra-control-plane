@@ -7,6 +7,21 @@ use tracing::info;
 
 use crate::LocalState;
 
+#[get("/game/elimination")]
+pub async fn elimination_game(
+    state: &State<LocalState>,
+) -> Result<Json<NewGameLocalResponse>> {
+    info!("Creating a new elimination game");
+
+    let client = NodeClient::new(state.hydra.clone(), state.admin_key.clone(), state.network);
+
+    let tx_hash = client.new_game(None, 2, 0).await.context("error creating new game");
+    Ok(Json(NewGameLocalResponse {
+        player_state: None,
+        admin_pkh: hex::encode(client.tx_builder.admin_pkh),
+    }))
+}
+
 #[get("/game/new_game?<address>&<player_count>&<bot_count>")]
 pub async fn new_game(
     address: &str,
@@ -24,12 +39,12 @@ pub async fn new_game(
     let client = NodeClient::new(state.hydra.clone(), state.admin_key.clone(), state.network);
 
     let tx_hash = client
-        .new_game(pkh.into(), player_count, bot_count)
+        .new_game(Some(pkh.into()), player_count, bot_count)
         .await
         .context("error creating new game")?;
 
     Ok(Json(NewGameLocalResponse {
-        player_state: format!("{}#1", hex::encode(tx_hash)),
+        player_state: Some(format!("{}#1", hex::encode(tx_hash))),
         admin_pkh: hex::encode(client.tx_builder.admin_pkh),
     }))
 }

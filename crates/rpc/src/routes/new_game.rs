@@ -12,7 +12,7 @@ use crate::model::cluster::{shared::NewGameLocalResponse, ClusterState, HydraDoo
 pub struct NewGameResponse {
     game_id: String,
     ip: String,
-    player_state: String,
+    player_state: Option<String>,
     admin_pkh: String,
 }
 
@@ -63,7 +63,58 @@ pub async fn do_new_game(
     }))
 }
 
-#[get("/new_game?<address>&<player_count>&<bot_count>&<node_id>")]
+pub async fn do_elimination(node: Arc<HydraDoomNode>) -> Result<Json<NewGameResponse>> {
+    let node_id = node.metadata.name.clone().expect("node without a name");
+    info!(id = node_id, "select node for new game");
+
+    let (external_url, local_url): (String, String) = node
+        .status
+        .as_ref()
+        .map(|status| {
+            (
+                status.external_url.clone(),
+                status
+                    .local_url
+                    .clone()
+                    .replace("ws://", "http://")
+                    .replace("4001", "8000"),
+            )
+        })
+        .unwrap_or_default();
+
+    let url = format!("{local_url}/game/elimination");
+
+    let response = reqwest::get(url)
+        .await
+        .context("failed to hit new_game metrics server endpoint")?;
+
+    let body = response
+        .json::<NewGameLocalResponse>()
+        .await
+        .context("http error")?;
+
+    Ok(Json(NewGameResponse {
+        game_id: node_id,
+        ip: external_url,
+        player_state: body.player_state,
+        admin_pkh: body.admin_pkh,
+    }))
+}
+
+#[get("/elimination")]
+pub async fn elimination(state: &State<ClusterState>) -> Result<Json<NewGameResponse>> {
+    info!("Creating a new elimination game");
+    let node = state
+        .select_node_for_new_game()
+        .context("error getting warm node")?;
+    let node_id = node.metadata.name.clone().context("node without a name")?;
+    do_elimination(node).await.or_else(|e| {
+        state.release_node(node_id.as_str());
+        Err(e)
+    })
+}
+
+#[get("/new_game?<address>&<player_count>&<bot_count>")]
 pub async fn new_game(
     address: &str,
     player_count: Option<u64>,
