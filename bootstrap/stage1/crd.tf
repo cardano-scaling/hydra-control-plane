@@ -69,6 +69,10 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       "nullable" = true
                       "type"     = "boolean"
                     }
+                    "quiet" = {
+                      "nullable" = true
+                      "type"     = "boolean"
+                    }
                     "resources" = {
                       "nullable" = true
                       "properties" = {
