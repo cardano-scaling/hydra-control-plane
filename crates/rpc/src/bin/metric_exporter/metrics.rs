@@ -1,10 +1,16 @@
 use std::sync::Mutex;
+use tracing::error;
 
+use hydra_control_plane_operator::controller::{HydraDoomGameState, HydraDoomNodeState};
 use prometheus::{
     histogram_opts, linear_buckets, Encoder, Histogram, HistogramTimer, IntCounter, IntGauge,
     Registry, TextEncoder,
 };
+use tokio::sync::mpsc::UnboundedSender;
 
+use crate::HydraState;
+
+#[derive(Debug, Clone)]
 pub enum NodeState {
     Offline,
     Online,
@@ -23,6 +29,18 @@ impl From<NodeState> for i64 {
     }
 }
 
+impl From<NodeState> for HydraDoomNodeState {
+    fn from(value: NodeState) -> Self {
+        match value {
+            NodeState::Offline => Self::Offline,
+            NodeState::Online => Self::Online,
+            NodeState::HeadIsInitializing => Self::HeadIsInitializing,
+            NodeState::HeadIsOpen => Self::HeadIsOpen,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum GameState {
     Waiting,
     Lobby,
@@ -37,6 +55,17 @@ impl From<GameState> for i64 {
             GameState::Lobby => 1,
             GameState::Running => 2,
             GameState::Done => 3,
+        }
+    }
+}
+
+impl From<GameState> for HydraDoomGameState {
+    fn from(value: GameState) -> Self {
+        match value {
+            GameState::Waiting => Self::Waiting,
+            GameState::Lobby => Self::Lobby,
+            GameState::Running => Self::Running,
+            GameState::Done => Self::Done,
         }
     }
 }
@@ -56,10 +85,11 @@ pub struct Metrics {
     pub suicides: IntCounter,
 
     game_timer: Mutex<Option<HistogramTimer>>,
+    tx_state: UnboundedSender<HydraState>,
 }
 
 impl Metrics {
-    pub fn try_new() -> Result<Self, prometheus::Error> {
+    pub fn try_new(tx_state: UnboundedSender<HydraState>) -> Result<Self, prometheus::Error> {
         let node_state = IntGauge::new(
             "hydra_doom_node_state",
             "0 for OFFLINE, 1 for ONLINE, 2 for HEAD_IS_INITIALIZING, 3 for HEAD_IS_OPEN",
@@ -140,11 +170,15 @@ impl Metrics {
             suicides,
 
             game_timer: Mutex::new(None),
+            tx_state,
         })
     }
 
     pub fn set_node_state(&self, state: NodeState) {
-        self.node_state.set(state.into())
+        self.node_state.set(state.clone().into());
+        if let Err(error) = self.tx_state.send(HydraState::Node(state.into())) {
+            error!(?error);
+        }
     }
 
     pub fn new_transaction(&self, bytes: u64) {
@@ -153,35 +187,55 @@ impl Metrics {
     }
 
     pub fn start_server(&self) {
-        self.game_state.set(GameState::Waiting.into());
+        let state = GameState::Waiting;
+        self.game_state.set(state.clone().into());
         self.players_current.set(0);
+
+        if let Err(error) = self.tx_state.send(HydraState::Game(state.into())) {
+            error!(?error);
+        }
     }
 
     pub fn start_game(&self) {
+        let state = GameState::Running;
         self.games_current.set(1);
-        self.game_state.set(GameState::Running.into());
+        self.game_state.set(state.clone().into());
         let mut guard = self.game_timer.lock().unwrap();
         if let Some(prev) = guard.take() {
             // The previous game didn't end properly, so we discard the duration so as not to pollute the timing
             prev.stop_and_discard();
         }
         *guard = Some(self.games_seconds.start_timer());
+
+        if let Err(error) = self.tx_state.send(HydraState::Game(state.into())) {
+            error!(?error);
+        }
     }
 
     pub fn end_game(&self) {
+        let state = GameState::Done;
         self.players_current.set(0);
         self.games_current.set(0);
-        self.game_state.set(GameState::Done.into());
+        self.game_state.set(state.clone().into());
         let mut guard = self.game_timer.lock().unwrap();
         if let Some(timer) = guard.take() {
             timer.observe_duration();
         }
+
+        if let Err(error) = self.tx_state.send(HydraState::Game(state.into())) {
+            error!(?error);
+        }
     }
 
     pub fn player_joined(&self) {
+        let state = GameState::Lobby;
         self.players_total.inc();
         self.players_current.inc();
-        self.game_state.set(GameState::Lobby.into());
+        self.game_state.set(state.clone().into());
+
+        if let Err(error) = self.tx_state.send(HydraState::Game(state.into())) {
+            error!(?error);
+        }
     }
 
     pub fn player_left(&self) {
