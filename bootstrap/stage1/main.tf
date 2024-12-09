@@ -16,6 +16,11 @@ variable "cluster_name" {
   description = "Name of the cluster, used as label for prometheus."
 }
 
+variable "network_id" {
+  type    = number
+  default = 1 # mainnet
+}
+
 variable "node_image" {
   type    = string
   default = "ghcr.io/blinklabs-io/cardano-node"
