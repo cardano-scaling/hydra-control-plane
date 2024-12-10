@@ -20,7 +20,7 @@ jobs:
       TF_VAR_ssl_cert_arn: arn:aws:acm:us-east-1:509399595051:certificate/6ab8319d-1dec-494f-b71c-3a4132e42a5e
       TF_VAR_discord_bot_image: ghcr.io/cardano-scaling/doom-matchmaking-bot:19c771736933083bb93ac10c74e96ca247db2c87
       TF_VAR_discord_bot_owner_id: "128987369285222400"
-      TF_VAR_discord_bot_channel_id: "1315965992513572905"
+      TF_VAR_discord_bot_channel_id: "1315189587064131664"
       TF_VAR_discord_bot_admin_role_id: "1315146910247686196"
       TF_VAR_discord_bot_token: ${{ secrets.DISCORD_BOT_TOKEN }}
 
