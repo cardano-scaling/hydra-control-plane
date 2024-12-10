@@ -1,6 +1,6 @@
 FROM debian:12-slim
 
-RUN apt-get update && apt-get install -y jq curl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y jq curl ca-certificates libc6 && rm -rf /var/lib/apt/lists/*
 
 RUN curl -L -o /usr/local/bin/websocat https://github.com/vi/websocat/releases/download/v1.14.0/websocat.x86_64-unknown-linux-musl && \
     chmod +x /usr/local/bin/websocat
