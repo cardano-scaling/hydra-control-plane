@@ -8,7 +8,7 @@ use routes::{
     head::head,
     heads::heads,
     health::health,
-    new_game::new_game,
+    new_game::{elimination, new_game},
     sample_transactions::sample_transactions,
     stats::{global_stats, refresh_stats, StatsState},
 };
@@ -84,6 +84,7 @@ async fn main() -> Result<()> {
             "/",
             routes![
                 new_game,
+                elimination,
                 heads,
                 head,
                 add_player,

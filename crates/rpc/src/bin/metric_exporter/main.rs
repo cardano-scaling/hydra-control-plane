@@ -11,7 +11,7 @@ use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
 use rocket::{get, post, routes, State};
 use routes::game::{
     add_player::add_player, cleanup::cleanup, end_game::end_game as node_end_game,
-    new_game::new_game, start_game::start_game as node_start_game,
+    new_game::{elimination_game, new_game}, start_game::start_game as node_start_game,
 };
 use std::{env, fs::File, sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -110,6 +110,7 @@ async fn main() -> Result<()> {
                 player_killed,
                 player_suicided,
                 new_game,
+                elimination_game,
                 add_player,
                 node_start_game,
                 node_end_game,
