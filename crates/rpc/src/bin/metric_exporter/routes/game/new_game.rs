@@ -15,10 +15,11 @@ pub async fn elimination_game(
 
     let client = NodeClient::new(state.hydra.clone(), state.admin_key.clone(), state.network);
 
-    let tx_hash = client.new_game(None, 2, 0).await.context("error creating new game");
+    let tx_hash = client.new_game(None, 2, 0).await.context("error creating new game")?;
     Ok(Json(NewGameLocalResponse {
         player_state: None,
         admin_pkh: hex::encode(client.tx_builder.admin_pkh),
+        game_tx_hash: hex::encode(tx_hash),
     }))
 }
 
@@ -46,5 +47,6 @@ pub async fn new_game(
     Ok(Json(NewGameLocalResponse {
         player_state: Some(format!("{}#1", hex::encode(tx_hash))),
         admin_pkh: hex::encode(client.tx_builder.admin_pkh),
+        game_tx_hash: hex::encode(tx_hash),
     }))
 }
