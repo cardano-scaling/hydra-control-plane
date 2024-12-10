@@ -114,7 +114,7 @@ pub async fn elimination(state: &State<ClusterState>) -> Result<Json<NewGameResp
     })
 }
 
-#[get("/new_game?<address>&<player_count>&<bot_count>")]
+#[get("/new_game?<address>&<player_count>&<bot_count>&<node_id>")]
 pub async fn new_game(
     address: &str,
     player_count: Option<u64>,
