@@ -45,8 +45,8 @@ pub async fn new_game(
         .context("error creating new game")?;
 
     Ok(Json(NewGameLocalResponse {
-        player_state: Some(format!("{}#1", hex::encode(tx_hash))),
+        player_state: Some(format!("{}#1", hex::encode(tx_hash.clone()))),
         admin_pkh: hex::encode(client.tx_builder.admin_pkh),
-        game_tx_hash: hex::encode(tx_hash),
+        game_tx_hash: hex::encode(tx_hash.clone()),
     }))
 }
