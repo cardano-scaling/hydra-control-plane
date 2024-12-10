@@ -45,7 +45,7 @@ impl TxBuilder {
 
     pub fn new_game(
         &self,
-        player: Player,
+        player: Option<Player>,
         utxos: Vec<UTxO>,
         player_count: u64,
         bot_count: u64,
@@ -59,9 +59,15 @@ impl TxBuilder {
         let input_utxo = admin_utxos.first().unwrap();
 
         let script_address = Validator::address(self.network);
-        let player_outbound_address = player
-            .outbound_address(self.admin_pkh, self.network)
-            .context("failed to build player multisig outbound address")?;
+        let player_outbound_address = if let Some(ref player) = player {
+            Some(
+                player
+                .outbound_address(self.admin_pkh, self.network)
+                .context("failed to build player multisig outbound address")?
+            )
+        } else {
+            None
+        };
 
         let mut admin_address_bytes = self.admin_pkh.to_vec();
         admin_address_bytes.insert(
@@ -75,18 +81,25 @@ impl TxBuilder {
         );
         let admin_address = Address::from_bytes(admin_address_bytes.as_slice())?;
 
-        let game_state: PlutusData = GameState::new(self.admin_pkh.into(), player_count, bot_count)
-            .add_player(player.signing_key.into())
-            .into();
+        let mut game_state = GameState::new(self.admin_pkh.into(), player_count, bot_count);
+        if let Some(player) = player {
+            game_state = game_state.add_player(player.signing_key.into());
+        }
+        let game_state: PlutusData = game_state.into();
         let mut datum: Vec<u8> = Vec::new();
         encode(&game_state, &mut datum)?;
 
         let tx_builder = StagingTransaction::new()
             .input(input_utxo.clone().into())
             // GameState Datum
-            .output(Output::new(script_address, 0).set_inline_datum(datum))
+            .output(Output::new(script_address, 0).set_inline_datum(datum));
             // Player Output
-            .output(Output::new(player_outbound_address, 0))
+        let tx_builder = if let Some(poa) = player_outbound_address {
+            tx_builder.output(Output::new(poa, 0))
+        } else {
+            tx_builder
+        };
+        let tx_builder = tx_builder
             //Server UTxO
             .output(Output::new(admin_address, 0))
             // Maintain Initial UTxO

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NewGameLocalResponse {
-    pub player_state: String,
+    pub player_state: Option<String>,
     pub admin_pkh: String,
 }
 

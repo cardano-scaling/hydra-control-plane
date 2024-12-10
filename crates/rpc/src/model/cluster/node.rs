@@ -70,7 +70,7 @@ impl NodeClient {
 
     pub async fn new_game(
         &self,
-        player: Player,
+        player: Option<Player>,
         player_count: u64,
         bot_count: u64,
     ) -> Result<Vec<u8>> {
