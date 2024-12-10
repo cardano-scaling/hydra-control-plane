@@ -14,6 +14,7 @@ pub struct NewGameResponse {
     ip: String,
     player_state: Option<String>,
     admin_pkh: String,
+    game_tx_hash: String,
 }
 
 pub async fn do_new_game(
@@ -60,6 +61,7 @@ pub async fn do_new_game(
         ip: external_url,
         player_state: body.player_state,
         admin_pkh: body.admin_pkh,
+        game_tx_hash: body.game_tx_hash,
     }))
 }
 
@@ -98,6 +100,7 @@ pub async fn do_elimination(node: Arc<HydraDoomNode>) -> Result<Json<NewGameResp
         ip: external_url,
         player_state: body.player_state,
         admin_pkh: body.admin_pkh,
+        game_tx_hash: body.game_tx_hash,
     }))
 }
 
