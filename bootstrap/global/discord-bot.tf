@@ -84,9 +84,7 @@ resource "kubernetes_service_v1" "discord_bot_lb" {
 
     load_balancer_class = "service.k8s.aws/nlb"
     selector = {
-      "app.kubernetes.io/component" = "o11y"
-      "app.kubernetes.io/name"      = "grafana"
-      "app.kubernetes.io/part-of"   = "hydradoom"
+      role = "discord-bot"
     }
 
     port {
