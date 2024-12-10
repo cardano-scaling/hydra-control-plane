@@ -9,6 +9,8 @@ use pallas::{
     },
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
+use std::time::{SystemTime, UNIX_EPOCH};
+use time::OffsetDateTime;
 
 use crate::model::{
     game::contract::{
@@ -62,8 +64,8 @@ impl TxBuilder {
         let player_outbound_address = if let Some(ref player) = player {
             Some(
                 player
-                .outbound_address(self.admin_pkh, self.network)
-                .context("failed to build player multisig outbound address")?
+                    .outbound_address(self.admin_pkh, self.network)
+                    .context("failed to build player multisig outbound address")?,
             )
         } else {
             None
@@ -89,11 +91,17 @@ impl TxBuilder {
         let mut datum: Vec<u8> = Vec::new();
         encode(&game_state, &mut datum)?;
 
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        let millis = now.as_millis() as u64;
+
         let tx_builder = StagingTransaction::new()
+            .invalid_from_slot(millis + 3600 * 24 * 365)
             .input(input_utxo.clone().into())
             // GameState Datum
             .output(Output::new(script_address, 0).set_inline_datum(datum));
-            // Player Output
+        // Player Output
         let tx_builder = if let Some(poa) = player_outbound_address {
             tx_builder.output(Output::new(poa, 0))
         } else {
@@ -112,6 +120,7 @@ impl TxBuilder {
                 Network::Mainnet => 1,
                 Network::Other(i) => i,
             })
+            .d
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
