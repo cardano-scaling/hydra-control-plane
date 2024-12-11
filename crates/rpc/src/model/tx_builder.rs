@@ -120,7 +120,6 @@ impl TxBuilder {
                 Network::Mainnet => 1,
                 Network::Other(i) => i,
             })
-            .d
             .fee(0);
 
         let tx = tx_builder.build_conway_raw()?;
