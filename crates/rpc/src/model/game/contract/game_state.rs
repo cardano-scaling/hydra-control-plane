@@ -11,7 +11,7 @@ use pallas::ledger::{
 use crate::model::game::player::Player;
 use crate::model::hydra::utxo::Datum;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PaymentCredential([u8; 28]);
 
 #[derive(Debug)]

@@ -10,7 +10,6 @@ use pallas::{
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
 use std::time::{SystemTime, UNIX_EPOCH};
-use time::OffsetDateTime;
 
 use crate::model::{
     game::contract::{
@@ -32,7 +31,7 @@ use super::{
 pub struct TxBuilder {
     admin_key: SecretKey,
     pub admin_pkh: Hash<28>,
-    network: Network,
+    pub network: Network,
 }
 
 impl TxBuilder {
