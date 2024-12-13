@@ -589,7 +589,7 @@ mod tests {
         }];
 
         let tx = tx_builder
-            .new_game(player.into(), utxos, 1, 3)
+            .new_game(Some(player.into()), utxos, 1, 3)
             .expect("Failed to build tx");
 
         debug!("{}", hex::encode(tx.tx_bytes));

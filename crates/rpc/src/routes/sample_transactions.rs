@@ -1,5 +1,3 @@
-use rand::seq::SliceRandom;
-
 use crate::model::{
     cluster::{ClusterState, ConnectionInfo, NodeClient},
     hydra::messages::Transaction,

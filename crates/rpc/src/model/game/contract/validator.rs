@@ -38,3 +38,20 @@ impl Validator {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use pallas::ledger::addresses::Network;
+
+    use crate::model::game::contract::validator::Validator;
+
+    #[test]
+    pub fn test_address() {
+        println!(
+            "{}",
+            Validator::address(Network::Mainnet)
+                .to_bech32()
+                .expect("error")
+        );
+    }
+}

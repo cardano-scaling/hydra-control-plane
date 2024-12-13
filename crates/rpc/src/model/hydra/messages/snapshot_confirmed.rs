@@ -3,8 +3,6 @@ use serde_json::Value;
 
 use crate::model::hydra::utxo::UTxO;
 
-use super::Transaction;
-
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct SnapshotConfirmed {

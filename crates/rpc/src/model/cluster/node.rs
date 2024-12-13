@@ -9,10 +9,7 @@ use tracing::debug;
 
 use crate::model::{
     game::{
-        contract::{
-            game_state::{GameState, PaymentCredential},
-            validator::Validator,
-        },
+        contract::{game_state::GameState, validator::Validator},
         player::Player,
     },
     hydra::{
