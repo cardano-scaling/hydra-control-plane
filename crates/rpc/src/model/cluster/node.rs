@@ -156,7 +156,7 @@ impl NodeClient {
             return Ok(player_utxo.hash);
         }
 
-        if game_state.players.len() > 2 {
+        if game_state.players.len() >= 2 {
             return Err(anyhow!("too many players"));
         }
         // Previous add player logic
