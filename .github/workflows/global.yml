@@ -18,7 +18,7 @@ jobs:
     env:
       TF_VAR_eks_cluster_arn: arn:aws:eks:us-east-1:509399595051:cluster/hydra-doom-dev-cluster
       TF_VAR_ssl_cert_arn: arn:aws:acm:us-east-1:509399595051:certificate/6ab8319d-1dec-494f-b71c-3a4132e42a5e
-      TF_VAR_discord_bot_image: ghcr.io/cardano-scaling/doom-matchmaking-bot:61749f3c0b845bacbcca30173b48956aac62a4c0
+      TF_VAR_discord_bot_image: ghcr.io/cardano-scaling/doom-matchmaking-bot:d16577646c1060d092f7a3717bcde594ec092a19
       TF_VAR_discord_bot_owner_id: "128987369285222400"
       TF_VAR_discord_bot_channel_id: "1315189587064131664"
       TF_VAR_discord_bot_admin_role_id: "1315146910247686196"
