@@ -156,6 +156,12 @@ impl Metrics {
         self.game_state.set(GameState::Waiting.into());
         self.players_current.set(0);
     }
+    
+    pub fn server_unavailable(&self) {
+        self.game_state.set(GameState::Done.into());
+        self.games_current.set(0);
+        self.players_current.set(0);
+    }
 
     pub fn start_game(&self) {
         self.games_current.set(1);

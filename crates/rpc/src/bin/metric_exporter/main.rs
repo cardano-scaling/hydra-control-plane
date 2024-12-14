@@ -103,6 +103,7 @@ async fn main() -> Result<()> {
             routes![
                 metrics_endpoint,
                 start_server,
+                server_unavailable,
                 start_game,
                 end_game,
                 player_joined,
@@ -131,6 +132,11 @@ fn metrics_endpoint(state: &State<LocalState>) -> String {
 #[post("/start_server")]
 fn start_server(state: &State<LocalState>) {
     state.metrics.start_server();
+}
+
+#[post("/server_unavailable")]
+fn server_unavailable(state: &State<LocalState>) {
+    state.metrics.server_unavailable();
 }
 
 #[post("/start_game")]
