@@ -316,11 +316,18 @@ impl HydraDoomNode {
                     "--admin-key-file".to_string(),
                     format!("{}/admin.sk", constants.secret_dir),
                 ]),
-                volume_mounts: Some(vec![VolumeMount {
-                    name: "secret".to_string(),
-                    mount_path: constants.secret_dir.clone(),
-                    ..Default::default()
-                }]),
+                volume_mounts: Some(vec![
+                    VolumeMount {
+                        name: "secret".to_string(),
+                        mount_path: constants.secret_dir.clone(),
+                        ..Default::default()
+                    },
+                    VolumeMount {
+                        name: "data".to_string(),
+                        mount_path: constants.data_dir.clone(),
+                        ..Default::default()
+                    },
+                ]),
                 env: Some(vec![EnvVar {
                     name: "NETWORK_ID".to_string(),
                     value: Some(config.network_id.clone()),
