@@ -529,6 +529,8 @@ impl TxBuilder {
         let admin_key = self.admin_key.public_key();
         let admin_kh = admin_key.compute_hash();
 
+        println!("{}", hex::encode(admin_kh));
+
         utxos
             .into_iter()
             .filter(|utxo| match &utxo.address {

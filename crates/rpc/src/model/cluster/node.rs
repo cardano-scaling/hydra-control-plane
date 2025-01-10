@@ -40,7 +40,7 @@ pub struct ConnectionInfo {
 #[derive(Serialize)]
 pub struct NodeSummary(pub NodeClient);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct KeyEnvelope {
     #[serde(rename = "type")]
     envelope_type: String,
@@ -153,7 +153,7 @@ impl NodeClient {
             return Ok(player_utxo.hash);
         }
 
-        if game_state.players.len() >= 2 {
+        if game_state.players.len() >= 4 {
             return Err(anyhow!("too many players"));
         }
         // Previous add player logic

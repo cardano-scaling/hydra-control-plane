@@ -8,10 +8,14 @@ use hydra_control_plane_rpc::model::{
     },
 };
 use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
-use rocket::{get, post, routes, State};
+use rocket::{get, http::Method, post, routes, State};
+use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::game::{
-    add_player::add_player, cleanup::cleanup, end_game::end_game as node_end_game,
-    new_game::{elimination_game, new_game}, start_game::start_game as node_start_game,
+    add_player::add_player,
+    cleanup::cleanup,
+    end_game::end_game as node_end_game,
+    new_game::{elimination_game, new_game},
+    start_game::start_game as node_start_game,
 };
 use std::{env, fs::File, sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -60,6 +64,17 @@ async fn main() -> Result<()> {
     let admin_key_envelope: KeyEnvelope = serde_json::from_reader(
         File::open(args.admin_key_file).context("unable to open key file")?,
     )?;
+
+    println!("{:?}", admin_key_envelope);
+
+    let cors = CorsOptions::default()
+        .allowed_origins(AllowedOrigins::all())
+        .allowed_methods(
+            vec![Method::Get, Method::Post, Method::Patch]
+                .into_iter()
+                .map(From::from)
+                .collect(),
+        );
 
     let admin_key: SecretKey = admin_key_envelope
         .try_into()
@@ -118,6 +133,7 @@ async fn main() -> Result<()> {
                 cleanup,
             ],
         )
+        .attach(cors.to_cors().unwrap())
         .launch()
         .await?;
 
