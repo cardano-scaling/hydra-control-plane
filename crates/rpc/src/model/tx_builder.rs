@@ -149,6 +149,7 @@ impl TxBuilder {
         info!("Datum encoded!");
 
         let collateral_utxos = self.find_admin_utxos(utxos);
+        info!("Possible collateral UTxOs: {:?}", collateral_utxos);
         let collateral_utxo = collateral_utxos
             .iter()
             .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
