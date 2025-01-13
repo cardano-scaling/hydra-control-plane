@@ -140,7 +140,7 @@ impl TxBuilder {
             .into();
 
         let mut datum: Vec<u8> = Vec::new();
-        encode(&game_state, &mut datum)?;
+        encode(&game_state, &mut datum).context("failed to encode game state")?;
 
         let collateral_utxos = self.find_admin_utxos(utxos);
         let collateral_utxo = collateral_utxos
@@ -155,7 +155,7 @@ impl TxBuilder {
             .context("failed to construct player multisig outbound address")?;
         let redeemer: PlutusData = Redeemer::new(0, SpendAction::AddPlayer).into();
         let mut redeemer_bytes = Vec::new();
-        encode(&redeemer, &mut redeemer_bytes)?;
+        encode(&redeemer, &mut redeemer_bytes).context("failed to encode redeemer")?;
 
         let tx_builder = StagingTransaction::new()
             .input(game_state_utxo.clone().into())
@@ -204,7 +204,9 @@ impl TxBuilder {
             })
             .fee(0);
 
-        let tx = tx_builder.build_conway_raw()?;
+        let tx = tx_builder
+            .build_conway_raw()
+            .context("failed to build conway transaction")?;
         let signed_tx = tx
             .sign(self.admin_key.clone().into())
             .context("failed to sign tx")?;
