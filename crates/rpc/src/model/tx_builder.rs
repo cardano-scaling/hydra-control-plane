@@ -10,6 +10,7 @@ use pallas::{
     txbuilder::{BuildConway, BuiltTransaction, ExUnits, Output, ScriptKind, StagingTransaction},
 };
 use std::time::{SystemTime, UNIX_EPOCH};
+use tracing::info;
 
 use crate::model::{
     game::contract::{
@@ -134,19 +135,25 @@ impl TxBuilder {
             .into_iter()
             .find(|utxo| utxo.address == Validator::address(self.network))
             .ok_or_else(|| anyhow!("game state UTxO not found"))?;
+        info!("Game State UTxO Found: {:?}", game_state_utxo);
 
         let game_state: PlutusData = GameState::try_from(game_state_utxo.datum.clone())?
             .add_player(player.signing_key.into())
             .into();
 
+        info!("Game state updated!");
+
         let mut datum: Vec<u8> = Vec::new();
         encode(&game_state, &mut datum).context("failed to encode game state")?;
+
+        info!("Datum encoded!");
 
         let collateral_utxos = self.find_admin_utxos(utxos);
         let collateral_utxo = collateral_utxos
             .iter()
             .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
             .ok_or_else(|| anyhow!("No collateral utxo found"))?;
+        info!("Collateral UTxO selected!");
 
         let script_address = Validator::address(self.network);
 
@@ -156,6 +163,7 @@ impl TxBuilder {
         let redeemer: PlutusData = Redeemer::new(0, SpendAction::AddPlayer).into();
         let mut redeemer_bytes = Vec::new();
         encode(&redeemer, &mut redeemer_bytes).context("failed to encode redeemer")?;
+        info!("Redeemer constructed");
 
         let tx_builder = StagingTransaction::new()
             .input(game_state_utxo.clone().into())
@@ -203,10 +211,12 @@ impl TxBuilder {
                 Network::Other(i) => i,
             })
             .fee(0);
+        info!("Building transaction...");
 
         let tx = tx_builder
             .build_conway_raw()
             .context("failed to build conway transaction")?;
+        info!("Signing transaction...");
         let signed_tx = tx
             .sign(self.admin_key.clone().into())
             .context("failed to sign tx")?;
