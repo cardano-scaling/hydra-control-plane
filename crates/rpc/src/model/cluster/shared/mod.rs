@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 pub struct NewGameLocalResponse {
     pub player_state: Option<String>,
     pub admin_pkh: String,
-    pub game_tx_hash: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

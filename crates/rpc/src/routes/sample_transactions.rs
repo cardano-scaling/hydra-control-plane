@@ -2,7 +2,6 @@ use crate::model::{
     cluster::{ClusterState, ConnectionInfo, NodeClient},
     hydra::messages::Transaction,
 };
-use rand::thread_rng;
 use rocket::{get, http::Status, serde::json::Json, State};
 use rocket_errors::anyhow::Result;
 use serde::Serialize;

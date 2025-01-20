@@ -1,20 +1,31 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use hex::FromHex;
-use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
+use pallas::{
+    crypto::key::ed25519::SecretKey,
+    ledger::{
+        addresses::Network,
+        primitives::{alonzo, PlutusData},
+        traverse::OutputRef,
+    },
+};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, ops::Deref, time::Duration};
 use tracing::debug;
 
 use crate::model::{
     game::{
-        contract::{game_state::GameState, validator::Validator},
+        contract::{
+            game_state::{GameState, PaymentCredential},
+            validator::Validator,
+        },
         player::Player,
     },
     hydra::{
         hydra_socket,
         messages::{new_tx::NewTx, Transaction},
+        utxo::Datum,
     },
     tx_builder::TxBuilder,
 };
@@ -71,24 +82,12 @@ impl NodeClient {
         }
     }
 
-    pub async fn new_game(
-        &self,
-        player: Option<Player>,
-        player_count: u64,
-        bot_count: u64,
-    ) -> Result<Vec<u8>> {
+    pub async fn new_game(&self, player: Option<Player>) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
-        // Removing for now, to make iterative development easier
-        // if utxos
-        //     .iter()
-        //     .any(|utxo| GameState::try_from(utxo.datum.clone()).is_ok())
-        // {
-        //     bail!("game UTxO already exists")
-        // }
 
         let new_game_tx = self
             .tx_builder
-            .new_game(player, utxos, player_count, bot_count)
+            .new_game(player, utxos)
             .context("failed to build transaction")?; // TODO: pass in network
         debug!("new game tx: {}", hex::encode(&new_game_tx.tx_bytes));
 
@@ -179,12 +178,48 @@ impl NodeClient {
         Ok(tx_hash)
     }
 
-    pub async fn cleanup_game(&self) -> Result<Vec<u8>> {
+    pub async fn cleanup_game(&self, series_ref: OutputRef, played_games: u64) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
+        let series_utxo = utxos
+            .iter()
+            .find(|utxo| utxo.hash == series_ref.hash().deref() && utxo.index == series_ref.index())
+            .ok_or(anyhow!("Missing series utxo"))?
+            .to_owned();
+
+        let (finished_games, players) = match series_utxo.datum {
+            Datum::Inline(data) => match data {
+                PlutusData::Constr(constr) => {
+                    let finished_games = match constr.fields[0] {
+                        PlutusData::BigInt(alonzo::BigInt::Int(int)) => u64::try_from(int.0)?,
+                        _ => bail!("invalid finished games"),
+                    };
+
+                    let players: Vec<PaymentCredential> = match constr.fields[2].clone() {
+                        PlutusData::Array(array) => {
+                            let mut players = Vec::new();
+                            for player in array.to_vec() {
+                                players.push(player.try_into().context("players")?);
+                            }
+
+                            players
+                        }
+                        _ => bail!("invalid players"),
+                    };
+
+                    (finished_games, players)
+                }
+                _ => bail!("invalid datum data"),
+            },
+            _ => bail!("invalid datum type"),
+        };
+
+        if finished_games != played_games {
+            bail!("game has not been stored yet")
+        }
 
         let cleanup_tx = self
             .tx_builder
-            .cleanup_game(utxos)
+            .cleanup_game(utxos, players)
             .context("failed to build transaction")?;
 
         debug!("cleanup tx: {}", hex::encode(&cleanup_tx.tx_bytes));
@@ -197,32 +232,6 @@ impl NodeClient {
             newtx,
             // TODO: make this configurable
             Duration::from_secs(10),
-        )
-        .await?;
-
-        Ok(tx_hash)
-    }
-
-    // This is just used for testing for now, always aborting the game
-    // TODO: actually handle winner and losers
-    pub async fn end_game(&self) -> Result<Vec<u8>> {
-        let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
-
-        let end_game_tx = self
-            .tx_builder
-            .end_game(None, utxos)
-            .context("failed to build transaction")?;
-
-        debug!("end_game_tx tx: {}", hex::encode(&end_game_tx.tx_bytes));
-
-        let tx_hash = end_game_tx.tx_hash.0.to_vec();
-
-        let newtx = NewTx::new(end_game_tx).context("failed to construct newtx message")?;
-        hydra_socket::submit_tx_roundtrip(
-            &self.connection.to_websocket_url(),
-            newtx,
-            // TODO: make this configurable
-            Duration::from_secs(3),
         )
         .await?;
 

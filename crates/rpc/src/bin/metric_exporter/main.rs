@@ -7,17 +7,19 @@ use hydra_control_plane_rpc::model::{
         hydra_socket::HydraSocket,
     },
 };
-use pallas::{crypto::key::ed25519::SecretKey, ledger::addresses::Network};
+use pallas::{
+    crypto::key::ed25519::SecretKey,
+    ledger::{addresses::Network, traverse::OutputRef},
+};
 use rocket::{get, http::Method, post, routes, State};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use routes::game::{
-    add_player::add_player,
-    cleanup::cleanup,
-    end_game::end_game as node_end_game,
-    new_game::{elimination_game, new_game},
-    start_game::start_game as node_start_game,
+use routes::game::{cleanup::cleanup, new_game::new_game, new_series::new_series};
+use std::{
+    env,
+    fs::File,
+    sync::{Arc, RwLock},
+    time::Duration,
 };
-use std::{env, fs::File, sync::Arc, time::Duration};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tracing::{error, info, warn};
 
@@ -42,6 +44,9 @@ pub struct LocalState {
     network: Network,
     hydra: ConnectionInfo,
     admin_key: SecretKey,
+    active_game: RwLock<bool>,
+    game_count: RwLock<u64>,
+    series_utxo: RwLock<Option<OutputRef>>,
     metrics: Arc<Metrics>,
 }
 
@@ -110,6 +115,9 @@ async fn main() -> Result<()> {
         .manage(LocalState {
             admin_key,
             hydra: connection_info,
+            active_game: RwLock::new(false),
+            game_count: RwLock::new(0),
+            series_utxo: RwLock::new(None),
             metrics,
             network,
         })
@@ -126,10 +134,7 @@ async fn main() -> Result<()> {
                 player_killed,
                 player_suicided,
                 new_game,
-                elimination_game,
-                add_player,
-                node_start_game,
-                node_end_game,
+                new_series,
                 cleanup,
             ],
         )
