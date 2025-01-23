@@ -13,10 +13,13 @@ use pallas::{
 };
 use rocket::{get, http::Method, post, routes, State};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use routes::game::{cleanup::cleanup, new_game::new_game, new_series::new_series};
+use routes::game::{
+    cleanup::cleanup,
+    new_game::new_game,
+    new_series::{new_series, update_series},
+};
 use std::{
     env,
-    fmt::Display,
     fs::File,
     sync::{Arc, RwLock},
     time::Duration,
@@ -138,6 +141,7 @@ async fn main() -> Result<()> {
                 new_game,
                 new_series,
                 cleanup,
+                update_series
             ],
         )
         .attach(cors.to_cors().unwrap())

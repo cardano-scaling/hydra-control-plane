@@ -122,7 +122,10 @@ impl TxBuilder {
             bail!("No admin UTxOs found");
         };
 
-        let input_utxo = admin_utxos.first().unwrap();
+        let input_utxo = admin_utxos
+            .into_iter()
+            .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) == &0)
+            .ok_or_else(|| anyhow!("admin UTxO without lovelace not found"))?;
 
         let outbound_player_address = player
             .outbound_address(self.admin_pkh, self.network)

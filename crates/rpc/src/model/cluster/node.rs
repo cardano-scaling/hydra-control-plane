@@ -157,7 +157,10 @@ impl NodeClient {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
         let series_utxo = utxos
             .iter()
-            .find(|utxo| utxo.hash == series_ref.hash().deref() && utxo.index == series_ref.index())
+            .find(|utxo| {
+                hex::encode(utxo.hash.clone()) == hex::encode(series_ref.hash())
+                    && utxo.index == series_ref.index()
+            })
             .ok_or(anyhow!("Missing series utxo"))?
             .to_owned();
 

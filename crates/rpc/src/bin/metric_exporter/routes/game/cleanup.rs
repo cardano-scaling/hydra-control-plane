@@ -17,6 +17,8 @@ pub async fn cleanup(state: &State<LocalState>) -> Result<()> {
             .ok_or(anyhow!("no series utxo"))?
     };
 
+    println!("SERIES UTXO REF: {:?}", series_utxo_ref);
+
     let played_games = {
         *state
             .game_count
@@ -28,6 +30,12 @@ pub async fn cleanup(state: &State<LocalState>) -> Result<()> {
         .cleanup_game(series_utxo_ref, played_games)
         .await
         .map_err(|e| anyhow!(e))?;
+
+    state
+        .series_utxo
+        .write()
+        .map_err(|_| anyhow!("failed to write state"))?
+        .clone_from(&None);
 
     Ok(())
 }

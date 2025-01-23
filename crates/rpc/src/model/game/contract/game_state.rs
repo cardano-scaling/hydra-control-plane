@@ -295,7 +295,19 @@ impl TryFrom<PlutusData> for PaymentCredential {
                     _ => bail!("Invalid field type for PaymentCredential."),
                 }
             }
-            _ => bail!("Invalid data type for PaymentCredential."),
+            PlutusData::BoundedBytes(bytes) => {
+                let bytes: Vec<u8> = bytes.into();
+                if bytes.len() != 28 {
+                    bail!("Invalid length for PaymentCredential.");
+                }
+
+                let credential: [u8; 28] = bytes
+                    .try_into()
+                    .map_err(|_| anyhow!("Failed to convert Vec<u8> to [u8; 28]"))?;
+
+                Ok(PaymentCredential(credential))
+            }
+            _ => bail!("Invalid data type for PaymentCredential"),
         }
     }
 }
