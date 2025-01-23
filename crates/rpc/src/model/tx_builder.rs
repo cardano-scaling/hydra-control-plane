@@ -116,33 +116,13 @@ impl TxBuilder {
     }
 
     pub fn add_player(&self, player: Player, utxos: Vec<UTxO>) -> Result<BuiltTransaction> {
-        let game_state_utxo = utxos
-            .clone()
-            .into_iter()
-            .find(|utxo| utxo.address == Validator::address(self.network))
-            .ok_or_else(|| anyhow!("game state UTxO not found"))?;
-        info!("Game State UTxO Found: {:?}", game_state_utxo);
+        let admin_utxos = self.find_admin_utxos(utxos);
 
-        let game_state: PlutusData = GameState::try_from(game_state_utxo.datum.clone())?
-            .add_player(player.signing_key.into())
-            .into();
+        if admin_utxos.is_empty() {
+            bail!("No admin UTxOs found");
+        };
 
-        info!("Game state updated!");
-
-        let mut datum: Vec<u8> = Vec::new();
-        encode(&game_state, &mut datum).context("failed to encode game state")?;
-
-        info!("Datum encoded!");
-
-        let collateral_utxos = self.find_admin_utxos(utxos);
-        info!("Possible collateral UTxOs: {:?}", collateral_utxos);
-        let collateral_utxo = collateral_utxos
-            .iter()
-            .find(|utxo| utxo.value.get("lovelace").unwrap_or(&0) > &0)
-            .ok_or_else(|| anyhow!("No collateral utxo found"))?;
-        info!("Collateral UTxO selected!");
-
-        let script_address = Validator::address(self.network);
+        let input_utxo = admin_utxos.first().unwrap();
 
         let outbound_player_address = player
             .outbound_address(self.admin_pkh, self.network)
@@ -153,57 +133,20 @@ impl TxBuilder {
         info!("Redeemer constructed");
 
         let tx_builder = StagingTransaction::new()
-            .input(game_state_utxo.clone().into())
-            .collateral_input(collateral_utxo.clone().into())
-            // GameState Output
-            .output(Output::new(script_address, 0).set_inline_datum(datum))
+            .input(input_utxo.clone().into())
             // Player Output
             .output(Output::new(outbound_player_address, 0))
-            .add_spend_redeemer(
-                game_state_utxo.into(),
-                redeemer_bytes,
-                Some(ExUnits {
-                    mem: 14000000,
-                    steps: 10000000000,
-                }),
-            )
-            .script(ScriptKind::PlutusV3, Validator::to_plutus().0.to_vec())
-            .language_view(
-                ScriptKind::PlutusV3,
-                // These are the protocol parameters in the hydra demo devnet. They are different from the current mainnet parameters.
-                vec![
-                    100788, 420, 1, 1, 1000, 173, 0, 1, 1000, 59957, 4, 1, 11183, 32, 201305, 8356,
-                    4, 16000, 100, 16000, 100, 16000, 100, 16000, 100, 16000, 100, 16000, 100, 100,
-                    100, 16000, 100, 94375, 32, 132994, 32, 61462, 4, 72010, 178, 0, 1, 22151, 32,
-                    91189, 769, 4, 2, 85848, 123203, 7305, -900, 1716, 549, 57, 85848, 0, 1, 1,
-                    1000, 42921, 4, 2, 24548, 29498, 38, 1, 898148, 27279, 1, 51775, 558, 1, 39184,
-                    1000, 60594, 1, 141895, 32, 83150, 32, 15299, 32, 76049, 1, 13169, 4, 22100,
-                    10, 28999, 74, 1, 28999, 74, 1, 43285, 552, 1, 44749, 541, 1, 33852, 32, 68246,
-                    32, 72362, 32, 7243, 32, 7391, 32, 11546, 32, 85848, 123203, 7305, -900, 1716,
-                    549, 57, 85848, 0, 1, 90434, 519, 0, 1, 74433, 32, 85848, 123203, 7305, -900,
-                    1716, 549, 57, 85848, 0, 1, 1, 85848, 123203, 7305, -900, 1716, 549, 57, 85848,
-                    0, 1, 955506, 213312, 0, 2, 270652, 22588, 4, 1457325, 64566, 4, 20467, 1, 4,
-                    0, 141992, 32, 100788, 420, 1, 1, 81663, 32, 59498, 32, 20142, 32, 24588, 32,
-                    20744, 32, 25933, 32, 24623, 32, 43053543, 10, 53384111, 14333, 10, 43574283,
-                    26308, 10, 16000, 100, 16000, 100, 962335, 18, 2780678, 6, 442008, 1, 52538055,
-                    3756, 18, 267929, 18, 76433006, 8868, 18, 52948122, 18, 1995836, 36, 3227919,
-                    12, 901022, 1, 166917843, 4307, 36, 284546, 36, 158221314, 26549, 36, 74698472,
-                    36, 333849714, 1, 254006273, 72, 2174038, 72, 2261318, 64571, 4, 207616, 8310,
-                    4, 1293828, 28716, 63, 0, 1, 1006041, 43623, 251, 0, 1,
-                ],
-            )
             .network_id(match self.network {
                 Network::Testnet => 0,
                 Network::Mainnet => 1,
                 Network::Other(i) => i,
             })
             .fee(0);
-        info!("Building transaction...");
 
         let tx = tx_builder
             .build_conway_raw()
             .context("failed to build conway transaction")?;
-        info!("Signing transaction...");
+
         let signed_tx = tx
             .sign(self.admin_key.clone().into())
             .context("failed to sign tx")?;

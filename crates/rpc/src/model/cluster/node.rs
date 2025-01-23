@@ -131,31 +131,6 @@ impl NodeClient {
 
     pub async fn add_player(&self, player: Player) -> Result<Vec<u8>> {
         let utxos = self.fetch_utxos().await.context("failed to fetch UTxOs")?;
-        // This logic prevents players from joining the same game twice.
-        // This is a really gross way to handle it, just doing it as a bandaid fix
-        let game_state_utxo = utxos
-            .clone()
-            .into_iter()
-            .find(|utxo| utxo.address == Validator::address(self.tx_builder.network))
-            .ok_or_else(|| anyhow!("game state UTxO not found"))?;
-
-        let game_state = GameState::try_from(game_state_utxo.datum.clone())?;
-        if game_state.players.contains(&player.signing_key.into()) {
-            let outbound_player_address =
-                player.outbound_address(self.tx_builder.admin_pkh, self.tx_builder.network)?;
-            let player_utxo = utxos
-                .clone()
-                .into_iter()
-                .find(|utxo| utxo.address == outbound_player_address)
-                .ok_or_else(|| anyhow!("player state utxo not found"))?;
-
-            return Ok(player_utxo.hash);
-        }
-
-        if game_state.players.len() >= 4 {
-            return Err(anyhow!("too many players"));
-        }
-        // Previous add player logic
         let add_player_tx = self
             .tx_builder
             .add_player(player, utxos)

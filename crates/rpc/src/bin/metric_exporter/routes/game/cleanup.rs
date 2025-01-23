@@ -27,7 +27,7 @@ pub async fn cleanup(state: &State<LocalState>) -> Result<()> {
     client
         .cleanup_game(series_utxo_ref, played_games)
         .await
-        .map_err(|_| anyhow!("failed to cleanup game"))?;
+        .map_err(|e| anyhow!(e))?;
 
     Ok(())
 }

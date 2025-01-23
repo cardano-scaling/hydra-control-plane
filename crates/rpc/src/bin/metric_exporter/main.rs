@@ -16,6 +16,7 @@ use rocket_cors::{AllowedOrigins, CorsOptions};
 use routes::game::{cleanup::cleanup, new_game::new_game, new_series::new_series};
 use std::{
     env,
+    fmt::Display,
     fs::File,
     sync::{Arc, RwLock},
     time::Duration,
@@ -40,6 +41,7 @@ struct Args {
     admin_key_file: String,
 }
 
+#[derive(Debug)]
 pub struct LocalState {
     network: Network,
     hydra: ConnectionInfo,

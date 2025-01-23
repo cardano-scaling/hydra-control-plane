@@ -41,6 +41,7 @@ impl From<GameState> for i64 {
     }
 }
 
+#[derive(Debug)]
 pub struct Metrics {
     pub registry: Registry,
     pub node_state: IntGauge,
@@ -156,7 +157,7 @@ impl Metrics {
         self.game_state.set(GameState::Waiting.into());
         self.players_current.set(0);
     }
-    
+
     pub fn server_unavailable(&self) {
         self.game_state.set(GameState::Done.into());
         self.games_current.set(0);
