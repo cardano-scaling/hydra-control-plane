@@ -36,8 +36,6 @@ pub async fn new_series(utxo: &str, state: &State<LocalState>) -> Result<()> {
             .map_err(|_| anyhow!("Failed to write state"))?
             .clone_from(&Some(output_ref));
 
-        println!("{:?}", state);
-
         Ok(())
     }
 }

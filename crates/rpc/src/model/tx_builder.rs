@@ -127,10 +127,6 @@ impl TxBuilder {
         let outbound_player_address = player
             .outbound_address(self.admin_pkh, self.network)
             .context("failed to construct player multisig outbound address")?;
-        let redeemer: PlutusData = Redeemer::new(0, SpendAction::AddPlayer).into();
-        let mut redeemer_bytes = Vec::new();
-        encode(&redeemer, &mut redeemer_bytes).context("failed to encode redeemer")?;
-        info!("Redeemer constructed");
 
         let tx_builder = StagingTransaction::new()
             .input(input_utxo.clone().into())
