@@ -82,8 +82,20 @@ impl UTxO {
         };
 
         let mut value_map = HashMap::new();
-        for (key, value) in value["value"].as_object().context("Invalid value")? {
-            value_map.insert(key.to_string(), value.as_u64().context("Invalid value")?);
+        for (policy, value) in value["value"].as_object().context("Invalid policy map")? {
+            if value.is_u64() {
+                value_map.insert(
+                    policy.to_string(),
+                    value.as_u64().context("Invalid amount")?,
+                );
+            } else {
+                for (asset, value) in value.as_object().context("invalid asset map")? {
+                    value_map.insert(
+                        policy.to_owned() + asset.as_str(),
+                        value.as_u64().context("Invalid amount in asset map")?,
+                    );
+                }
+            }
         }
 
         Ok(UTxO {
