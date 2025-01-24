@@ -139,7 +139,15 @@ impl TxBuilder {
                 Network::Mainnet => 1,
                 Network::Other(i) => i,
             })
-            .change_address(input_utxo.clone().address)
+            .output(Output::new(
+                input_utxo.clone().address,
+                input_utxo
+                    .clone()
+                    .value
+                    .get("lovelace")
+                    .unwrap_or(&0)
+                    .to_owned(),
+            ))
             .fee(0);
 
         let tx = tx_builder
