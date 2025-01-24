@@ -139,6 +139,7 @@ impl TxBuilder {
                 Network::Mainnet => 1,
                 Network::Other(i) => i,
             })
+            .change_address(input_utxo.clone().address)
             .fee(0);
 
         let tx = tx_builder
