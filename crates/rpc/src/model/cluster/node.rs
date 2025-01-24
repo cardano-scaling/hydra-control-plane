@@ -191,10 +191,6 @@ impl NodeClient {
             _ => bail!("invalid datum type"),
         };
 
-        if finished_games != played_games {
-            bail!("game has not been stored yet")
-        }
-
         let cleanup_tx = self
             .tx_builder
             .cleanup_game(utxos, players)

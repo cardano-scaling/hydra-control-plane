@@ -17,8 +17,6 @@ pub async fn cleanup(state: &State<LocalState>) -> Result<()> {
             .ok_or(anyhow!("no series utxo"))?
     };
 
-    println!("SERIES UTXO REF: {:?}", series_utxo_ref);
-
     let played_games = {
         *state
             .game_count
