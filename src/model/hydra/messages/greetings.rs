@@ -9,9 +9,7 @@ pub struct Greetings {
     head_status: String,
     hydra_node_version: String,
     me: Vec<u8>,
-    seq: u64,
     snapshot_utxos: Vec<UTxO>,
-    timestamp: String,
 }
 
 impl TryFrom<Value> for Greetings {
@@ -28,22 +26,17 @@ impl TryFrom<Value> for Greetings {
             .to_owned();
         let me_obj = value["me"].as_object().context("Invalid me object")?;
         let me = hex::decode(me_obj["vkey"].as_str().context("Invalid me vkey")?)?;
-        let seq = value["seq"].as_u64().context("Invalid seq")?;
-        let timestamp = value["timestamp"].as_str().context("Invalid timestamp")?;
         let snapshot_utxos = value["snapshotUtxo"]
             .as_object()
             .context("Invalid snapshotUtxo object")?
             .iter()
             .map(|(key, value)| UTxO::try_from_value(key, value))
             .collect::<Result<Vec<UTxO>>>()?;
-
         Ok(Greetings {
             head_status: head_status.to_string(),
             hydra_node_version: hydra_node_version.to_string(),
             me,
-            seq,
             snapshot_utxos,
-            timestamp: timestamp.to_string(),
         })
     }
 }

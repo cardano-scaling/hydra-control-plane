@@ -6,8 +6,8 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
 
-    cardano-node.url = "github:intersectmbo/cardano-node/9.0.0";
-    hydra.url = "github:cardano-scaling/hydra/0.17.0";
+    cardano-node.url = "github:intersectmbo/cardano-node/10.1.4";
+    hydra.url = "github:cardano-scaling/hydra/0.22.2";
 
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";

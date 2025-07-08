@@ -113,7 +113,7 @@ impl HydraSocket {
     async fn process_messages(&self, mut receiver: HydraSource) -> Result<()> {
         while let Some(msg) = receiver.next().await {
             let msg = msg?;
-            let hydra_message = HydraMessage::try_from(msg)?;
+            let hydra_message = HydraMessage::try_from(msg.clone())?;
             match hydra_message {
                 HydraMessage::Ping(payload) => {
                     debug!("Received ping: {:?}", payload);
