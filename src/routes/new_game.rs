@@ -4,6 +4,7 @@ use itertools::Itertools;
 use pallas::ledger::addresses::Address;
 use rocket::{get, http::Status, serde::json::Json, State};
 use serde::Serialize;
+use std::fmt::Write;
 use tracing::warn;
 
 use crate::{
@@ -59,10 +60,24 @@ pub async fn new_game(
             Status::InternalServerError
         })?;
 
+    let xs = node.find_script_ref().await;
+    let script_ref = match xs {
+        None => node.create_script_ref().await.map_err(|e| {
+            warn!("failed to commit script {:?}", e);
+            Status::InternalServerError
+        }),
+        Some(x) => {
+            let mut hex_hash = String::with_capacity(x.hash.len() * 2);
+            for byte in &x.hash {
+                write!(&mut hex_hash, "{:02x}", byte).unwrap();
+            }
+            Ok(format!("{}#{}", hex_hash, x.index))
+        }
+    }?;
+
     // TODO: move this to the frontend to lookup
     // TODO: This is hard coded because our offline nodes have them in the initial-utxo
-    let script_ref =
-        "0000000000000000000000000000000000000000000000000000000000000000#0".to_string();
+    //
     Ok(Json(NewGameResponse {
         ip: node.remote_connection.to_authority(),
         script_ref,

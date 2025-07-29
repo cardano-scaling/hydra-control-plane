@@ -15,7 +15,7 @@ use crate::SCRIPT_ADDRESS;
 
 #[derive(Clone)]
 pub struct TxBuilder {
-    admin_key: SecretKey,
+    pub admin_key: SecretKey,
     pub admin_pkh: Hash<28>,
 }
 
@@ -98,7 +98,7 @@ impl TxBuilder {
         Ok((signed_tx, datum))
     }
 
-    fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {
+    pub fn find_admin_utxos(&self, utxos: Vec<UTxO>) -> Vec<UTxO> {
         let admin_kh = self.admin_key.public_key().compute_hash();
         utxos
             .into_iter()

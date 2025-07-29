@@ -6,6 +6,8 @@ use std::{
     time::Duration,
 };
 
+use crate::SCRIPT_CBOR;
+use anyhow::Error;
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
 use hex::FromHex;
@@ -22,6 +24,7 @@ use pallas::{
         },
         traverse::MultiEraTx,
     },
+    txbuilder::{BuildBabbage, BuiltTransaction, Output, ScriptKind, StagingTransaction},
 };
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -209,6 +212,51 @@ impl Node {
 
         node.start_listen();
         Ok(node)
+    }
+
+    pub async fn create_script_ref(&self) -> Result<String, Error> {
+        let utxos = self.fetch_utxos().await.context("Failed to fetch utxos")?;
+        let admin_utxos = self.tx_builder.find_admin_utxos(utxos);
+        if admin_utxos.is_empty() {
+            bail!("No admin UTxOs found");
+        };
+
+        let input_utxo = admin_utxos.first().unwrap();
+
+        let script_address = Address::from_bech32(SCRIPT_ADDRESS).unwrap();
+
+        let bytes = hex::decode(SCRIPT_CBOR).unwrap();
+
+        let tx = StagingTransaction::new()
+            .input(input_utxo.clone().into())
+            .output(Output::new(script_address, 0).set_inline_script(ScriptKind::PlutusV2, bytes))
+            .output(Output::new(
+                input_utxo.clone().address,
+                input_utxo.value.get("lovelace").unwrap().to_owned(),
+            ))
+            .fee(0)
+            .build_babbage_raw()?;
+
+        let signed_tx = tx.sign(self.tx_builder.admin_key.clone().into())?;
+
+        let utxo = hex::encode(signed_tx.tx_hash.0) + "#0";
+
+        let message: String = NewTx::new(signed_tx)?.into();
+
+        self.send(message).await?;
+
+        Ok(utxo)
+    }
+
+    pub async fn find_script_ref(&self) -> Option<UTxO> {
+        let utxos = self
+            .fetch_utxos()
+            .await
+            .context("Failed to fetch utxos")
+            .ok()?;
+        utxos.into_iter().find(|utxo| {
+            utxo.reference_script.is_some() && utxo.address.to_bech32().unwrap() == SCRIPT_ADDRESS
+        })
     }
 
     pub async fn add_player(

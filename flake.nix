@@ -7,7 +7,7 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     cardano-node.url = "github:intersectmbo/cardano-node/10.1.4";
-    hydra.url = "github:cardano-scaling/hydra/0.22.2";
+    hydra.url = "github:cardano-scaling/hydra/0.22.3";
 
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
