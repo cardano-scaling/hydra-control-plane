@@ -1,5 +1,9 @@
 # ChangeLog for hydra-control-plane
 
+## 0.2.1
+
+* Fix snapshot decoder for `hydra-0.22.3`.
+
 ## 0.2.0
 
 * Support online hydra heads.

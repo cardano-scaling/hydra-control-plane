@@ -34,7 +34,7 @@ impl TryFrom<Value> for SnapshotConfirmed {
             .collect::<Result<Vec<String>>>()?;
         let snapshot = value["snapshot"].as_object().context("Invalid snapshot")?;
 
-        let confirmed_transactions = snapshot["confirmedTransactions"]
+        let confirmed_transactions = snapshot["confirmed"]
             .as_array()
             .context("Invalid confirmedTransactions")?
             .iter()
@@ -44,7 +44,7 @@ impl TryFrom<Value> for SnapshotConfirmed {
                     .and_then(|s| hex::decode(s).context("failed to hex decode"))
             })
             .collect::<Result<Vec<Vec<u8>>>>()?;
-        let snapshot_number = snapshot["snapshotNumber"]
+        let snapshot_number = snapshot["number"]
             .as_u64()
             .context("Invalid snapshotNumber")?;
         let utxo = snapshot["utxo"]
